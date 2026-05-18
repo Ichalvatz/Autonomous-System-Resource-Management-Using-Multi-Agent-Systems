@@ -1,0 +1,2441 @@
+openapi: 3.0.3
+info:
+  title: "myWorld Travel API"
+  description: |
+    ## 🔗 **HATEOAS Architecture (REST Level 3)**
+    This API implements **Hypermedia As The Engine Of Application State (HATEOAS)** following REST Level 3 architectural constraints:
+    - **Dynamic Navigation**: Every response includes discoverable links to related resources and available actions
+    - **Self-Descriptive**: Clients can navigate the API entirely through hypermedia links without hardcoding URLs
+    - **Stateless Interaction**: All possible actions are dynamically provided based on current resource state
+
+    Each resource response includes a `links` object containing:
+    - Available HTTP methods and URIs for resource operations
+    - Navigation paths to connected entities  
+    - Self-reference links to the current resource
+
+    **Important**: Link availability is dynamic and depends on the current resource state, user permissions, and context. The examples show typical links but actual responses may include additional or fewer links based on the specific situation.
+
+    ---
+    🌍 **myWorld Travel API** - Your intelligent travel companion for discovering the world!
+
+    A comprehensive RESTful API that powers personalized travel experiences through smart recommendations and community-driven insights.
+
+    ### 🚀 **Key Features**
+    - **AI-Powered Recommendations**: Intelligent place suggestions based on your preferences, location, and travel history
+    - **Multi-Profile Support**: Create unlimited preference profiles for different travel moods (business, leisure, adventure, culture)
+    - **Real-Time Location Services**: Get instant recommendations based on your current location
+    - **Community Reviews**: Read authentic reviews and contribute your own experiences
+    - **Smart Navigation**: Turn-by-turn directions with multiple transportation options
+    
+    ### 👤 **User Management**
+    - Complete profile management with customizable personal information
+    - Multi-language support (English, French, German, Greek, Italian, Spanish)
+    - Comprehensive accessibility options (high contrast, large text, text-to-speech)
+    - Granular privacy controls for location sharing and data preferences
+    - Seamless profile switching for different travel scenarios
+
+    ### 🎯 **Intelligent Discovery System**
+    - Create and manage multiple preference profiles
+    - AI-powered recommendations based on location and interests
+    - Support for 8 diverse categories: Museum, Beach, Park, Restaurant, Nightlife, Shopping, Sports, and Culture
+    - Real-time location-based suggestions
+
+    ### 🌟 **Social & Community Features**
+    - Comprehensive review system with 5-star ratings and detailed comments
+    - Manage favorite and disliked places to improve future recommendations
+    - Report incorrect or outdated information to maintain data quality
+    - Community-driven content validation and moderation system
+    - Share experiences and help fellow travelers make informed decisions
+
+    ### 🔍 **Advanced Search & Navigation**
+    - Powerful keyword-based place search with advanced filtering options
+    - Turn-by-turn navigation with support for walking, driving, and public transport
+    - Integration with leading mapping services for accurate and up-to-date directions
+    - Estimated travel times and distance calculations
+
+    ### 🛡️ **Administrative Tools**
+    - Comprehensive content management and moderation capabilities
+    - Streamlined report handling and resolution workflows
+    - Admin dashboard for monitoring system health and user engagement
+
+    ---
+  version: "1.6.2"
+  contact:
+    name: "myWorld API Support Team"
+    email: api-support@myworld.com
+    url: "https://myworld.com/support"
+  license:
+    name: "Apache License 2.0"
+    url: "https://www.apache.org/licenses/LICENSE-2.0"
+servers:
+  - url: "https://860d5886-4cd1-42e5-8777-f4ccfda73c0e.mock.pstmn.io"
+    description: "Staging server for development and testing"
+  - url: "https://api.myworld.com/v1"
+    description: "Production server for live API access"
+paths:
+  "/":
+    get:
+      summary: "API information and entry point"
+      operationId: getApiInfo
+      description: |
+        Root endpoint providing API information and HATEOAS links for API discovery. Returns version information and important resource links.
+      tags: ["API Information"]
+      security: []   # Public endpoint
+      responses:
+        '200':
+          description: "Successfully retrieved API information with discoverable links"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "🌍 Welcome to myWorld Travel API"
+                  version:
+                    type: string
+                    example: "1.6.2"
+                  description:
+                    type: string
+                    example: "RESTful API with HATEOAS support for personalized travel experiences"
+                  documentation:
+                    type: string
+                    example: "/api-docs"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Key API entry points"
+                    example:
+                      api-info:
+                        href: /
+                        method: GET
+                      users:
+                        href: "/users/{userId}/profile"
+                        method: GET
+                        templated: true
+                      places:
+                        href: "/places/{placeId}"
+                        method: GET
+                        templated: true
+                      search:
+                        href: "/places/search{?keywords}"
+                        method: GET
+                        templated: true
+                      navigation:
+                        href: "/navigation{?userLatitude,userLongitude,placeLatitude,placeLongitude,transportationMode}"
+                        method: GET
+  /health:
+    get:
+      summary: "Health check endpoint"
+      operationId: healthCheck
+      description: |
+        Simple health check endpoint for monitoring and uptime probes. Returns basic status and uptime information.
+      tags: ["API Information"]
+      security: []   # Public
+      responses:
+        '200':
+          description: "Service is healthy and operational"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-11-28T10:30:00Z"
+                  uptime:
+                    type: number
+                    description: "Process uptime in seconds"
+                    example: 3600
+  /auth/login:
+    post:
+      summary: "User login"
+      operationId: login
+      description: |
+        Authenticates a user with email and password credentials and returns a JWT token for subsequent API requests.
+      tags: [Authentication]
+      security: []   # No auth required
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: "User email address"
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  format: password
+                  description: "User password"
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: "Successfully authenticated and JWT token generated"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: "Success message"
+                    example: "Login successful"
+                  token:
+                    type: string
+                    description: "JWT authentication token for API access"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." 
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: "Bad request - Missing required fields"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: "Email and password are required"
+        '401':
+          description: "Unauthorized - Invalid email or password"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: AUTHENTICATION_ERROR
+                message: "Invalid email or password"
+  /auth/signup:
+    post:
+      summary: "User registration"
+      operationId: signup
+      description: |
+        Creates a new user account with name, email, and password. Returns a JWT token for immediate access.
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  description: "Full name of the user"
+                  example: "John Doe"
+                email:
+                  type: string
+                  format: email
+                  description: "User email address (must be unique)"
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  format: password
+                  description: "User password (minimum 6 characters)"
+                  example: SecurePass123!
+      responses:
+        '201':
+          description: "User account successfully created and JWT token generated"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: "Success message"
+                    example: "Registration successful"
+                  token:
+                    type: string
+                    description: "JWT authentication token for API access"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: "Bad request - Invalid input data or missing required fields"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: "Password must be at least 6 characters long"
+                details:
+                  field: password
+        '409':
+          description: "Conflict - Email already registered"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: CONFLICT
+                message: "User with this email already exists"
+                details:
+                  field: email
+  "/users/{userId}/profile":
+    get:
+      summary: "Get user profile information"
+      operationId: getUserProfile
+      description: |
+        **FR41 - The user must be able to access their profile information.**
+
+        Retrieves comprehensive profile information for a specific user including personal details and active preference profile.
+      tags: ["User Management"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose profile information is being requested"
+      responses:
+        '200':
+          description: "Successfully retrieved user profile information with complete details"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Available actions and related resources"
+                    example:
+                      self:
+                        href: "/users/16180/profile"
+                        method: GET
+                      edit:
+                        href: "/users/16180/profile"
+                        method: PUT
+                      settings:
+                        href: "/users/16180/settings"
+                        method: GET
+                      preference-profiles:
+                        href: "/users/16180/preference-profiles"
+                        method: GET
+                      create-profile:
+                        href: "/users/16180/preference-profiles"
+                        method: POST
+                      recommendations:
+                        href: "/users/16180/recommendations{?latitude,longitude,maxDistance}"
+                        method: GET
+                      favourites:
+                        href: "/users/16180/favourite-places"
+                        method: GET
+        '403':
+          description: "Forbidden - Authenticated user cannot access this userId resource"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: ACCESS_DENIED
+                message: "You can only access your own resources"
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+    put:
+      summary: "Update user profile information"
+      operationId: updateUserProfile
+      description: |
+        **FR6 - The user must be able to switch between preference profiles.**
+
+        Updates user profile information including active preference profile selection. Only allowed for the authenticated user themselves.
+      tags: ["User Management"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose profile is being updated"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: "User profile successfully updated with the new information"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Available actions for this user profile"
+                    example:
+                      self:
+                        href: "/users/16180/profile"
+                        method: GET
+                      edit:
+                        href: "/users/16180/profile"
+                        method: PUT
+                      settings:
+                        href: "/users/16180/settings"
+                        method: GET
+                      preference-profiles:
+                        href: "/users/16180/preference-profiles"
+                        method: GET
+                      recommendations:
+                        href: "/users/16180/recommendations{?latitude,longitude,maxDistance}"
+                        method: GET
+        '403':
+          description: "Forbidden - Authenticated user cannot access this userId resource"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: ACCESS_DENIED
+                message: "You can only access your own resources"
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+        '409':
+          description: "Conflict - Email already in use by another account"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: CONFLICT
+                message: "Email is already in use by another account"
+                details:
+                  field: email
+  "/users/{userId}/settings":
+    get:
+      summary: "Get user settings"
+      operationId: getSettings
+      description: |
+        **FR28 - The user must be able to access the settings.**
+
+        Retrieves user's application settings including language preferences, accessibility options, and privacy configurations.
+      tags: ["User Management"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose settings are being retrieved"
+      responses:
+        '200':
+          description: "Successfully retrieved user settings with all configured preferences"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    $ref: '#/components/schemas/Settings'
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Available actions for user settings"
+                    example:
+                      self:
+                        href: "/users/16180/settings"
+                        method: GET
+                      update:
+                        href: "/users/16180/settings"
+                        method: PUT
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+    put:
+      summary: "Update user settings"
+      operationId: updateSettings
+      description: |
+        **FR40 - The user must be able to modify their settings.**
+
+        Updates user's application settings including language, accessibility, and privacy preferences.
+      tags: ["User Management"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose settings are being updated"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: "Settings successfully updated with the new configuration"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    $ref: '#/components/schemas/Settings'
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Available actions for user settings"
+                    example:
+                      self:
+                        href: "/users/16180/settings"
+                        method: GET
+                      update:
+                        href: "/users/16180/settings"
+                        method: PUT
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+  "/users/{userId}/preference-profiles":
+    get:
+      summary: "Get all preference profiles for a user"
+      operationId: getPreferenceProfiles
+      description: |
+        **FR2 - The user must be able to view their preference profiles.**
+
+        Retrieves all preference profiles created by the user, including their names and selected categories.
+      tags: [Preferences]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose preference profiles are being retrieved"
+      responses:
+        '200':
+          description: "Successfully retrieved list of all preference profiles for the user"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PreferenceProfile'
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Available actions for preference profiles collection"
+                    example:
+                      self:
+                        href: "/users/16180/preference-profiles"
+                        method: GET
+                      create-profile:
+                        href: "/users/16180/preference-profiles"
+                        method: POST
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+    post:
+      summary: "Create a new preference profile for a user"
+      operationId: createPreferenceProfile
+      description: |
+        **FR3 - The user must be able to create preference profiles.**
+
+        **FR4 - The user must be able to set their preferences for a profile.**
+
+        Creates a new preference profile with selected categories for personalized recommendations. Returns all user profiles including the newly created one.
+      tags: [Preferences]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user for whom the preference profile is being created"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [categories]
+              properties:
+                name:
+                  type: string
+                  description: "Custom name for the preference profile to help identify its purpose"
+                  example: "Cultural Explorer"
+                categories:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PreferenceCategory"
+                  uniqueItems: true
+                  description: "Array of preference categories that define this profile's interests"
+                  example: [MUSEUM, RESTAURANT, CULTURE]
+                selectedPreferences:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PreferenceCategory"
+                  uniqueItems: true
+                  description: "Legacy alias for categories field"
+                  example: [MUSEUM, RESTAURANT, CULTURE]
+                  deprecated: true
+                profileName:
+                  type: string
+                  description: "Legacy alias for name field"
+                  deprecated: true
+                  example: "Cultural Explorer"
+      responses:
+        '201':
+          description: "Preference profile successfully created with the specified settings. Returns all user profiles including the newly created one."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PreferenceProfile"
+                    description: "All preference profiles for this user including the newly created one"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for preference profiles"
+                    example:
+                      self:
+                        href: "/users/16180/preference-profiles"
+                        method: GET
+                      create-profile:
+                        href: "/users/16180/preference-profiles"
+                        method: POST
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '400':
+          description: "Bad request - Missing or invalid profile data"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: INVALID_PROFILE_DATA
+                message: "No preferences selected"
+                details:
+                  field: categories
+                  value: []
+                  reason: "At least one preference category must be selected"
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+  "/users/{userId}/preference-profiles/{profileId}":
+    put:
+      summary: "Update a specific preference profile"
+      operationId: updatePreferenceProfile
+      description: |
+        **FR5 - The user must be able to edit their preference profiles.**
+
+        Updates an existing preference profile with new categories and/or profile name. Returns all user profiles.
+      tags: [Preferences]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user who owns the preference profile"
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the preference profile to be updated"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceProfile'
+      responses:
+        '200':
+          description: "Preference profile successfully updated with the new settings. Returns all user profiles."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PreferenceProfile"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for this user's preference profiles"
+                    example:
+                      self:
+                        href: "/users/16180/preference-profiles"
+                        method: GET
+                      create-profile:
+                        href: "/users/16180/preference-profiles"
+                        method: POST
+                      recommendations:
+                        href: "/users/16180/recommendations{?latitude,longitude}"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '400':
+          description: "Bad request - Invalid profile data"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: INVALID_PROFILE_DATA
+                message: "No preferences selected"
+                details:
+                  field: categories
+                  value: []
+                  reason: "At least one preference category must be selected"
+        '404':
+          description: "User or profile not found - Either the user or the specified profile does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PROFILE_NOT_FOUND
+                message: "Profile with ID 42 not found for user 12345"
+        # Note: No 409 documented here because current implementation allows deleting active/last profiles.
+    delete:
+      summary: "Delete a specific preference profile"
+      operationId: deletePreferenceProfile
+      description: |
+        **FR5 - The user must be able to edit their preference profiles.**
+
+        Deletes a preference profile. **Note**: The current implementation allows deleting any profile (even the active or last profile). If the active profile is deleted, the user's `activeProfile` setting may point to a non-existent profile until changed.
+      tags: [Preferences]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user who owns the preference profile"
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the preference profile to be deleted"
+      responses:
+        '204':
+          description: "Preference profile successfully deleted with no content returned"
+        '404':
+          description: "User or profile not found - Either the user or the specified profile does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PROFILE_NOT_FOUND
+                message: "Profile with ID 42 not found for user 12345"
+        # The spec no longer lists 409, since deletion restrictions are not enforced in code.
+  "/users/{userId}/preference-profiles/{profileId}/activate":
+    post:
+      summary: "Activate a specific preference profile"
+      operationId: activatePreferenceProfile
+      description: |
+        **FR5 - The user must be able to edit their preference profiles.**
+
+        Activates a specific preference profile, making it the active profile for recommendations. Returns all user profiles with the `activeProfile` field indicating which profile is now active.
+      tags: [Preferences]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user who owns the preference profiles"
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the preference profile to be activated"
+      responses:
+        '200':
+          description: "Preference profile successfully activated. Returns all profiles with activeProfile indicator."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PreferenceProfile"
+                  activeProfile:
+                    type: integer
+                    description: "ID of the newly activated profile"
+                    example: 42
+                  message:
+                    type: string
+                    description: "Confirmation message"
+                    example: "Profile activated successfully"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions after activation"
+                    example:
+                      self:
+                        href: "/users/16180/preference-profiles"
+                        method: GET
+                      recommendations:
+                        href: "/users/16180/recommendations{?latitude,longitude}"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User or profile not found - Either the user or the specified profile does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PROFILE_NOT_FOUND
+                message: "Profile with ID 42 not found for user 12345"
+  "/users/{userId}/recommendations":
+    get:
+      summary: "Get personalized recommendations for a user"
+      operationId: getRecommendations
+      description: |
+        **FR7 - The system must provide place recommendations based on the user's preferences and location.**
+
+        **FR8 - The user must be able to view recommended places.**
+
+        **FR39 - The system must be able to access the user's location.**
+
+        Generates personalized place recommendations based on the user's active preference profile and optional current location. When no preference profiles exist, returns an empty recommendations array with a message prompting the user to create a profile.
+      tags: [Recommendations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user for whom recommendations are being generated"
+        - name: latitude
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          description: "Current latitude for location-based filtering and distance calculation"
+        - name: longitude
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          description: "Current longitude for location-based filtering and distance calculation"
+        - name: maxDistance
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+          description: "Maximum distance in kilometers for filtering recommendations (only used when lat/lon provided)"
+      responses:
+        '200':
+          description: "Successfully generated personalized recommendations based on user preferences and location. Returns activeProfile field containing the name of the profile used for recommendations. May include message field when no profiles exist."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommendations:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/Place"
+                        - type: object
+                          properties:
+                            distance:
+                              type: number
+                              format: float
+                              description: "Distance in kilometers from user location (only present when latitude/longitude provided)"
+                            links:
+                              type: object
+                              additionalProperties:
+                                $ref: "#/components/schemas/HypermediaLink"
+                              description: "Available actions for this place recommendation"
+                              example:
+                                select:
+                                  href: "/places/4321"
+                                  method: GET
+                  activeProfile:
+                    type: string
+                    description: "Name of the preference profile used to generate these recommendations"
+                    example: "Cultural Explorer"
+                  message:
+                    type: string
+                    description: "Informational message when no recommendations available (e.g., no preference profiles)"
+                    example: "Δημιουργήστε ένα προφίλ προτιμήσεων για να δείτε προτάσεις"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for recommendations"
+                    example:
+                      refresh:
+                        href: "/users/16180/recommendations{?latitude,longitude,maxDistance}"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+  "/places/{placeId}":
+    get:
+      summary: "Get details of a specific place"
+      operationId: getPlace
+      description: |
+        **FR10 - The user must be able to select a place.**
+
+        **FR12 - The user should be able to open the website of a selected place.**
+
+        **FR13 - The user should be able to read a description of a selected place.**
+
+        Retrieves comprehensive information about a specific place including description, location, website, and reviews. Publicly accessible.
+      tags: [Places]
+      security: []   # Public (no auth required to get place details)
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the place whose details are being requested"
+      responses:
+        '200':
+          description: "Successfully retrieved complete place information including all details and reviews"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  place:
+                    $ref: "#/components/schemas/Place"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for this place"
+                    example:
+                      self:
+                        href: "/places/4321"
+                        method: GET
+                      see-reviews:
+                        href: "/places/4321/reviews"
+                        method: GET
+                      add-review:
+                        href: "/places/4321/reviews"
+                        method: POST
+                      add-report:
+                        href: "/places/4321/reports"
+                        method: POST
+                      navigation:
+                        href: "/navigation{?userLatitude,userLongitude,placeLatitude,placeLongitude,transportationMode}"
+                        method: GET
+                      add-to-favourites:
+                        href: "/users/{userId}/favourite-places"
+                        method: POST
+                      add-to-disliked:
+                        href: "/users/{userId}/disliked-places"
+                        method: POST
+                      website:
+                        href: "https://www.lpth.gr"
+                        method: GET
+                        type: text/html
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "Place not found - No place exists with the specified placeId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_NOT_FOUND
+                message: "Place with ID 4321 not found"
+  "/places/{placeId}/reviews":
+    get:
+      summary: "Get reviews for a place"
+      operationId: getReviews
+      description: |
+        **FR33 - The user should be able to read reviews for a place.**
+
+        Retrieves all reviews for the specified place. Always returns an array (which may be empty if no reviews yet).
+      tags: [Places]
+      security: []   # Public (reading reviews is open)
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the place whose reviews are being requested"
+      responses:
+        '200':
+          description: "Successfully retrieved all reviews for the specified place"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Review"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for reviews collection"
+                    example:
+                      self:
+                        href: "/places/4321/reviews"
+                        method: GET
+                      add-review:
+                        href: "/places/4321/reviews"
+                        method: POST
+                      place:
+                        href: "/places/4321"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "Place not found - No place exists with the specified placeId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_NOT_FOUND
+                message: "Place with ID 4321 not found"
+    post:
+      summary: "Add a review for a place"
+      operationId: submitReview
+      description: |
+        **FR32 - The user must be able to upload a review for a place.**
+
+        Submits a new review with rating and optional comment for a specific place. The `userId` is extracted from the JWT token (the authenticated user creating the review).
+      tags: [Places]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the place being reviewed"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: "Star rating for the place on a scale of 1 to 5 stars"
+                comment:
+                  type: string
+                  maxLength: 500
+                  description: "Optional detailed review comment describing the user's experience. HTML tags are automatically stripped for security. Maximum 500 characters."
+      responses:
+        '201':
+          description: "Review successfully submitted and added to the place's review collection"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review:
+                    $ref: "#/components/schemas/Review"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions after submitting a review"
+                    example:
+                      self:
+                        href: "/places/4321/reviews"
+                        method: GET
+                      place:
+                        href: "/places/4321"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '400':
+          description: "Bad request - Missing or invalid required fields"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: INVALID_REVIEW_DATA
+                message: "Missing required rating"
+                details:
+                  field: rating
+                  reason: "Rating is required to submit a review"
+        '404':
+          description: "Place not found - No place exists with the specified placeId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_NOT_FOUND
+                message: "Place with ID 4321 not found"
+  "/places/{placeId}/reports":
+    post:
+      summary: "Report an issue with a place"
+      operationId: createReport
+      description: |
+        **FR34 - The user should be able to report incorrect information.**
+
+        Submits a report about incorrect or outdated information for a specific place. The `userId` is extracted from the JWT token.
+      tags: [Places]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the place being reported for incorrect information"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: "Detailed description of the incorrect information or issue found. HTML tags are automatically stripped for security. Maximum 1000 characters."
+      responses:
+        '201':
+          description: "Report successfully submitted and will be reviewed by administrators"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    $ref: "#/components/schemas/Report"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions after submitting a report"
+                    example:
+                      place:
+                        href: "/places/4321"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '400':
+          description: "Bad request - Missing required fields"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: INVALID_REPORT_DATA
+                message: "Description is required to submit a report"
+                details:
+                  field: description
+                  value: ""
+        '404':
+          description: "Place not found - No place exists with the specified placeId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_NOT_FOUND
+                message: "Place with ID 4321 not found"
+  /places/search:
+    get:
+      summary: "Search for places using keywords"
+      operationId: performSearch
+      description: |
+        **FR19 - The user must be able to search for places using keywords.**
+
+        Searches for places that match the provided keywords in their names or descriptions. Publicly accessible.
+      tags: [Places]
+      security: []
+      parameters:
+        - name: keywords
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+          description: "Array of keywords to search for in place names, descriptions, and categories"
+          example: [museum, art, history]
+      responses:
+        '200':
+          description: "Successfully found places matching the search keywords. Includes search metadata."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/Place"
+                        - type: object
+                          properties:
+                            links:
+                              type: object
+                              additionalProperties:
+                                $ref: "#/components/schemas/HypermediaLink"
+                              description: "Available actions for this search result"
+                              example:
+                                select:
+                                  href: "/places/4321"
+                                  method: GET
+                  searchTerms:
+                    type: array
+                    items:
+                      type: string
+                    description: "The search keywords used in the query"
+                    example: [museum, art]
+                  totalResults:
+                    type: integer
+                    description: "Total number of results found"
+                    example: 15
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for search results"
+                    example:
+                      refine-search:
+                        href: "/places/search{?keywords}"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+  "/users/{userId}/favourite-places":
+    get:
+      summary: "Get user's favourite places"
+      operationId: getFavouritePlaces
+      description: |
+        **FR18 - The user must be able to view their favorite places.**
+
+        Retrieves all places that the user has marked as favorites for quick access.
+      tags: ["Favourite & Disliked Places"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose favorite places are being retrieved"
+      responses:
+        '200':
+          description: "Successfully retrieved list of all favorite places for the user"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favourites:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/FavouritePlace"
+                        - type: object
+                          properties:
+                            links:
+                              type: object
+                              additionalProperties:
+                                $ref: "#/components/schemas/HypermediaLink"
+                              description: "Available actions for this favourite place"
+                              example:
+                                select:
+                                  href: "/places/4321"
+                                  method: GET
+                                remove-favourite:
+                                  href: "/users/16180/favourite-places/789"
+                                  method: DELETE
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for favourites collection"
+                    example:
+                      self:
+                        href: "/users/16180/favourite-places"
+                        method: GET
+                      add-favourite:
+                        href: "/users/16180/favourite-places"
+                        method: POST
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+    post:
+      summary: "Add a place to user's favourites"
+      operationId: addFavouritePlace
+      description: |
+        **FR16 - The user must be able to add a place to their favorite places.**
+
+        Adds a specific place to the user's collection of favorite places for easy future access. Returns the full place details including reviews, merged with the new favourite entry.
+      tags: ["Favourite & Disliked Places"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user adding a place to their favorites"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placeId]
+              properties:
+                placeId:
+                  type: integer
+                  description: "Unique identifier of the place to be added to the user's favorites"
+      responses:
+        '201':
+          description: "Place successfully added to user's favorites collection. Returns the favourite with full place details merged (not nested)."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favourite:
+                    allOf:
+                      - type: object
+                        properties:
+                          favouriteId:
+                            type: integer
+                            description: "Unique identifier for this favourite entry"
+                            example: 789
+                      - $ref: "#/components/schemas/Place"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for this favourite"
+                    example:
+                      self:
+                        href: "/users/16180/favourite-places"
+                        method: GET
+                      remove:
+                        href: "/users/16180/favourite-places/789"
+                        method: DELETE
+                      place:
+                        href: "/places/4321"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User or place not found - Either the user or the specified place does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_OR_PLACE_NOT_FOUND
+                message: "User with ID 12345 or place with ID 4321 not found"
+        '409':
+          description: "Conflict - Place already in favorites"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_ALREADY_FAVORITED
+                message: "Place is already in user's favorites"
+                details:
+                  placeId: 4321
+                  userId: 16180
+  "/users/{userId}/favourite-places/{favouriteId}":
+    delete:
+      summary: "Remove a place from user's favourites"
+      operationId: removeFavouritePlace
+      description: |
+        **FR16 - The user must be able to edit their favorite places.**
+
+        Removes a place from the user's favorites collection.
+      tags: ["Favourite & Disliked Places"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user removing a place from their favorites"
+        - name: favouriteId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the favorite entry to be removed from the user's collection"
+      responses:
+        '204':
+          description: "Favorite place successfully removed from user's collection with no content returned"
+        '404':
+          description: "User or favorite not found - Either the user or the specified favorite entry does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: FAVOURITE_NOT_FOUND
+                message: "Favourite with ID 789 not found for user 12345"
+  "/users/{userId}/disliked-places":
+    get:
+      summary: "Get user's disliked places"
+      operationId: getDislikedPlaces
+      description: |
+        **FR24 - The user should be able to view places excluded from their recommendations.**
+
+        Retrieves all places that the user has marked as disliked and are excluded from recommendations.
+      tags: ["Favourite & Disliked Places"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user whose disliked places are being retrieved"
+      responses:
+        '200':
+          description: "Successfully retrieved list of all disliked places for the user"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dislikedPlaces:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/DislikedPlace"
+                        - type: object
+                          properties:
+                            links:
+                              type: object
+                              additionalProperties:
+                                $ref: "#/components/schemas/HypermediaLink"
+                              description: "Available actions for this disliked place"
+                              example:
+                                select:
+                                  href: "/places/4321"
+                                  method: GET
+                                remove-disliked:
+                                  href: "/users/16180/disliked-places/456"
+                                  method: DELETE
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for disliked places collection"
+                    example:
+                      self:
+                        href: "/users/16180/disliked-places"
+                        method: GET
+                      add-disliked:
+                        href: "/users/16180/disliked-places"
+                        method: POST
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User not found - No user exists with the specified userId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_NOT_FOUND
+                message: "User with ID 12345 not found"
+    post:
+      summary: "Add a place to user's disliked places"
+      operationId: addDislikedPlace
+      description: |
+        **FR24 - The user should be able to exclude a place from their recommendations.**
+
+        Adds a place to the user's disliked places to exclude it from future recommendations.
+      tags: ["Favourite & Disliked Places"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user adding a place to their dislikes for recommendation exclusion"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placeId]
+              properties:
+                placeId:
+                  type: integer
+                  description: "Unique identifier of the place to be excluded from future recommendations"
+      responses:
+        '201':
+          description: "Place successfully added to user's disliked places and will be excluded from recommendations"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dislikedId:
+                    type: integer
+                    description: "Unique identifier for the newly created disliked entry"
+                    example: 456
+                  placeId:
+                    type: integer
+                    description: "ID of the place that was added to dislikes"
+                    example: 4321
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for this disliked place"
+                    example:
+                      self:
+                        href: "/users/16180/disliked-places"
+                        method: GET
+                      remove:
+                        href: "/users/16180/disliked-places/456"
+                        method: DELETE
+                      recommendations:
+                        href: "/users/16180/recommendations{?latitude,longitude}"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '404':
+          description: "User or place not found - Either the user or the specified place does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_OR_PLACE_NOT_FOUND
+                message: "User with ID 12345 or place with ID 4321 not found"
+        '409':
+          description: "Conflict - Place already in disliked places"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_ALREADY_DISLIKED
+                message: "Place is already in user's disliked places"
+                details:
+                  placeId: 4321
+                  userId: 16180
+  "/users/{userId}/disliked-places/{dislikedId}":
+    delete:
+      summary: "Remove a place from user's disliked places"
+      operationId: removeDislikedPlace
+      description: |
+        **FR24 - The user should be able to manage places excluded from recommendations.**
+
+        Removes a place from the user's disliked places collection, allowing it to appear in recommendations again.
+      tags: ["Favourite & Disliked Places"]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the user removing a place from their dislikes"
+        - name: dislikedId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the disliked entry to be removed from the user's collection"
+      responses:
+        '204':
+          description: "Disliked place successfully removed from user's collection with no content returned"
+        '404':
+          description: "User or disliked entry not found - Either the user or the specified disliked entry does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: DISLIKED_NOT_FOUND
+                message: "Disliked entry with ID 456 not found for user 12345"
+  /navigation:
+    get:
+      summary: "Get navigation directions between locations"
+      operationId: getNavigation
+      description: |
+        **FR11 - The user must be able to get directions to a selected place.**
+
+        Provides turn-by-turn navigation directions between two locations with estimated time and distance. Publicly accessible.
+      tags: [Navigation]
+      security: []
+      parameters:
+        - name: userLatitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          description: "Starting point latitude coordinate"
+        - name: userLongitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          description: "Starting point longitude coordinate"
+        - name: placeLatitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          description: "Destination latitude coordinate"
+        - name: placeLongitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          description: "Destination longitude coordinate"
+        - name: transportationMode
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TransportationMode'
+          description: "Preferred mode of transportation for route calculation (defaults to WALKING if not specified)"
+          example: WALKING
+      responses:
+        '200':
+          description: "Successfully calculated navigation route with directions, estimated time, and distance"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  route:
+                    $ref: '#/components/schemas/NavigationRoute'
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/HypermediaLink'
+                    description: "Available actions for this navigation route"
+                    example:
+                      destination:
+                        href: "/places/4321"
+                        method: GET
+                      alternative-routes:
+                        href: "/navigation{?userLatitude,userLongitude,placeLatitude,placeLongitude,transportationMode}"
+                        method: GET
+                      user-profile:
+                        href: "/users/16180/profile"
+                        method: GET
+        '400':
+          description: "Bad request - Missing or invalid required location parameters"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: "User location with latitude and longitude is required"
+  /admin/auth/generate-token:
+    post:
+      summary: "Generate admin token (development only)"
+      operationId: generateAdminToken
+      description: |
+        Generates an admin JWT token for testing purposes. **This endpoint is only available in development mode (NODE_ENV=development) and should never be enabled in production.**
+
+        In development, provide the admin test credentials to receive a temporary admin token.
+      tags: [Admin]
+      security: []   # No auth required, but disabled in production
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  description: "Development admin username (defaults to 'admin' if not overridden)"
+                  example: admin
+                password:
+                  type: string
+                  description: "Development admin password (defaults to 'admin123' if not overridden)"
+                  example: admin123
+      responses:
+        '200':
+          description: "Successfully generated admin token for development testing"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: "JWT admin authentication token"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  adminId:
+                    type: integer
+                    description: "Admin ID included in the token"
+                    example: 1001
+                  message:
+                    type: string
+                    example: "Admin token generated successfully (development only)"
+                  expiresIn:
+                    type: string
+                    description: "How long the token is valid"
+                    example: "24 hours"
+                  usage:
+                    type: string
+                    description: "Instructions for using the token"
+                    example: "Include this token in Authorization header as: Bearer <token>"
+        '401':
+          description: "Unauthorized - Invalid admin credentials"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: INVALID_CREDENTIALS
+                message: "Invalid admin credentials for token generation."
+        '403':
+          description: "Forbidden - Endpoint not available in production"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: DISABLED_IN_PRODUCTION
+                message: "Admin token generation endpoint is disabled in production."
+  "/admin/{adminId}/places/{placeId}/reports":
+    get:
+      summary: "Get reports for a place (admin only)"
+      operationId: getPlaceReports
+      description: |
+        **FR35 - The admin must be able to see reports of a place.**
+
+        Retrieves all user reports filed for a specific place for administrative review and action.
+      tags: [Admin]
+      security: [{ adminAuth: [] }]
+      parameters:
+        - name: adminId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the administrator performing the operation for audit purposes"
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the place whose reports are being retrieved for review"
+      responses:
+        '200':
+          description: "Successfully retrieved all reports filed for the specified place"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/Report"
+                        - type: object
+                          properties:
+                            links:
+                              type: object
+                              additionalProperties:
+                                $ref: "#/components/schemas/HypermediaLink"
+                              description: "Available actions for this report"
+                              example:
+                                place:
+                                  href: "/places/4321"
+                                  method: GET
+                                edit-place:
+                                  href: "/admin/1001/places/4321"
+                                  method: PUT
+                  totalReports:
+                    type: integer
+                    description: "Total number of reports for this place"
+                    example: 5
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for reports collection"
+                    example:
+                      self:
+                        href: "/admin/1001/places/4321/reports"
+                        method: GET
+        '403':
+          description: "Forbidden - Admin access required, invalid or missing authentication token"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: ACCESS_DENIED
+                message: "Administrator access required for this operation"
+                details:
+                  requiredRole: admin
+                  providedRole: user
+        '404':
+          description: "Place not found - No place exists with the specified placeId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_NOT_FOUND
+                message: "Place with ID 4321 not found"
+  "/admin/{adminId}/places/{placeId}":
+    put:
+      summary: "Update place information (admin only)"
+      operationId: updatePlace
+      description: |
+        **FR37 - The admin must be able to edit the information of a place.**
+
+        Updates place information including details, category, location, and other attributes (admin only). (Note: ratings are not directly editable and are excluded.)
+      tags: [Admin]
+      security: [{ adminAuth: [] }]
+      parameters:
+        - name: adminId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the administrator performing the update operation for audit purposes"
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Unique identifier of the place whose information is being updated"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Place"
+      responses:
+        '200':
+          description: "Place information successfully updated with the new data"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  place:
+                    $ref: "#/components/schemas/Place"
+                  links:
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/HypermediaLink"
+                    description: "Available actions for this edited place"
+                    example:
+                      self:
+                        href: "/places/4321"
+                        method: GET
+                      edit:
+                        href: "/admin/1001/places/4321"
+                        method: PUT
+                      reports:
+                        href: "/admin/1001/places/4321/reports"
+                        method: GET
+        '403':
+          description: "Forbidden - Admin access required, invalid or missing authentication token"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: ACCESS_DENIED
+                message: "Administrator access required for this operation"
+                details:
+                  requiredRole: admin
+                  providedRole: user
+        '404':
+          description: "Place not found - No place exists with the specified placeId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: PLACE_NOT_FOUND
+                message: "Place with ID 4321 not found"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "User authentication using JWT token with userId, email, and role claims"
+    adminAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Admin authentication using JWT token. Requires role: admin claim in the JWT payload"
+  schemas:
+    User:
+      type: object
+      required: [userId, name, email, password]
+      properties:
+        userId:
+          type: integer
+          description: "Unique identifier for the user"
+          example: 16180
+        name:
+          type: string
+          description: "Full name of the user"
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          description: "User's email address for authentication"
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          description: "User's password for authentication (never returned in responses, only accepted in requests)"
+          example: SecurePass123!
+        phone:
+          type: string
+          description: "User phone number"
+          example: "+30 123 456 7890"
+        dateOfBirth:
+          type: string
+          description: "User date of birth"
+          example: "1990-01-15"
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+          description: "User role in the system"
+        activeProfile:
+          type: integer
+          description: "ID of the user's active preference profile"
+          example: 4
+        preferences:
+          type: object
+          description: "Legacy aggregate user preferences (used when not utilizing multiple profiles)"
+          properties:
+            categories:
+              type: array
+              items: 
+                type: string
+              description: "List of preferred categories (legacy field)"
+              example: []
+            tags:
+              type: array
+              items:
+                type: string
+              description: "List of preferred tags or keywords (legacy field)"
+              example: []
+        location:
+          $ref: "#/components/schemas/Location"
+          description: "User's saved or last known location (if any)"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Account creation timestamp"
+          example: "2025-11-28T12:00:00Z"
+    PreferenceProfile:
+      type: object
+      required: [profileId, userId, name, categories]
+      properties:
+        profileId:
+          type: integer
+          description: "Unique identifier for the preference profile"
+          example: 42
+        userId:
+          type: integer
+          description: "ID of the user who owns this profile"
+          example: 16180
+        name:
+          type: string
+          description: "Name of the preference profile"
+          example: "Cultural Explorer"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/PreferenceCategory"
+          description: "List of selected preference categories for this profile"
+          example: ["MUSEUM", "RESTAURANT", "CULTURE"]
+        priceRange:
+          type: string
+          description: "Preferred price range for recommendations (if applicable)"
+          example: "$$"
+        # note: selectedPreferences/profileName are legacy aliases, not included here as separate fields in the profile object.
+    PreferenceCategory:
+      type: string
+      description: "Possible categories for preferences and place classification"
+      enum: [MUSEUM, BEACH, PARK, RESTAURANT, NIGHTLIFE, SHOPPING, SPORTS, CULTURE]
+    Settings:
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: "ID of the user these settings belong to"
+          example: 16180
+        preferredLanguage:
+          $ref: "#/components/schemas/Language"
+          description: "Preferred language for the application interface. This is the primary field; 'language' is also accepted as a legacy alias for backward compatibility"
+        language:
+          $ref: "#/components/schemas/Language"
+          deprecated: true
+          description: "Legacy alias for preferredLanguage field. Both fields are supported in requests for backward compatibility, but preferredLanguage is preferred. When reading settings, preferredLanguage is always returned"
+        emailNotifications:
+          type: boolean
+          description: "Whether email notifications are enabled"
+          example: true
+        pushNotifications:
+          type: boolean
+          description: "Whether push notifications are enabled"
+          example: true
+        accessibilitySettings:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessibilityOption"
+          description: "Array of accessibility features enabled by the user"
+          example: [LARGE_TEXT]
+        privacySettings:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrivacyOption"
+          description: "Array of privacy preferences set by the user"
+          example: [SHARE_LOCATION, ENABLE_NOTIFICATIONS]
+        userAgreementAccepted:
+          type: boolean
+          description: "Whether the user has accepted the terms and conditions"
+          example: true
+    Language:
+      type: string
+      description: "Available languages for the application interface"
+      enum: [ENGLISH, FRENCH, GERMAN, GREEK, ITALIAN, SPANISH]
+    AccessibilityOption:
+      type: string
+      description: "Accessibility features available to users"
+      enum: [HIGH_CONTRAST, LARGE_TEXT, TEXT_TO_SPEECH]
+    PrivacyOption:
+      type: string
+      description: "Privacy settings that users can control"
+      enum: [SHARE_LOCATION, ENABLE_NOTIFICATIONS, DATA_SHARING]
+    Place:
+      type: object
+      required: [placeId, name]
+      properties:
+        placeId:
+          type: integer
+          description: "Unique identifier for the place"
+          example: 4321
+        name:
+          type: string
+          description: "Name of the place"
+          example: "White Tower of Thessaloniki"
+        description:
+          type: string
+          description: "Detailed description of the place"
+          example: "The White Tower is a historical monument and museum in Thessaloniki, Greece. It is the city's most famous landmark and a symbol of its rich history."
+        category:
+          $ref: "#/components/schemas/PreferenceCategory"
+        location:
+          $ref: "#/components/schemas/Location"
+          description: "Geographic location of the place with coordinates and address details"
+        website:
+          type: string
+          format: uri
+          description: "Official website URL"
+          example: "https://www.lpth.gr"
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: "Average rating of the place"
+          example: 4.7
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+          description: "List of reviews for this place"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Place creation timestamp"
+    Location:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: "Latitude coordinate in decimal degrees"
+          example: 37.9688
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: "Longitude coordinate in decimal degrees"
+          example: 23.7281
+        address:
+          type: string
+          description: "Street address of the location"
+          example: "Leoforos Nikis"
+        city:
+          type: string
+          description: "City where the location is situated"
+          example: Thessaloniki
+        country:
+          type: string
+          description: "Country where the location is situated"
+          example: Greece
+        postalCode:
+          type: string
+          description: "Postal/ZIP code of the location"
+          example: "54640"
+    FavouritePlace:
+      type: object
+      properties:
+        favouriteId:
+          type: integer
+          description: "Unique identifier for the favourite entry"
+          example: 789
+        placeId:
+          type: integer
+          description: "ID of the favourited place"
+          example: 4321
+        place:
+          $ref: "#/components/schemas/Place"
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+          description: "Reviews for this place"
+    DislikedPlace:
+      type: object
+      properties:
+        dislikedId:
+          type: integer
+          description: "Unique identifier for the disliked entry"
+          example: 456
+        placeId:
+          type: integer
+          description: "ID of the disliked place"
+          example: 4321
+        place:
+          $ref: "#/components/schemas/Place"
+    Review:
+      type: object
+      required: [reviewId, userId, placeId, rating]
+      properties:
+        reviewId:
+          type: integer
+          description: "Unique identifier for the review"
+          example: 7853
+        userId:
+          type: integer
+          description: "ID of the user who wrote the review"
+          example: 16180
+        placeId:
+          type: integer
+          description: "ID of the place being reviewed"
+          example: 4321
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Star rating given to the place (1-5 stars)"
+          example: 5
+        comment:
+          type: string
+          description: "Optional text comment from the reviewer"
+          example: "The White Tower is a must-visit! The view from the top is breathtaking and the museum inside is very informative."
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the review was created"
+          example: "2025-05-15T14:30:00Z"
+    Report:
+      type: object
+      required: [reportId, userId, placeId, description]
+      properties:
+        reportId:
+          type: integer
+          description: "Unique identifier for the report"
+          example: 824
+        userId:
+          type: integer
+          description: "ID of the user who filed the report"
+          example: 16180
+        placeId:
+          type: integer
+          description: "ID of the place being reported"
+          example: 4321
+        description:
+          type: string
+          description: "Detailed description of the issue being reported"
+          example: "The opening hours listed are incorrect. The place is actually closed on Sundays."
+        status:
+          type: string
+          enum: [PENDING, REVIEWED, RESOLVED]
+          default: PENDING
+          description: "Current status of the report processing"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the report was filed"
+          example: "2025-05-20T09:15:00Z"
+        resolvedAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the report was resolved"
+    NavigationRoute:
+      type: object
+      properties:
+        startPoint:
+          $ref: "#/components/schemas/Location"
+        endPoint:
+          $ref: "#/components/schemas/Location"
+        transportationMode:
+          $ref: "#/components/schemas/TransportationMode"
+        estimatedTime:
+          type: integer
+          description: "Estimated time in minutes"
+          example: 25
+        distance:
+          type: number
+          format: float
+          description: "Distance in kilometers"
+          example: 2.3
+      example:
+        startPoint:
+          latitude: 40.6279
+          longitude: 22.9584
+          address: "Aristotle University of Thessaloniki"
+          city: Thessaloniki
+          country: Greece
+        endPoint:
+          latitude: 40.6264
+          longitude: 22.9484
+          address: "White Tower of Thessaloniki"
+          city: Thessaloniki
+          country: Greece
+        transportationMode: WALKING
+        estimatedTime: 25
+        distance: 2.3
+    TransportationMode:
+      type: string
+      description: "Available modes of transportation for navigation"
+      enum: [WALKING, DRIVING, PUBLIC_TRANSPORT]
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: "Machine-readable error code for programmatic handling"
+          example: USER_NOT_FOUND
+        message:
+          type: string
+          description: "Human-readable error message describing the issue"
+          example: "User with ID 12345 not found"
+        details:
+          type: object
+          description: "Optional additional error details and context"
+          additionalProperties: true
+          example:
+            field: userId
+            value: 12345
+            timestamp: "2025-06-01T10:30:00Z"
+    HypermediaLink:
+      type: object
+      properties:
+        href:
+          type: string
+          description: "URI of the related resource"
+        method:
+          type: string
+          enum: [GET, POST, PUT, DELETE, PATCH]
+          description: "HTTP method for the link"
+tags:
+  - name: "API Information"
+    description: "Root endpoints for API discovery, health checks, and system information"
+  - name: Authentication
+    description: "User authentication and registration"
+  - name: "User Management"
+    description: "User profile and settings management"
+  - name: Preferences
+    description: "Create and manage multiple preference profiles for different travel scenarios and personalized recommendations"
+  - name: Recommendations
+    description: "Personalized place recommendations based on user preferences and location"
+  - name: Places
+    description: "Place information, reviews, reports, and search functionality"
+  - name: "Favourite & Disliked Places"
+    description: "Curate personal favorites and exclude unwanted places to enhance recommendations"
+  - name: Navigation
+    description: "Turn-by-turn navigation services."
+  - name: Admin
+    description: "Administrative operations for report handling and place management"

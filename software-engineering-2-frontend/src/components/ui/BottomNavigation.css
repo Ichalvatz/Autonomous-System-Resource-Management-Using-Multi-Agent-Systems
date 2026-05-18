@@ -1,0 +1,92 @@
+/**
+ * Bottom Navigation Component Styles
+ * Mobile-only fixed bottom navigation
+ */
+
+/* Hide on desktop */
+.bottom-navigation {
+    display: none;
+}
+
+/* Show on mobile */
+@media (max-width: 768px) {
+    .bottom-navigation {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: var(--z-sticky);
+        background: var(--bg-primary);
+        border-top: 1px solid var(--border-light);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        padding: var(--space-2) var(--space-1);
+        padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .bottom-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-1);
+        padding: var(--space-2) var(--space-3);
+        color: var(--text-tertiary);
+        text-decoration: none;
+        border-radius: var(--radius-lg);
+        transition: var(--transition-fast);
+        min-width: 56px;
+    }
+
+    .bottom-nav-item:hover {
+        color: var(--color-primary-600);
+        background: var(--color-primary-50);
+    }
+
+    .bottom-nav-item.active {
+        color: var(--color-primary-600);
+    }
+
+    .bottom-nav-item.active .bottom-nav-icon {
+        background: var(--color-primary-100);
+        transform: scale(1.1);
+    }
+
+    .bottom-nav-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-full);
+        transition: var(--transition-fast);
+    }
+
+    .bottom-nav-label {
+        font-size: var(--text-xs);
+        font-weight: var(--font-medium);
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    /* Add padding to main content to account for bottom nav */
+    body {
+        padding-bottom: 80px;
+    }
+}
+
+/* Dark mode */
+[data-theme="dark"] .bottom-navigation {
+    background: var(--bg-primary);
+    border-color: var(--border-medium);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .bottom-nav-item:hover {
+    background: var(--color-primary-900);
+}
+
+[data-theme="dark"] .bottom-nav-item.active .bottom-nav-icon {
+    background: var(--color-primary-800);
+}

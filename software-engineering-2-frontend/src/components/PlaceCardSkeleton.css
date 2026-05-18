@@ -1,0 +1,136 @@
+/**
+ * PlaceCardSkeleton Component - Loading Placeholder Styles
+ * Matches PlaceCard structure for seamless loading experience
+ */
+
+.place-card-skeleton {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn var(--duration-normal) var(--ease-out) both;
+}
+
+/* Shimmer Animation */
+.skeleton-shimmer {
+    background: linear-gradient(90deg,
+            var(--color-neutral-200) 0%,
+            var(--color-neutral-100) 40%,
+            var(--color-neutral-100) 60%,
+            var(--color-neutral-200) 100%);
+    background-size: 300% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+    border-radius: var(--radius-base);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+/* Header */
+.skeleton-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--space-5);
+    padding-bottom: var(--space-4);
+}
+
+.skeleton-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+}
+
+.skeleton-badge {
+    width: 80px;
+    height: 24px;
+    border-radius: var(--radius-full);
+}
+
+/* Body */
+.skeleton-body {
+    flex: 1;
+    padding: 0 var(--space-5);
+    padding-bottom: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.skeleton-title {
+    height: 24px;
+    width: 75%;
+}
+
+.skeleton-location {
+    height: 18px;
+    width: 50%;
+}
+
+.skeleton-description {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.skeleton-line {
+    height: 14px;
+    width: 100%;
+}
+
+.skeleton-line--short {
+    width: 70%;
+}
+
+/* Footer */
+.skeleton-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border-light);
+    background-color: var(--bg-secondary);
+}
+
+.skeleton-rating {
+    width: 60px;
+    height: 24px;
+}
+
+.skeleton-distance {
+    width: 70px;
+    height: 24px;
+    border-radius: var(--radius-full);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .skeleton-header {
+        padding: var(--space-4);
+    }
+
+    .skeleton-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .skeleton-body {
+        padding: 0 var(--space-4);
+        padding-bottom: var(--space-3);
+    }
+
+    .skeleton-footer {
+        padding: var(--space-3) var(--space-4);
+    }
+}

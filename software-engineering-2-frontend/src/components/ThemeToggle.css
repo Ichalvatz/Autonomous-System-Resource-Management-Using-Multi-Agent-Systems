@@ -1,0 +1,57 @@
+/**
+ * ThemeToggle Component Styles
+ */
+
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    transition: var(--transition-base);
+    color: var(--text-primary);
+}
+
+.theme-toggle:hover {
+    background-color: var(--color-neutral-100);
+    border-color: var(--border-medium);
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+}
+
+.theme-toggle-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.theme-toggle-icon.light {
+    color: var(--color-accent-500);
+}
+
+.theme-toggle-icon.dark {
+    color: var(--color-primary-400);
+}
+
+.theme-toggle:hover .theme-toggle-icon {
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .theme-toggle {
+    border-color: var(--border-light);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    background-color: var(--color-neutral-800);
+    border-color: var(--border-medium);
+}

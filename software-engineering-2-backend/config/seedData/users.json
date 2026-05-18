@@ -1,0 +1,123 @@
+{
+    "users": [
+        {
+            "userId": 16180,
+            "name": "Γιάννης Παπαδόπουλος",
+            "email": "user1@example.com",
+            "plainPassword": "password123",
+            "role": "user",
+            "preferences": {
+                "categories": [
+                    "MUSEUMS_AND_ART",
+                    "ARCHEOLOGICAL_SITES"
+                ],
+                "tags": [
+                    "culture",
+                    "history"
+                ]
+            },
+            "location": {
+                "latitude": 40.6401,
+                "longitude": 22.9444
+            },
+            "activeProfile": 1,
+            "createdAt": "2024-01-15T00:00:00.000Z"
+        },
+        {
+            "userId": 12345,
+            "name": "Admin User",
+            "email": "admin@example.com",
+            "plainPassword": "admin123",
+            "role": "admin",
+            "preferences": {
+                "categories": [
+                    "NIGHTLIFE",
+                    "RESTAURANTS"
+                ],
+                "tags": [
+                    "food",
+                    "entertainment"
+                ]
+            },
+            "location": {
+                "latitude": 37.9838,
+                "longitude": 23.7275
+            },
+            "activeProfile": 3,
+            "createdAt": "2024-01-10T00:00:00.000Z"
+        }
+    ],
+    "preferenceProfiles": [
+        {
+            "profileId": 1,
+            "userId": 16180,
+            "name": "Cultural Explorer",
+            "categories": [
+                "MUSEUM",
+                "CULTURE",
+                "RESTAURANT"
+            ],
+            "tags": [
+                "culture",
+                "history",
+                "food"
+            ],
+            "isActive": true
+        },
+        {
+            "profileId": 2,
+            "userId": 16180,
+            "name": "Night Owl",
+            "categories": [
+                "NIGHTLIFE",
+                "RESTAURANT",
+                "SHOPPING"
+            ],
+            "tags": [
+                "nightlife",
+                "entertainment",
+                "food"
+            ],
+            "isActive": false
+        },
+        {
+            "profileId": 3,
+            "userId": 12345,
+            "name": "Adventure Seeker",
+            "categories": [
+                "PARK",
+                "SPORTS",
+                "BEACH"
+            ],
+            "tags": [
+                "adventure",
+                "nature",
+                "active"
+            ],
+            "isActive": true
+        }
+    ],
+    "settings": [
+        {
+            "userId": 16180,
+            "preferredLanguage": "ENGLISH",
+            "accessibilitySettings": [
+                "LARGE_TEXT"
+            ],
+            "privacySettings": [
+                "SHARE_LOCATION",
+                "ENABLE_NOTIFICATIONS"
+            ],
+            "userAgreementAccepted": true
+        },
+        {
+            "userId": 12345,
+            "preferredLanguage": "GREEK",
+            "accessibilitySettings": [],
+            "privacySettings": [
+                "SHARE_LOCATION"
+            ],
+            "userAgreementAccepted": true
+        }
+    ]
+}

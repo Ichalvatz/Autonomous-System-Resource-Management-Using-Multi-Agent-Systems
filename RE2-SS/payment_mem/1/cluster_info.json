@@ -1,0 +1,512 @@
+{
+    "1": {
+        "template": "payment ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "payment"
+        ]
+    },
+    "2": {
+        "template": "front-end Order response:<:ORDER-RESPONSE:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "3": {
+        "template": "front-end POST /orders <:HTTP5XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "4": {
+        "template": "front-end Request received with body: {}",
+        "container": [
+            "front-end"
+        ]
+    },
+    "5": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=GetUsers id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "6": {
+        "template": "front-end Received response:<:RESPONSE:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "7": {
+        "template": "front-end GET Request to: http://user/customers/<:ID:>/addresses",
+        "container": [
+            "front-end"
+        ]
+    },
+    "8": {
+        "template": "front-end GET Request to: http://user/customers/<:ID:>/cards",
+        "container": [
+            "front-end"
+        ]
+    },
+    "9": {
+        "template": "front-end [ undefined, undefined ]",
+        "container": [
+            "front-end"
+        ]
+    },
+    "10": {
+        "template": "front-end Posting Order:<:ORDER:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "11": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.autoconfigure.ConfigurationPropertiesRebinderAutoConfiguration' of type [class org.springframework.cloud.autoconfigure.ConfigurationPropertiesRebinderAutoConfiguration$$EnhancerBySpringCGLIB$$<:SEQ:>] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)",
+        "container": [
+            "orders"
+        ]
+    },
+    "12": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "13": {
+        "template": "front-end Posting Address:<:ADDR:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "14": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=PostAddress<:Address:>",
+        "container": [
+            "user"
+        ]
+    },
+    "15": {
+        "template": "front-end POST /addresses <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "16": {
+        "template": "front-end Posting Card:<:CARD:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "17": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=PostCard<:Card:>",
+        "container": [
+            "user"
+        ]
+    },
+    "18": {
+        "template": "front-end POST /cards <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "19": {
+        "template": "front-end Attempting to delete cart for user:<:USERID:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "20": {
+        "template": "front-end User cart deleted with status: <:HTTP2XX:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "21": {
+        "template": "front-end DELETE /cart <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "22": {
+        "template": "front-end Attempting to add to cart: {\"id\":\"<:USERID:>\",\"quantity\":<:NUM:>}",
+        "container": [
+            "front-end"
+        ]
+    },
+    "23": {
+        "template": "catalogue ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Get id=<:USERID:> sock=<:USERID:> err=null took=<:TIME:>",
+        "container": [
+            "catalogue"
+        ]
+    },
+    "24": {
+        "template": "<:SHOP-ITEM:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "25": {
+        "template": "front-end POST to carts:<:ITEM:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "26": {
+        "template": "front-end POST /cart <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "27": {
+        "template": "catalogue ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=List tags= order=id pageNum=<:NUM:> pageSize=<:NUM:> result=<:NUM:> err=null took=<:TIME:>",
+        "container": [
+            "catalogue"
+        ]
+    },
+    "28": {
+        "template": "front-end GET /catalogue <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "29": {
+        "template": "catalogue ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "catalogue"
+        ]
+    },
+    "30": {
+        "template": "front-end Posting Customer:<:CUSTOMER:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "31": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=Register username=<:USERNAME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "32": {
+        "template": "front-end { id: '<:ID:>' }",
+        "container": [
+            "front-end"
+        ]
+    },
+    "33": {
+        "template": "front-end <:ID:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "34": {
+        "template": "front-end Merging carts for customer id: <:ID:> and session id:<:SESSIONID:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "35": {
+        "template": "front-end Carts merged.",
+        "container": [
+            "front-end"
+        ]
+    },
+    "36": {
+        "template": "front-end set cookie<:COOKIE:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "37": {
+        "template": "front-end Sent cookies.",
+        "container": [
+            "front-end"
+        ]
+    },
+    "38": {
+        "template": "front-end POST /register <:HTTP2XX:> <:NUM:>.<:NUM:> ms - <:NUM:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "39": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] s.b.c.e.t.TomcatEmbeddedServletContainer : Tomcat initialized with port(s): <:NUM:> (http)",
+        "container": [
+            "orders"
+        ]
+    },
+    "40": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.apache.catalina.core.StandardService : Starting service Tomcat",
+        "container": [
+            "orders"
+        ]
+    },
+    "41": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] org.apache.catalina.core.StandardEngine : Starting Servlet Engine: Apache Tomcat/<:NUM:>.<:NUM:>.<:NUM:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "42": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ost-startStop-<:NUM:>] o.a.c.c.C.[Tomcat].[localhost].[/] : Initializing Spring embedded WebApplicationContext",
+        "container": [
+            "orders"
+        ]
+    },
+    "43": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ost-startStop-<:NUM:>] o.s.web.context.ContextLoader : Root WebApplicationContext: initialization completed in <:NUM:> ms",
+        "container": [
+            "orders"
+        ]
+    },
+    "44": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ost-startStop-<:NUM:>] o.s.b.w.servlet.FilterRegistrationBean : Mapping filter: 'metricsFilter' to: [/*]",
+        "container": [
+            "orders"
+        ]
+    },
+    "45": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ost-startStop-<:NUM:>] o.s.b.c.embedded.FilterRegistrationBean : Mapping filter: 'traceFilter' to: [/*]",
+        "container": [
+            "orders"
+        ]
+    },
+    "46": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ost-startStop-<:NUM:>] o.s.b.w.servlet.ServletRegistrationBean : Mapping servlet: 'metricsServlet' to [/metrics]",
+        "container": [
+            "orders"
+        ]
+    },
+    "47": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ost-startStop-<:NUM:>] o.s.b.w.servlet.ServletRegistrationBean : Mapping servlet: 'dispatcherServlet' to [/]",
+        "container": [
+            "orders"
+        ]
+    },
+    "48": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] org.mongodb.driver.cluster : Cluster created with settings {hosts=[orders-db:<:NUM:>], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='<:NUM:> ms', maxWaitQueueSize=<:NUM:>}",
+        "container": [
+            "orders"
+        ]
+    },
+    "49": {
+        "template": "orders-db <:NUM:>-<:NUM:>-21T08:<:NUM:>:<:NUM:>.<:NUM:>+<:NUM:> I NETWORK [thread1] connection accepted from <:IP:>:<:NUM:> #<:NUM:> (<:NUM:> connection now open)",
+        "container": [
+            "orders-db"
+        ]
+    },
+    "50": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [orders-db:<:NUM:>] org.mongodb.driver.connection : Opened connection [connectionId{localValue:<:NUM:>, serverValue:<:NUM:>}] to orders-db:<:NUM:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "51": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [orders-db:<:NUM:>] org.mongodb.driver.cluster : Monitor thread successfully connected to server with description ServerDescription{address=orders-db:<:NUM:>, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[<:NUM:>, <:NUM:>, <:NUM:>]}, minWireVersion=<:NUM:>, maxWireVersion=<:NUM:>, maxDocumentSize=<:NUM:>, roundTripTimeNanos=<:SEQ:>}",
+        "container": [
+            "orders"
+        ]
+    },
+    "52": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.s.b.f.config.PropertiesFactoryBean : Loading properties file from class path resource [rest-default-messages.properties]",
+        "container": [
+            "orders"
+        ]
+    },
+    "53": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] s.w.s.m.m.a.RequestMappingHandlerMapping : <:ITEM:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "54": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] s.w.s.m.m.a.RequestMappingHandlerAdapter : Looking for @ControllerAdvice: org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext@6adca536: startup date [Sun Jan <:NUM:> <:NUM:>:<:NUM:>:<:NUM:> GMT <:NUM:>]; parent: org.springframework.context.annotation.AnnotationConfigApplicationContext@51521cc1",
+        "container": [
+            "orders"
+        ]
+    },
+    "55": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] s.w.s.m.m.a.RequestMappingHandlerAdapter : Detected ResponseBodyAdvice bean in org.springframework.boot.actuate.autoconfigure.EndpointWebMvcHypermediaManagementContextConfiguration$ActuatorEndpointLinksAdvice",
+        "container": [
+            "orders"
+        ]
+    },
+    "56": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] .m.m.a.ExceptionHandlerExceptionResolver : Detected @ExceptionHandler methods in repositoryRestExceptionHandler",
+        "container": [
+            "orders"
+        ]
+    },
+    "57": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] .m.m.a.ExceptionHandlerExceptionResolver : Detected ResponseBodyAdvice implementation in org.springframework.boot.actuate.autoconfigure.EndpointWebMvcHypermediaManagementContextConfiguration$ActuatorEndpointLinksAdvice",
+        "container": [
+            "orders"
+        ]
+    },
+    "58": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.s.s.c.ThreadPoolTaskScheduler : Initializing ExecutorService",
+        "container": [
+            "orders"
+        ]
+    },
+    "59": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.s.j.e.a.AnnotationMBeanExporter : Registering beans for JMX exposure on startup",
+        "container": [
+            "orders"
+        ]
+    },
+    "60": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.s.j.e.a.AnnotationMBeanExporter : Bean with name 'configurationPropertiesRebinder' has been autodetected for JMX exposure",
+        "container": [
+            "orders"
+        ]
+    },
+    "61": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.s.j.e.a.AnnotationMBeanExporter : Located managed bean 'environmentManager': registering with JMX server as MBean [org.springframework.cloud.context.environment:name=environmentManager,type=EnvironmentManager]",
+        "container": [
+            "orders"
+        ]
+    },
+    "62": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] o.s.c.support.DefaultLifecycleProcessor : Starting beans in phase <:NUM:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "63": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] s.b.c.e.t.TomcatEmbeddedServletContainer : Tomcat started on port(s): <:NUM:> (http)",
+        "container": [
+            "orders"
+        ]
+    },
+    "64": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [ main] w.weave.socks.orders.OrderApplication : Started OrderApplication in <:NUM:>.<:NUM:> seconds (JVM running for <:NUM:>.<:NUM:>)",
+        "container": [
+            "orders"
+        ]
+    },
+    "65": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] o.a.c.c.C.[Tomcat].[localhost].[/] : Initializing Spring FrameworkServlet 'dispatcherServlet'",
+        "container": [
+            "orders"
+        ]
+    },
+    "66": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] o.s.web.servlet.DispatcherServlet : FrameworkServlet 'dispatcherServlet': initialization started",
+        "container": [
+            "orders"
+        ]
+    },
+    "67": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] o.s.web.servlet.DispatcherServlet : FrameworkServlet 'dispatcherServlet': initialization completed in <:HTTP2XX:> ms",
+        "container": [
+            "orders"
+        ]
+    },
+    "68": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=GetCards id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "69": {
+        "template": "user-db <:NUM:>-<:NUM:>-21T08:<:NUM:>:<:NUM:>.<:NUM:>+<:NUM:> I NETWORK [thread1] connection accepted from <:IP:>:<:NUM:> #<:NUM:> (<:NUM:> connections now open)",
+        "container": [
+            "user-db"
+        ]
+    },
+    "70": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=GetAddresses id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "71": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] w.w.s.o.controllers.OrdersController : Sending payment request: <:PaymentRequest:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "72": {
+        "template": "payment ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Authorise result=true took=<:TIME:>",
+        "container": [
+            "payment"
+        ]
+    },
+    "73": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] w.w.s.o.controllers.OrdersController : Received payment response: <:PaymentResponse:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "74": {
+        "template": "shipping Adding shipment to queue...",
+        "container": [
+            "shipping"
+        ]
+    },
+    "75": {
+        "template": "queue-master Received shipment task: <:ID:>",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "76": {
+        "template": "queue-master <:TIMESTAMP:> INFO <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] w.weave.socks.queuemaster.DockerSpawner : Spawning new container",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "77": {
+        "template": "queue-master <:TIMESTAMP:> INFO <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] o.apache.http.impl.execchain.RetryExec : I/O exception (org.newsclub.net.unix.AFUNIXSocketException) caught when processing request to {}->unix://localhost:<:NUM:>: No such file or directory",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "78": {
+        "template": "queue-master <:TIMESTAMP:> INFO <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] o.apache.http.impl.execchain.RetryExec : Retrying request to {}->unix://localhost:<:NUM:>",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "79": {
+        "template": "queue-master <:TIMESTAMP:> ERROR <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] w.weave.socks.queuemaster.DockerSpawner : Exception trying to launch/remove worker container. javax.ws.rs.ProcessingException: org.newsclub.net.unix.AFUNIXSocketException: No such file or directory (socket: /var/run/docker.sock)",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "80": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] o.s.d.r.w.RepositoryRestHandlerMapping : <:ITEM:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "81": {
+        "template": "front-end POST /orders <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "82": {
+        "template": "carts <:ERROR-LOG:>",
+        "container": [
+            "carts"
+        ]
+    },
+    "83": {
+        "template": "user ts=<:NUM:>-<:NUM:>-21T08:<:NUM:>:<:NUM:>.90192Z caller=middlewares.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "84": {
+        "template": "user ts=<:NUM:>-<:NUM:>-21T08:<:NUM:>:<:NUM:>.01617Z caller=middlewares.go:<:NUM:> method=GetAddresses id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "85": {
+        "template": "user ts=<:NUM:>-<:NUM:>-21T08:<:NUM:>:<:NUM:>.31265Z caller=middlewares.go:<:NUM:> method=GetUsers id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    }
+}

@@ -1,0 +1,86 @@
+name: Backend CI/CD Pipeline
+
+on:
+  # Trigger the workflow on pushes to the 'main' branch
+  push:
+    branches: [ main ]
+  # Trigger the workflow on pull requests targeting the 'main' branch
+  pull_request:
+    branches: [ main ]
+
+# Keep permissions minimal by default for security
+permissions:
+  contents: read
+
+# Cancel older runs on the same branch/PR to save CI minutes
+concurrency:
+  group: backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Continuous Integration (builds & tests)
+  ci-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code from the repository
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      # Step 2: Set up Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20' # Specify Node.js version 20
+          cache: 'npm' # Enable npm caching for faster installations
+
+      # Step 3: Install dependencies using a clean install
+      - name: Install Dependencies
+        run: npm ci --loglevel=error --no-audit --no-fund
+
+      # Step 4: Run ESLint to ensure code quality
+      - name: Run Lint
+        run: npm run lint
+
+      # Step 5: Run unit tests and generate a coverage report
+      - name: Run Tests with Coverage
+        run: npm run test:coverage
+        env:
+          JWT_SECRET: ci_test_jwt_secret_for_github_actions_min_32_chars
+          NODE_ENV: test
+
+      # Step 5: Upload the coverage report as an artifact
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7 # Keep artifacts for 7 days
+
+  # Job for Continuous Deployment: Deploys the backend to Render.
+  cd:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: ci-unit-tests # This job depends on the 'ci-unit-tests' job passing
+    # Only run this deployment job if:
+    # 1. The event is a push to the 'main' branch.
+    # 2. The previous 'ci-unit-tests' job was successful.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
+    steps:
+      # Step 1: Deploy the backend application to Render
+      - name: Deploy to Render and wait for completion
+        uses: JorgeLNJunior/render-deploy@v1.4.6
+        with:
+          api_key: ${{ secrets.RENDER_API_KEY }} # Render API key for authentication
+          service_id: ${{ secrets.RENDER_SERVICE_ID }} # Render service ID for the backend
+          wait_deploy: true # Wait for the Render deployment to complete
+          clear_cache: false # Do not clear Render cache
+
+      # Step 2: Perform a post-deployment sanity check
+      - name: Post-deploy sanity check
+        run: |
+          set -euo pipefail
+          echo "Verifying deployment status from ${{ env.HEALTH_CHECK_URL }}..."
+          curl -fsS --retry 5 --retry-delay 10 --retry-all-errors "${{ env.HEALTH_CHECK_URL }}" | jq -e '.status == "healthy"' >/dev/null
+          echo "✅ Backend healthy"
+        env:
+          HEALTH_CHECK_URL: https://myworld-backend-8u7h.onrender.com/health

@@ -1,0 +1,140 @@
+name: Frontend CI/CD Pipeline
+
+on:
+  # Trigger the workflow on pushes to the 'main' branch
+  push:
+    branches: [ main ]
+  # Trigger the workflow on pull requests targeting the 'main' branch
+  pull_request:
+    branches: [ main ]    
+
+# Keep permissions minimal by default
+permissions:
+  contents: read
+
+# Cancel older runs on the same branch/PR to save minutes
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job for Continuous Integration: Builds, installs dependencies, and runs E2E tests.
+  ci-e2e-acceptance-tests:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+    steps:
+      # Step 1: Checkout the frontend code from the current repository
+      - name: Checkout Frontend Code
+        uses: actions/checkout@v6
+
+      # Step 2: Checkout the backend code from a separate repository
+      # This is necessary to run the backend locally for E2E tests.
+      - name: Checkout Backend Code
+        uses: actions/checkout@v6
+        with:
+          repository: fraidakis/software-engineering-2-backend # Specify the backend repository
+          token: ${{ secrets.BACKEND_REPO_TOKEN }} # Use a PAT for private repo access
+          path: backend # Checkout into a 'backend' directory
+          fetch-depth: 1 # Only fetch the latest commit for efficiency
+
+      # Step 3: Set up Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20' # Specify Node.js version 20
+          cache: 'npm' # Enable npm caching for faster installations
+          cache-dependency-path: |
+            package-lock.json 
+            backend/package-lock.json 
+
+      # --- Backend Setup for E2E Tests ---
+      # Step 4: Install backend dependencies
+      - name: Install Backend Dependencies
+        run: npm ci --loglevel=error --no-audit --no-fund
+        working-directory: backend # Execute in the backend directory
+
+      # Step 5: Start the backend server in the background
+      - name: Start Local Backend (background)
+        working-directory: backend
+        run: |
+          # Start the backend in the background so it stays running for later steps
+          npm start &> backend.log &
+
+          # Wait until the backend health endpoint responds before continuing
+          npx wait-on http://localhost:3001/health
+          echo "backend ready"
+
+      # --- Frontend Setup & E2E Test ---
+      # Step 6: Install frontend dependencies
+      - name: Install Frontend Dependencies
+        run: npm ci --loglevel=error --no-audit --no-fund
+
+      # Step 7: Run Cypress End-to-End tests
+      - name: Run Cypress E2E
+        uses: cypress-io/github-action@v6
+        with:
+          install: false # Dependencies are already installed in a previous step
+          start: npm start # Command to start the frontend application
+          wait-on: ${{ env.CYPRESS_BASE_URL }} # Wait for the frontend to be available
+          browser: chrome
+          # Suppress WebGL warnings in headless CI environment
+          command: npm run test:e2e -- --env apiUrl=${{ env.REACT_APP_API_URL }}
+        env:
+          CI: true # Indicate that tests are running in a CI environment
+          CYPRESS_BASE_URL: 'http://localhost:3000' # Base URL for the frontend application
+          REACT_APP_API_URL: 'http://localhost:3001' # API URL for the backend
+          GENERATE_SOURCEMAP: false # Suppress source map warnings during build
+          # Chrome flags for headless mode to suppress WebGL warnings
+          ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu --enable-unsafe-swiftshader'
+
+      # Step 8: Upload Cypress screenshots if tests fail
+      - name: Upload Cypress Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
+          retention-days: 7 # Keep artifacts for 7 days
+
+      # Step 9: Upload Cypress videos if tests fail
+      - name: Upload Cypress Videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-videos
+          path: cypress/videos/
+          retention-days: 7
+
+  # Job for Continuous Deployment: Deploys the frontend to Render.
+  cd:
+    runs-on: ubuntu-latest
+    needs: ci-e2e-acceptance-tests # This job depends on the CI job passing
+    # Only run this deployment job if:
+    # 1. The event is a push to the 'main' branch.
+    # 2. The previous 'ci-e2e-acceptance-tests' job was successful.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
+    steps:
+      # Step 1: Deploy the frontend application to Render
+      - name: Deploy to Render and wait for completion
+        uses: JorgeLNJunior/render-deploy@v1.4.6
+        with:
+          api_key: ${{ secrets.RENDER_API_KEY }} # Render API key for authentication
+          service_id: ${{ secrets.RENDER_SERVICE_ID }} # Render service ID for the frontend
+          wait_deploy: true # Wait for the Render deployment to complete before proceeding
+          clear_cache: false # Do not clear Render cache
+          github_deployment: false # Do not create a GitHub deployment status
+
+      # Step 2: Perform a post-deployment sanity check to ensure the deployed application is reachable and healthy
+      - name: Post-deploy sanity check
+        run: |
+          set -euo pipefail
+
+          echo "Checking frontend: ${{ env.FRONTEND_URL }}"
+          curl -fsS --retry 5 --retry-all-errors --retry-delay 3 -o /dev/null ${{ env.FRONTEND_URL }}
+          echo "✅ Frontend reachable"
+
+          echo "Checking backend health: ${{ env.BACKEND_HEALTH }}"
+          curl -fsS ${{ env.BACKEND_HEALTH }} | jq -e '.status == "healthy"' >/dev/null
+          echo "✅ Backend healthy"
+        env:
+          BACKEND_HEALTH: 'https://myworld-backend-8u7h.onrender.com/health' # URL for the deployed backend health check
+          FRONTEND_URL: 'https://myworld-frontend.onrender.com' # URL for the deployed frontend

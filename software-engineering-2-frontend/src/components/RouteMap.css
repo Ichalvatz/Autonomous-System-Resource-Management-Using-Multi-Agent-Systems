@@ -1,0 +1,156 @@
+/**
+ * RouteMap - Component Styles
+ * Styling for the interactive route map
+ */
+
+.route-map-container {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    box-shadow: var(--shadow-sm);
+}
+
+.route-map {
+    width: 100%;
+    height: 300px;
+    z-index: 1;
+}
+
+/* Larger map on desktop */
+@media (min-width: 768px) {
+    .route-map {
+        height: 350px;
+    }
+}
+
+/* ============================================
+   CUSTOM MARKERS
+   ============================================ */
+
+.custom-marker {
+    background: transparent;
+    border: none;
+}
+
+.marker-pin {
+    width: 30px;
+    height: 42px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.marker-pin--green {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.marker-pin--red {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.marker-label {
+    transform: rotate(45deg);
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   POPUP STYLES
+   ============================================ */
+
+.map-popup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+}
+
+.map-popup strong {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.popup-name {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-primary-600);
+}
+
+.popup-coords {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+/* Override Leaflet popup styles */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.leaflet-popup-content {
+    margin: 12px 16px !important;
+}
+
+.leaflet-popup-tip {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* ============================================
+   EMPTY STATE OVERLAY
+   ============================================ */
+
+.map-empty-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.map-empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-3);
+    opacity: 0.5;
+}
+
+.map-empty-overlay p {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* ============================================
+   LEAFLET OVERRIDES
+   ============================================ */
+
+/* Make sure attribution is readable */
+.leaflet-control-attribution {
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.8) !important;
+    padding: 2px 6px !important;
+}
+
+/* Zoom controls styling */
+.leaflet-control-zoom a {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-light) !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: var(--bg-tertiary) !important;
+}

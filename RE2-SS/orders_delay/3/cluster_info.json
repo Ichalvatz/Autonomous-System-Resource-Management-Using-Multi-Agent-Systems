@@ -1,0 +1,326 @@
+{
+    "1": {
+        "template": "front-end Carts merged.",
+        "container": [
+            "front-end"
+        ]
+    },
+    "2": {
+        "template": "front-end set cookie<:COOKIE:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "3": {
+        "template": "front-end Sent cookies.",
+        "container": [
+            "front-end"
+        ]
+    },
+    "4": {
+        "template": "front-end POST /register <:HTTP2XX:> <:NUM:>.<:NUM:> ms - <:NUM:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "5": {
+        "template": "front-end User cart deleted with status: <:HTTP2XX:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "6": {
+        "template": "front-end DELETE /cart <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "7": {
+        "template": "front-end Attempting to add to cart: {\"id\":\"<:USERID:>\",\"quantity\":<:NUM:>}",
+        "container": [
+            "front-end"
+        ]
+    },
+    "8": {
+        "template": "catalogue ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Get id=<:USERID:> sock=<:USERID:> err=null took=<:TIME:>",
+        "container": [
+            "catalogue"
+        ]
+    },
+    "9": {
+        "template": "<:SHOP-ITEM:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "10": {
+        "template": "front-end POST to carts:<:ITEM:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "11": {
+        "template": "front-end POST /cart <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "12": {
+        "template": "catalogue ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=List tags= order=id pageNum=<:NUM:> pageSize=<:NUM:> result=<:NUM:> err=null took=<:TIME:>",
+        "container": [
+            "catalogue"
+        ]
+    },
+    "13": {
+        "template": "front-end GET /catalogue <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "14": {
+        "template": "front-end Posting Address:<:ADDR:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "15": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=PostAddress<:Address:>",
+        "container": [
+            "user"
+        ]
+    },
+    "16": {
+        "template": "front-end POST /addresses <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "17": {
+        "template": "front-end Posting Card:<:CARD:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "18": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=PostCard<:Card:>",
+        "container": [
+            "user"
+        ]
+    },
+    "19": {
+        "template": "front-end POST /cards <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "20": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "21": {
+        "template": "front-end Attempting to delete cart for user:<:USERID:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "22": {
+        "template": "catalogue ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "catalogue"
+        ]
+    },
+    "23": {
+        "template": "payment ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Health result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "payment"
+        ]
+    },
+    "24": {
+        "template": "front-end Request received with body: {}",
+        "container": [
+            "front-end"
+        ]
+    },
+    "25": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=GetUsers id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "26": {
+        "template": "front-end Received response:<:RESPONSE:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "27": {
+        "template": "front-end GET Request to: http://user/customers/<:ID:>/addresses",
+        "container": [
+            "front-end"
+        ]
+    },
+    "28": {
+        "template": "front-end GET Request to: http://user/customers/<:ID:>/cards",
+        "container": [
+            "front-end"
+        ]
+    },
+    "29": {
+        "template": "front-end [ undefined, undefined ]",
+        "container": [
+            "front-end"
+        ]
+    },
+    "30": {
+        "template": "front-end Posting Order:<:ORDER:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "31": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=GetCards id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "32": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=GetAddresses id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "33": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] w.w.s.o.controllers.OrdersController : Sending payment request: <:PaymentRequest:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "34": {
+        "template": "payment ts=<:TIMESTAMP:> caller=logging.go:<:NUM:> method=Authorise result=true took=<:TIME:>",
+        "container": [
+            "payment"
+        ]
+    },
+    "35": {
+        "template": "orders <:TIMESTAMP:> INFO [orders,<:ITEM:> <:NUM:> --- [p-nio-<:NUM:>-exec-<:NUM:>] w.w.s.o.controllers.OrdersController : Received payment response: <:PaymentResponse:>",
+        "container": [
+            "orders"
+        ]
+    },
+    "36": {
+        "template": "shipping Adding shipment to queue...",
+        "container": [
+            "shipping"
+        ]
+    },
+    "37": {
+        "template": "queue-master Received shipment task: <:ID:>",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "38": {
+        "template": "queue-master <:TIMESTAMP:> INFO <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] w.weave.socks.queuemaster.DockerSpawner : Spawning new container",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "39": {
+        "template": "queue-master <:TIMESTAMP:> INFO <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] o.apache.http.impl.execchain.RetryExec : I/O exception (org.newsclub.net.unix.AFUNIXSocketException) caught when processing request to {}->unix://localhost:<:NUM:>: No such file or directory",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "40": {
+        "template": "queue-master <:TIMESTAMP:> INFO <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] o.apache.http.impl.execchain.RetryExec : Retrying request to {}->unix://localhost:<:NUM:>",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "41": {
+        "template": "queue-master <:TIMESTAMP:> ERROR <:NUM:> --- [ool-<:NUM:>-thread-<:NUM:>] w.weave.socks.queuemaster.DockerSpawner : Exception trying to launch/remove worker container. javax.ws.rs.ProcessingException: org.newsclub.net.unix.AFUNIXSocketException: No such file or directory (socket: /var/run/docker.sock)",
+        "container": [
+            "queue-master"
+        ]
+    },
+    "42": {
+        "template": "front-end Order response:<:ORDER-RESPONSE:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "43": {
+        "template": "front-end POST /orders <:HTTP2XX:> <:NUM:>.<:NUM:> ms - -",
+        "container": [
+            "front-end"
+        ]
+    },
+    "44": {
+        "template": "front-end Posting Customer:<:CUSTOMER:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "45": {
+        "template": "user ts=<:TIMESTAMP:> caller=middlewares.go:<:NUM:> method=Register username=<:USERNAME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "46": {
+        "template": "front-end { id: '<:ID:>' }",
+        "container": [
+            "front-end"
+        ]
+    },
+    "47": {
+        "template": "front-end <:ID:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "48": {
+        "template": "front-end Merging carts for customer id: <:ID:> and session id:<:SESSIONID:>",
+        "container": [
+            "front-end"
+        ]
+    },
+    "49": {
+        "template": "carts <:ERROR-LOG:>",
+        "container": [
+            "carts"
+        ]
+    },
+    "50": {
+        "template": "user ts=<:NUM:>-<:NUM:>-20T09:<:NUM:>:<:NUM:>.05849Z caller=middlewares.go:<:NUM:> method=GetUsers id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "51": {
+        "template": "user-db <:NUM:>-<:NUM:>-20T09:<:NUM:>:<:NUM:>.<:NUM:>+<:NUM:> I NETWORK [thread1] connection accepted from <:IP:>:<:NUM:> #<:NUM:> (<:NUM:> connections now open)",
+        "container": [
+            "user-db"
+        ]
+    },
+    "52": {
+        "template": "user ts=<:NUM:>-<:NUM:>-20T09:<:NUM:>:<:NUM:>.05456Z caller=middlewares.go:<:NUM:> method=GetCards id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "53": {
+        "template": "user ts=<:NUM:>-<:NUM:>-20T10:<:NUM:>:<:NUM:>.60289Z caller=middlewares.go:<:NUM:> method=GetUsers id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    },
+    "54": {
+        "template": "user ts=<:NUM:>-<:NUM:>-20T10:<:NUM:>:<:NUM:>.12724Z caller=middlewares.go:<:NUM:> method=GetUsers id=<:ID:> result=<:NUM:> took=<:TIME:>",
+        "container": [
+            "user"
+        ]
+    }
+}
