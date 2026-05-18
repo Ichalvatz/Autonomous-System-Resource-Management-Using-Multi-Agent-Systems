@@ -1,0 +1,13 @@
+grafana:
+  enabled: true
+  adminPassword: "admin"
+  service:
+    type: ClusterIP
+prometheus:
+  prometheusSpec:
+    scrapeInterval: "10s"
+    evaluationInterval: "10s"
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
