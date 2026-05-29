@@ -8,6 +8,9 @@ prometheus:
   prometheusSpec:
     scrapeInterval: "10s"
     evaluationInterval: "10s"
+  service:
+    type: NodePort
+    nodePort: 30090 
 kubeStateMetrics:
   enabled: true
 nodeExporter:

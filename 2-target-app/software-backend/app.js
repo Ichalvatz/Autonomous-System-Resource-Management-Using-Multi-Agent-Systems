@@ -6,7 +6,7 @@
 // External dependencies (4 consolidated into 1)
 import { express, cors, helmet, mongoose } from './dependencies.js';
 // Middleware
-import { errorHandler, requestLogger, requestId } from './middleware/index.js';
+import { errorHandler, requestLogger, requestId, metricsMiddleware, metricsHandler } from './middleware/index.js';
 // Configuration
 import { setupSwagger, API_VERSION } from './config/index.js';
 // Routes
@@ -62,6 +62,7 @@ app.use(
 );
 app.use(cors(corsOptions));
 app.use(requestId); // Request ID for tracing
+app.use(metricsMiddleware); // Prometheus metrics instrumentation
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
@@ -71,6 +72,12 @@ app.use(requestLogger);
  * Serves interactive API documentation at /api-docs
  */
 setupSwagger(app);
+
+/**
+ * Prometheus Metrics Endpoint
+ * Exposes metrics in Prometheus text format
+ */
+app.get('/metrics', metricsHandler);
 
 /**
  * Root endpoint with minimal HATEOAS links
