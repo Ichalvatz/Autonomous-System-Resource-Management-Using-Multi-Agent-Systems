@@ -1,0 +1,14 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30001 # NodePort Backend
+    hostPort: 3001
+    protocol: TCP
+  - containerPort: 30002 # NodePort Frontend
+    hostPort: 8080
+    protocol: TCP
+  - containerPort: 30003 # NodePort Grafana
+    hostPort: 3000
+    protocol: TCP

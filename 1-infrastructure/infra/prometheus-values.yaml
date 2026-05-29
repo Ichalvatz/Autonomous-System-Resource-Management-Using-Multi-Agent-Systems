@@ -2,7 +2,8 @@ grafana:
   enabled: true
   adminPassword: "admin"
   service:
-    type: ClusterIP
+    type: NodePort
+    nodePort: 30003
 prometheus:
   prometheusSpec:
     scrapeInterval: "10s"
