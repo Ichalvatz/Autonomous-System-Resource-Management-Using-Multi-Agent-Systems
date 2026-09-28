@@ -6,7 +6,17 @@
 // External dependencies (4 consolidated into 1)
 import { express, cors, helmet, mongoose } from './dependencies.js';
 // Middleware
-import { errorHandler, requestLogger, requestId, metricsMiddleware, metricsHandler } from './middleware/index.js';
+import {
+  errorHandler,
+  requestLogger,
+  requestId,
+  metricsMiddleware,
+  metricsHandler,
+  structuredLogger,
+  errorLogger,
+  performanceMonitor,
+  setupAsyncOperationLogger
+} from './middleware/index.js';
 // Configuration
 import { setupSwagger, API_VERSION } from './config/index.js';
 // Routes
@@ -65,7 +75,11 @@ app.use(requestId); // Request ID for tracing
 app.use(metricsMiddleware); // Prometheus metrics instrumentation
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(requestLogger);
+
+// Structured logging middleware stack (for AIOps observability)
+app.use(structuredLogger); // Main structured logger with request timing
+app.use(performanceMonitor); // Performance tracking utilities
+app.use(setupAsyncOperationLogger); // Async operation logging capabilities
 
 /**
  * Swagger API Documentation
@@ -135,6 +149,18 @@ app.get('/health', (_, res) => {
   });
 });
 
+// Deliberately delays requests for chaos-engineering experiments.
+app.get('/chaos/zombie', (_, res) => {
+  if (process.env.CHAOS_ENABLED !== 'true') {
+    return res.status(404).json({ error: 'CHAOS_DISABLED' });
+  }
+
+  console.warn('[CHAOS] Zombie mode: simulating a database deadlock');
+  setTimeout(() => {
+    res.status(200).json({ message: 'Recovered from zombie state' });
+  }, 10000);
+});
+
 // Mount all API routes
 app.use('/', routes);
 
@@ -153,6 +179,8 @@ app.use((req, res) => {
 });
 
 // Error handling middleware
+// Log errors explicitly before handling them
+app.use(errorLogger);
 app.use(errorHandler);
 
 export default app;

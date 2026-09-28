@@ -3,6 +3,7 @@
  * @module tests/unit/rateLimiter.test
  */
 
+import { jest } from '@jest/globals';
 import { authLimiter, apiLimiter } from '../../middleware/rateLimiter.js';
 import rateLimiterDefault from '../../middleware/rateLimiter.js';
 
@@ -47,6 +48,27 @@ describe('Rate Limiter Middleware - Unit Tests', () => {
 
         it('apiLimiter should have expected configuration structure', () => {
             expect(apiLimiter.length).toBeGreaterThanOrEqual(0);
+        });
+    });
+
+    describe('auth limiter toggle', () => {
+        beforeEach(() => {
+            jest.resetModules();
+            delete process.env.AUTH_RATE_LIMIT_ENABLED;
+        });
+
+        it('disables auth rate limiting when AUTH_RATE_LIMIT_ENABLED is false', async () => {
+            process.env.AUTH_RATE_LIMIT_ENABLED = 'false';
+
+            const { isAuthRateLimitEnabled } = await import('../../middleware/rateLimiter.js');
+
+            expect(isAuthRateLimitEnabled()).toBe(false);
+        });
+
+        it('keeps auth rate limiting enabled by default', async () => {
+            const { isAuthRateLimitEnabled } = await import('../../middleware/rateLimiter.js');
+
+            expect(isAuthRateLimitEnabled()).toBe(true);
         });
     });
 });

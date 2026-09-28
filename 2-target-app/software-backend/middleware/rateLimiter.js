@@ -5,8 +5,8 @@
 import rateLimit from 'express-rate-limit';
 
 // --- Time Constants ---
-const FIFTEEN_MINUTES = 15 * 60 * 1000;
-const ONE_MINUTE = 60 * 1000;
+const FIFTEEN_MINUTES = 0;
+const ONE_MINUTE = 0;
 
 /**
  * Factory to create a consistent rate limiter
