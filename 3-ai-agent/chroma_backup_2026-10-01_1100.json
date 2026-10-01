@@ -1,0 +1,250 @@
+{
+ "ids": [
+  "incident_1790800384",
+  "incident_1790800745",
+  "incident_1790801415",
+  "incident_1790801865",
+  "incident_1790803926",
+  "incident_1790804018",
+  "incident_1790804108",
+  "incident_1790804196",
+  "incident_1790804298",
+  "incident_1790804390",
+  "incident_1790804478",
+  "incident_1790804573",
+  "incident_1790804668",
+  "incident_1790808133",
+  "incident_1790808629",
+  "incident_1790809155",
+  "incident_1790809602",
+  "incident_1790815953",
+  "incident_1790816443",
+  "incident_1790816984",
+  "incident_1790817426",
+  "incident_1790826484",
+  "incident_1790826966",
+  "incident_1790827489",
+  "incident_1790827963"
+ ],
+ "embeddings": null,
+ "metadatas": [
+  {
+   "root_cause": "Root cause: The current replica count of 1 was insufficient, causing CPU saturation (0.83 cores) and CPU throttling (9.6%), which exceeded the SLO targets. Action: Scaled up to 2 replicas to restore performance and comply with service level objectives.",
+   "status": "resolved",
+   "action_taken": "scale 1->2"
+  },
+  {
+   "status": "resolved",
+   "action_taken": "scale 2->3",
+   "root_cause": "Root cause: The system was experiencing latency (0.333s) that exceeded the defined SLO target of 0.300s. Action: Scaled up from 2 to 3 replicas to relieve performance pressure and restore SLO compliance."
+  },
+  {
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.4 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "action_taken": "scale 3->2",
+   "status": "resolved"
+  },
+  {
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating significantly below the required capacity for the current throughput of 6.36 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "status": "resolved",
+   "action_taken": "scale 2->1"
+  },
+  {
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 13.3 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "status": "resolved",
+   "action_taken": "scale 3->2"
+  },
+  {
+   "status": "resolved",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 12.8 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "action_taken": "scale 3->2"
+  },
+  {
+   "action_taken": "scale 3->2",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 12.78 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "status": "resolved"
+  },
+  {
+   "action_taken": "scale 3->2",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 12.78 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "status": "resolved"
+  },
+  {
+   "status": "resolved",
+   "action_taken": "scale 3->1",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 9.48 rps, which can be safely handled by 1 replica according to the capacity reference. Action: Scaled down from 3 to 1 replica to improve resource efficiency."
+  },
+  {
+   "action_taken": "scale 3->1",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 5.10 rps, which can be safely handled by 1 replica according to the capacity reference. Action: Scaled down from 3 to 1 replica to improve resource efficiency.",
+   "status": "resolved"
+  },
+  {
+   "status": "resolved",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 4.54 rps, which can be safely handled by 1 replica. Action: Scaled down from 3 to 1 replica to improve resource efficiency.",
+   "action_taken": "scale 3->1"
+  },
+  {
+   "status": "resolved",
+   "action_taken": "scale 3->1",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 4.5 rps, which can be safely handled by 1 replica according to the capacity reference. Action: Scaled down from 3 to 1 replica to improve resource efficiency."
+  },
+  {
+   "status": "resolved",
+   "action_taken": "scale 3->1",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of ~5 rps, which can be safely handled by 1 replica according to the capacity reference. Action: Scaled down from 3 to 1 replica to improve resource efficiency."
+  },
+  {
+   "status": "resolved",
+   "root_cause": "Root cause: The current replica count of 1 was insufficient, causing CPU saturation (0.85 cores) and CPU throttling (12.16%), which exceeded the SLO targets. Action: Scaled up to 2 replicas to restore performance and comply with service level objectives.",
+   "cpu": 0.8492,
+   "p95": 0.1485,
+   "throttling": 0.1216,
+   "replicas": 1,
+   "action_taken": "scale 1->2",
+   "rps": 12.28
+  },
+  {
+   "p95": 0.1365,
+   "throttling": 0.0449,
+   "status": "resolved",
+   "cpu": 0.8249,
+   "root_cause": "Root cause: The system was experiencing high CPU saturation (0.82 cores per pod) exceeding the 0.75 SLO limit, indicating potential performance degradation. Action: Scaled up from 2 to 3 replicas to reduce CPU load per pod and restore system health.",
+   "replicas": 2,
+   "action_taken": "scale 2->3",
+   "rps": 23.96
+  },
+  {
+   "p95": 0.0956,
+   "status": "resolved",
+   "throttling": 0.0112,
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.34 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "action_taken": "scale 3->2",
+   "replicas": 3,
+   "cpu": 0.3191,
+   "rps": 13.34
+  },
+  {
+   "p95": 0.1379,
+   "status": "resolved",
+   "replicas": 2,
+   "action_taken": "scale 2->1",
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating well below the capacity required for the current throughput of 6.44 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "throttling": 0.0083,
+   "cpu": 0.2202,
+   "rps": 6.44
+  },
+  {
+   "root_cause": "Root cause: The current replica count of 1 was insufficient to handle the throughput of 12.12 rps, leading to CPU saturation (0.81 cores) and throttling (8.4%), violating SLO targets. Action: Scaled the deployment up to 2 replicas to restore performance and comply with service level objectives.",
+   "p95": 0.1535,
+   "rps": 12.12,
+   "replicas": 1,
+   "cpu": 0.8103,
+   "throttling": 0.0842,
+   "action_taken": "scale 1->2",
+   "status": "resolved"
+  },
+  {
+   "status": "resolved",
+   "rps": 23.92,
+   "root_cause": "Root cause: The system was experiencing high CPU saturation (0.812 cores per pod) and CPU throttling (5.69%) exceeding SLO limits due to traffic exceeding the capacity of 2 replicas. Action: Scaled up from 2 to 3 replicas to restore system health and comply with SLO targets.",
+   "p95": 0.1404,
+   "throttling": 0.0569,
+   "action_taken": "scale 2->3",
+   "cpu": 0.8124,
+   "replicas": 2
+  },
+  {
+   "status": "resolved",
+   "throttling": 0.018,
+   "action_taken": "scale 3->2",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 13.28 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "cpu": 0.273,
+   "p95": 0.0978,
+   "replicas": 3,
+   "rps": 13.28
+  },
+  {
+   "action_taken": "scale 2->1",
+   "status": "resolved",
+   "rps": 6.56,
+   "cpu": 0.2411,
+   "replicas": 2,
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating well below the capacity required for the current throughput of 6.56 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "throttling": 0.0137,
+   "p95": 0.0953
+  },
+  {
+   "cpu": 0.8706,
+   "status": "resolved",
+   "rps": 12.88,
+   "root_cause": "Root cause: Current replica count of 1 was insufficient to handle the throughput of 12.87 rps, leading to CPU saturation (0.87 cores) and significant CPU throttling (11.2%). Action: Scaled the deployment to 2 replicas to restore system health and comply with SLO targets.",
+   "action_taken": "scale 1->2",
+   "p95": 0.1482,
+   "replicas": 1,
+   "throttling": 0.1121
+  },
+  {
+   "action_taken": "scale 2->3",
+   "rps": 23.98,
+   "cpu": 0.7366,
+   "status": "resolved",
+   "replicas": 2,
+   "p95": 0.1388,
+   "throttling": 0.0599,
+   "root_cause": "Root cause: The system was experiencing CPU throttling (5.99%) exceeding the 5.0% SLO limit, indicating performance degradation under the current load. Action: Scaled up from 2 to 3 replicas to relieve CPU pressure and restore system health."
+  },
+  {
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 14.5 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "cpu": 0.2768,
+   "action_taken": "scale 3->2",
+   "rps": 14.5,
+   "status": "resolved",
+   "p95": 0.0984,
+   "throttling": 0.0122,
+   "replicas": 3
+  },
+  {
+   "p95": 0.0958,
+   "throttling": 0.0045,
+   "cpu": 0.2485,
+   "replicas": 2,
+   "action_taken": "scale 2->1",
+   "rps": 5.88,
+   "status": "resolved",
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas for the current throughput of 5.88 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps."
+  }
+ ],
+ "documents": [
+  "State -> CPU:0.83cores | Throttle:9.6% | Tput:13.0rps | Reps:1",
+  "State -> CPU:0.6cores | Throttle:4.5% | Tput:17.0rps | Reps:2",
+  "State -> CPU:0.32cores | Throttle:1.2% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.2cores | Throttle:0.3% | Tput:6.0rps | Reps:2",
+  "State -> CPU:0.31cores | Throttle:1.3% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.33cores | Throttle:1.7% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.33cores | Throttle:1.6% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.27cores | Throttle:1.5% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.26cores | Throttle:0.6% | Tput:9.0rps | Reps:3",
+  "State -> CPU:0.15cores | Throttle:0.4% | Tput:5.0rps | Reps:3",
+  "State -> CPU:0.12cores | Throttle:0.2% | Tput:5.0rps | Reps:3",
+  "State -> CPU:0.1cores | Throttle:0.3% | Tput:4.0rps | Reps:3",
+  "State -> CPU:0.13cores | Throttle:0.0% | Tput:5.0rps | Reps:3",
+  "State -> CPU:0.85cores | Throttle:12.2% | Tput:12.0rps | Reps:1",
+  "State -> CPU:0.82cores | Throttle:4.5% | Tput:24.0rps | Reps:2",
+  "State -> CPU:0.32cores | Throttle:1.1% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.22cores | Throttle:0.8% | Tput:6.0rps | Reps:2",
+  "State -> CPU:0.81cores | Throttle:8.4% | Tput:12.0rps | Reps:1",
+  "State -> CPU:0.81cores | Throttle:5.7% | Tput:24.0rps | Reps:2",
+  "State -> CPU:0.27cores | Throttle:1.8% | Tput:13.0rps | Reps:3",
+  "State -> CPU:0.24cores | Throttle:1.4% | Tput:7.0rps | Reps:2",
+  "State -> CPU:0.87cores | Throttle:11.2% | Tput:13.0rps | Reps:1",
+  "State -> CPU:0.74cores | Throttle:6.0% | Tput:24.0rps | Reps:2",
+  "State -> CPU:0.28cores | Throttle:1.2% | Tput:14.0rps | Reps:3",
+  "State -> CPU:0.25cores | Throttle:0.4% | Tput:6.0rps | Reps:2"
+ ],
+ "data": null,
+ "uris": null,
+ "included": [
+  "documents",
+  "metadatas"
+ ]
+}

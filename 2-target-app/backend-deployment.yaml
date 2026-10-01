@@ -23,6 +23,13 @@ spec:
           value: "0.0.0.0"
         - name: CHAOS_ENABLED
           value: "true"
+        # CPU is deliberately exactly 1 core (see "Pod sizing" in CLAUDE.md):
+        # Node.js runs requests on one thread, so it cannot use more than 1 core,
+        # and a login (bcrypt) costs ~70ms CPU. With 1 core that fits inside a
+        # single 100ms CFS period, so throttling only appears under real overload.
+        # With less (e.g. 500m) every login gets throttled, which breaks the
+        # throttling metric and all CPU thresholds (they are in absolute cores).
+        # Changing this invalidates capacity_table.json and the trained model.
         resources:
           requests:
             cpu: "1"

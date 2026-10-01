@@ -1,0 +1,23 @@
+# Baseline: standard Kubernetes HPA on CPU (needs metrics-server).
+# Same bounds as the agent (1-3 replicas). Target 70% of the 1-core request,
+# just under the agent's 0.75-core SLO. Default behaviour otherwise
+# (immediate scale-up, 300 s scale-down stabilization): "HPA as shipped".
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aiops-backend-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aiops-backend-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

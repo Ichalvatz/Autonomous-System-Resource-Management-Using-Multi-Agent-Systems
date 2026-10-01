@@ -91,3 +91,25 @@ A strong thesis title could be:
 ## Final Assessment
 
 This repository is a solid proof of concept for an LLM-driven autonomous operations system. For a master’s thesis, the main opportunity is to evolve it from a demonstrator into a well-evaluated research artifact with clear hypotheses, baselines, and experimental evidence.
+
+## Status of the TODO items (2026-10-01)
+Added by Claude after the overnight and day experiments; details in `NOTES_2026-10-01_DAY.md` and
+`4-load-testing/OVERNIGHT_REPORT_2026-10-01.md`.
+
+- **Rigorous evaluation (§2):** `4-load-testing/run_experiment.sh` + `evaluate_run.py` score every run the same way:
+  SLO-violation seconds, recovery time (MTTR) after a fault, replica-minutes (cost), scaling accuracy vs the capacity
+  table, scale actions, LLM calls. Repeated runs (n = 2–4 per strategy), mean ± std in `comparison.md`.
+- **Baselines (§3):** Kubernetes HPA (CPU 70%), a rule-based scaler with the same information and gates as the agent,
+  static 1 and static 3 replicas.
+- **Results so far:**
+  - Scaling (demo load): every autoscaler kept 0 s SLO violation; the agent was the cheapest (71.6 replica-min vs
+    HPA 79.5, rules 78.2, static-3 114.5) and the most accurately provisioned (86% vs 69% / 77%), but reacted slowest
+    to CPU pressure that users did not notice.
+  - Failure beyond scaling (stuck dependency): agent recovered in ~100 s (4/4 with the final prompt); HPA, rules and
+    static never recovered (710 s violation each); rules tripled the cost.
+- **Decision logic (§4):** verification of every action by code, automatic rollback of failed scale-downs, metric-based
+  incident memory, retries for LLM outages (Gemini 503s happened several times and were absorbed).
+- **Engineering (§6):** 37 unit tests (`3-ai-agent/tests`), structured per-incident log (`3-ai-agent/incident_log.csv`).
+- **Research question 2 (RAG):** ablation done for the stuck fault: memory off recovered in 100 / 100 s with 2–3 LLM
+  calls, the same as memory on (mean 100 s, 2.75 calls). No measurable effect for this incident type (the prompt
+  and the logs are enough); a fault the logs do not explain would be the next test.

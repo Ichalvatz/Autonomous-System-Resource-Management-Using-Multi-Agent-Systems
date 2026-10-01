@@ -82,6 +82,37 @@ app.use(performanceMonitor); // Performance tracking utilities
 app.use(setupAsyncOperationLogger); // Async operation logging capabilities
 
 /**
+ * Chaos: "stuck dependency" fault (thesis restart experiment, 4-load-testing/fault_experiment.sh).
+ * POST /chaos/stuck puts THIS process in a state where every request first waits
+ * STUCK_DELAY_MS for a database connection that never frees up, like a leaked
+ * connection pool. It uses no CPU, so the pod looks idle while users wait.
+ * Only a process restart clears it; new pods start healthy, so adding replicas
+ * dilutes the problem but does not fix it.
+ */
+const STUCK_DELAY_MS = 3000;
+let stuckSince = null;
+app.post('/chaos/stuck', (_, res) => {
+  if (process.env.CHAOS_ENABLED !== 'true') {
+    return res.status(404).json({ error: 'CHAOS_DISABLED' });
+  }
+  stuckSince = stuckSince ?? new Date().toISOString();
+  console.error(`[${new Date().toISOString()}] [ERROR] [chaos] - Database connection pool leak injected: every request will wait ${STUCK_DELAY_MS}ms`);
+  res.status(200).json({ stuck: true, since: stuckSince, delayMs: STUCK_DELAY_MS });
+});
+app.use((req, res, next) => {
+  if (!stuckSince || req.path === '/metrics' || req.path === '/health' || req.path.startsWith('/chaos')) {
+    return next();
+  }
+  setTimeout(() => {
+    console.error(
+      `[${new Date().toISOString()}] [ERROR] [${req.id || '-'}] ${req.method} ${req.path} - ` +
+      `DB connection pool exhausted: waited ${STUCK_DELAY_MS}ms for a free connection (0/10 idle since ${stuckSince})`
+    );
+    next();
+  }, STUCK_DELAY_MS);
+});
+
+/**
  * Swagger API Documentation
  * Serves interactive API documentation at /api-docs
  */

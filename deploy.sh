@@ -24,6 +24,13 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --values 1-infrastructure/prometheus-values.yaml
 
+# metrics-server: only needed for the HPA baseline (4-load-testing/baselines/hpa.yaml).
+# kind's kubelets use self-signed certs, hence --kubelet-insecure-tls.
+echo "Installation of metrics-server (HPA baseline)..."
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+helm install metrics-server metrics-server/metrics-server -n kube-system \
+  --set 'args={--kubelet-insecure-tls}'
+
 echo "App Deployment..."
 kubectl apply -f 2-target-app/backend-deployment.yaml
 kubectl apply -f 2-target-app/frontend-deployment.yaml

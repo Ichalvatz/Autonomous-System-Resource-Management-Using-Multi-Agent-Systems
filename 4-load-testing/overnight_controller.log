@@ -1,0 +1,178 @@
+[00:04:42] strategy=hpa: reset to 1 replica(s)
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa unchanged
+[00:06:47] k6 baseline.js started
+[00:44:48] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-01 00:06:47
+               end: 2026-10-01 00:44:48
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 70
+          p95_mean: 0.107
+           p95_p99: 0.153
+   replica_minutes: 89.5
+      under_prov_s: 40
+       over_prov_s: 830
+  correct_prov_pct: 61.2
+     scale_actions: 16
+         incidents: 9
+            stable: 9
+         llm_calls: 23
+      agent_s_mean: 13.3
+             notes: 
+[00:45:09] done
+[00:48:13] strategy=rules: reset to 1 replica(s)
+[00:50:18] k6 baseline.js started
+[01:28:19] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-01 00:50:18
+               end: 2026-10-01 01:28:19
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 120
+          p95_mean: 0.114
+           p95_p99: 0.179
+   replica_minutes: 78.3
+      under_prov_s: 0
+       over_prov_s: 520
+  correct_prov_pct: 76.8
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: 
+[01:28:39] done
+[01:31:43] strategy=llm: reset to 1 replica(s)
+[01:33:48] k6 baseline.js started
+[02:11:49] k6 finished (exit 0)
+             label: llm
+             start: 2026-10-01 01:33:48
+               end: 2026-10-01 02:11:49
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 350
+          p95_mean: 0.107
+           p95_p99: 0.15
+   replica_minutes: 71.5
+      under_prov_s: 120
+       over_prov_s: 220
+  correct_prov_pct: 84.8
+     scale_actions: 4
+         incidents: 4
+            stable: 4
+         llm_calls: 11
+      agent_s_mean: 14.2
+             notes: agent v3: metric memory, rollout+45s SLO verification, rollback
+[02:12:10] done
+[02:15:13] strategy=static-1: reset to 1 replica(s)
+[02:17:19] k6 baseline.js started
+[02:55:20] k6 finished (exit 0)
+             label: static-1
+             start: 2026-10-01 02:17:19
+               end: 2026-10-01 02:55:20
+      duration_min: 38.0
+   slo_violation_s: 550
+        pressure_s: 1540
+          p95_mean: 0.284
+           p95_p99: 0.709
+   replica_minutes: 38.2
+      under_prov_s: 1370
+       over_prov_s: 0
+  correct_prov_pct: 39.1
+     scale_actions: 0
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: 
+[02:55:40] done
+[02:58:44] strategy=static-3: reset to 3 replica(s)
+[03:00:50] k6 baseline.js started
+[03:38:51] k6 finished (exit 0)
+             label: static-3
+             start: 2026-10-01 03:00:50
+               end: 2026-10-01 03:38:51
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 0
+          p95_mean: 0.109
+           p95_p99: 0.138
+   replica_minutes: 114.5
+      under_prov_s: 0
+       over_prov_s: 1740
+  correct_prov_pct: 22.3
+     scale_actions: 0
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: 
+[03:39:11] done
+[03:42:15] strategy=llm: reset to 1 replica(s)
+[03:44:20] k6 baseline.js started
+[04:22:21] k6 finished (exit 0)
+             label: llm
+             start: 2026-10-01 03:44:20
+               end: 2026-10-01 04:22:21
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 390
+          p95_mean: 0.111
+           p95_p99: 0.166
+   replica_minutes: 71.8
+      under_prov_s: 90
+       over_prov_s: 210
+  correct_prov_pct: 86.7
+     scale_actions: 4
+         incidents: 4
+            stable: 4
+         llm_calls: 8
+      agent_s_mean: 4.6
+             notes: agent v3: metric memory, rollout+45s SLO verification, rollback
+[04:22:42] done
+[04:25:45] strategy=hpa: reset to 1 replica(s)
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[04:27:51] k6 baseline.js started
+[05:05:52] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-01 04:27:51
+               end: 2026-10-01 05:05:52
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 350
+          p95_mean: 0.113
+           p95_p99: 0.183
+   replica_minutes: 79.7
+      under_prov_s: 50
+       over_prov_s: 660
+  correct_prov_pct: 68.4
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: 
+[05:06:13] done
+[05:09:16] strategy=rules: reset to 1 replica(s)
+[05:11:22] k6 baseline.js started
+[05:49:23] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-01 05:11:22
+               end: 2026-10-01 05:49:23
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 120
+          p95_mean: 0.107
+           p95_p99: 0.178
+   replica_minutes: 78.2
+      under_prov_s: 0
+       over_prov_s: 510
+  correct_prov_pct: 77.3
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: 
+[05:49:44] done

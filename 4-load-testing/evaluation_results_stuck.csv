@@ -1,0 +1,15 @@
+label,start,end,duration_min,slo_violation_s,pressure_s,p95_mean,p95_p99,replica_minutes,under_prov_s,over_prov_s,correct_prov_pct,scale_actions,incidents,stable,llm_calls,agent_s_mean,notes,fault_at_min,recovery_s,slo_violation_after_fault_s,max_replicas_after_fault
+llm-v3,2026-10-01 08:07:15,2026-10-01 08:23:16,16.0,80,510,0.472,4.745,16.2,0,0,100.0,0,1,0,3,6.7,"v3.0 prompt v3, 1m-window verification (restart judged UNSTABLE by measurement artefact)",4.0,100,80,1
+rules,2026-10-01 08:27:49,2026-10-01 08:43:53,16.1,710,80,3.458,4.85,37.5,0,760,20.0,4,,,,,,4.0,never,710,3
+hpa,2026-10-01 08:49:24,2026-10-01 09:05:28,16.1,710,160,3.615,4.85,16.2,0,0,100.0,0,,,,,,4.0,never,710,1
+static-1,2026-10-01 09:10:58,2026-10-01 09:27:02,16.1,710,150,3.625,4.85,16.2,0,0,100.0,0,,,,,,4.0,never,710,1
+llm-v3,2026-10-01 09:32:32,2026-10-01 09:48:33,16.0,90,480,0.477,4.85,16.2,0,0,100.0,0,1,0,4,16.9,"v3.1 prompt v3, 40s windows but 5% throttling limit (restart judged UNSTABLE)",4.0,100,80,1
+rules,2026-10-01 09:54:05,2026-10-01 10:10:09,16.1,710,60,3.48,4.85,37.2,0,750,20.2,4,,,,,,4.0,never,710,3
+hpa,2026-10-01 10:15:40,2026-10-01 10:31:44,16.1,710,160,3.624,4.85,16.2,0,0,100.0,0,,,,,,4.0,never,710,1
+llm-v3,2026-10-01 10:37:15,2026-10-01 10:53:16,16.0,590,210,2.914,4.85,32.0,0,570,40.0,5,4,1,15,17.4,"v3.2 prompt v3 (scaled up twice, wrong scale-down + rollback, restart on 4th wake-up)",4.0,610,590,3
+llm,2026-10-01 10:59:58,2026-10-01 11:15:59,16.0,80,430,0.457,4.675,16.2,0,0,100.0,0,1,1,3,10.7,"stuck fault, agent v4 (bottleneck-first Tier 1 prompt; v3.2 verification)",4.0,90,80,1
+llm,2026-10-01 11:21:30,2026-10-01 11:37:32,16.0,80,300,0.474,4.758,16.2,0,0,100.0,0,1,1,3,7.6,"stuck fault, agent v4 (bottleneck-first Tier 1 prompt; v3.2 verification)",4.0,100,80,1
+llm,2026-10-01 12:27:44,2026-10-01 12:43:45,16.0,80,460,0.472,4.725,16.2,0,0,100.0,0,1,1,2,7.5,"stuck fault, agent v4 (bottleneck-first Tier 1 prompt; v3.2 verification)",4.0,100,80,1
+llm,2026-10-01 12:49:15,2026-10-01 13:05:17,16.0,90,520,0.532,4.85,16.2,0,0,100.0,0,1,1,3,15.2,"stuck fault, agent v4 (bottleneck-first Tier 1 prompt; v3.2 verification)",4.0,110,90,1
+llm-nomem,2026-10-01 13:55:39,2026-10-01 14:11:41,16.0,80,740,0.482,4.764,16.2,0,0,100.0,0,1,1,2,7.0,"stuck fault, agent v4, incident memory OFF (RAG ablation)",4.0,100,80,1
+llm-nomem,2026-10-01 14:17:12,2026-10-01 14:33:13,16.0,80,530,0.483,4.85,16.2,0,0,100.0,0,1,1,3,13.6,"stuck fault, agent v4, incident memory OFF (RAG ablation)",4.0,100,80,1

@@ -3,10 +3,12 @@
 Capacity Discovery — Phase 1 of the ML Training Pipeline
 =========================================================
 
-For each replica count (1–6), gradually ramps up concurrent users
+For each replica count (1–3), gradually ramps up concurrent users
 hitting the backend until the system reaches its breaking point.
+Each count's ramp starts at the previous count's safe load (known safe).
 
-Breaking point — ANY ONE of these triggers it:
+Breaking point — ANY ONE of these triggers it, and it must show up on two
+consecutive measurements at the same load (a single noisy reading is ignored):
   • avg_cpu_per_pod  > 0.75  → Only 25% headroom left before the 1-core limit
   • cpu_throttling   > 0.08  → Kernel CFS scheduler is starving the container
   • latency_p95      > 1.0s  → 1 in 20 requests takes over a second
@@ -21,6 +23,7 @@ Usage:
 """
 
 import json
+import random
 import subprocess
 import threading
 import time
@@ -39,20 +42,21 @@ NAMESPACE = "default"
 
 # Breaking-point thresholds
 # These define "the pod can't take any more" — NOT the health-training boundary.
-# Training thresholds (in train_health_baseline.py) are tighter.
+# Training filter thresholds (in train_health_baseline.py) are looser; collection
+# already stays below the safe VUs found here, so the filter only drops outliers.
 BP_CPU = 0.75           # 75% of 1 core
 BP_THROTTLE = 0.08      # 8% of CPU periods throttled
 BP_LATENCY = 1.0        # 1 second P95
 
 # Test ladder
-REPLICA_RANGE = [1, 2, 3, 4, 5, 6]
+REPLICA_RANGE = [1, 2, 3]  # >3 x 1-core pods saturates the host (see "Pod sizing" in CLAUDE.md)
 INITIAL_VUS = 2         # Start with 2 concurrent users
 VU_STEP = 2             # Add 2 users per step
 MAX_VUS = 80            # Safety cap (stop even if no breaking point)
 
 # Timing
 SCALE_SETTLE_S = 45     # Wait after scaling replicas (pods starting up)
-STEP_SETTLE_S = 30      # Wait after adding VUs (Prometheus rate window)
+STEP_SETTLE_S = 60      # Wait after adding VUs so the 1m rate() window only sees this step
 N_READINGS = 3          # Prometheus readings per step
 READING_INTERVAL_S = 10 # Seconds between readings
 
@@ -104,6 +108,10 @@ LOGIN_HEADERS = {"Content-Type": "application/json"}
 
 def _user_loop(stop_event: threading.Event):
     """Simulate one user continuously hitting the /auth/login endpoint."""
+    # Random start offset so users don't fire in lockstep: k6 ramps VUs in
+    # gradually, so live traffic arrives spread out rather than in bursts.
+    if stop_event.wait(random.uniform(0, 1)):
+        return
     session = http_client.Session()
     while not stop_event.is_set():
         try:
@@ -242,6 +250,15 @@ def check_breaking_point(m: dict) -> tuple[bool, str]:
 
 # ─── Main Discovery Loop ────────────────────────────────────────────────────
 
+def ramp_start_vus(capacity: dict, replicas: int) -> int:
+    """N replicas can always carry what N-1 carried safely, so start the ramp
+    at the previous count's safe load instead of re-testing the low range."""
+    prev = capacity.get(str(replicas - 1))
+    if prev and prev["max_safe_vus"] >= INITIAL_VUS:
+        return prev["max_safe_vus"]
+    return INITIAL_VUS
+
+
 def discover_capacity() -> dict:
     capacity = {}
     log_rows = []
@@ -272,18 +289,27 @@ def discover_capacity() -> dict:
 
             # Reset traffic for this replica count
             traffic.stop_all()
+            start_vus = ramp_start_vus(capacity, replicas)
             safe_vus = 0
+            safe_rps = 0.0
+            breaking_rps = None
             breaking_reason = ""
+            # Set when a reading crosses a threshold; the same load is then
+            # re-measured, and only a second breaking reading confirms it.
+            unconfirmed_break = False
 
             vus = 0
-            while vus < MAX_VUS:
-                # Ramp: add VU_STEP users on top of existing traffic
-                add = INITIAL_VUS if vus == 0 else VU_STEP
-                traffic.add_users(add)
-                vus = traffic.active_users
-
-                print(f"\n  📊 {vus:>3} VUs │ settling {STEP_SETTLE_S}s ",
-                      end="", flush=True)
+            while vus < MAX_VUS or unconfirmed_break:
+                if unconfirmed_break:
+                    print(f"\n  🔁 {vus:>3} VUs │ re-measuring after {STEP_SETTLE_S}s ",
+                          end="", flush=True)
+                else:
+                    # Ramp: add users on top of existing traffic
+                    add = start_vus if vus == 0 else VU_STEP
+                    traffic.add_users(add)
+                    vus = traffic.active_users
+                    print(f"\n  📊 {vus:>3} VUs │ settling {STEP_SETTLE_S}s ",
+                          end="", flush=True)
                 time.sleep(STEP_SETTLE_S)
                 print("│ measuring ", end="", flush=True)
 
@@ -308,9 +334,14 @@ def discover_capacity() -> dict:
 
                 broken, reason = check_breaking_point(metrics)
 
+                if broken and not unconfirmed_break:
+                    unconfirmed_break = True
+                    print(f"│ ⚠️ {reason} — re-measuring same load to rule out noise")
+                    continue
+
                 if broken:
                     print(
-                        f"\n\n  🔥 BREAKING POINT at {vus} VUs!"
+                        f"\n\n  🔥 BREAKING POINT at {vus} VUs (confirmed)!"
                         f"\n     CPU: {cpu_pct:.2f} cores │ "
                         f"Throttle: {thr_pct:.1f}% │ "
                         f"Latency: {lat:.3f}s │ "
@@ -318,9 +349,19 @@ def discover_capacity() -> dict:
                         f"\n     Reason: {reason}"
                     )
                     breaking_reason = reason
+                    breaking_rps = tput
+                    if safe_vus == 0:
+                        print(
+                            f"     ⚠️ Already broken at the starting load ({vus} VUs); "
+                            "the host may be out of CPU for this many replicas."
+                        )
                     break
                 else:
+                    if unconfirmed_break:
+                        print("│ previous reading was noise ", end="")
+                    unconfirmed_break = False
                     safe_vus = vus
+                    safe_rps = tput
                     print(
                         f"│ ✅ CPU: {cpu_pct:.2f} │ "
                         f"Thr: {thr_pct:.1f}% │ "
@@ -330,9 +371,13 @@ def discover_capacity() -> dict:
             else:
                 print(f"\n  ℹ️ Reached {MAX_VUS} VUs without breaking point.")
 
+            # VUs drive collect_healthy_data.py; rps is what the agent compares
+            # against live throughput (1 VU sends slightly under 1 req/s).
             capacity[str(replicas)] = {
                 "max_safe_vus": safe_vus,
+                "max_safe_rps": round(safe_rps, 2),
                 "breaking_vus": vus if breaking_reason else None,
+                "breaking_rps": round(breaking_rps, 2) if breaking_rps is not None else None,
                 "breaking_reason": breaking_reason or None,
             }
 
