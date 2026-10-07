@@ -59,3 +59,105 @@
 [14:15:02] queue: starting llm
 [14:33:34] queue: finished llm (exit 0)
 [14:36:34] queue: all done
+[18:29:02] cpuhog queue: starting llm
+[18:47:35] cpuhog queue: finished llm (exit 0)
+[18:48:35] cpuhog queue: starting rules
+[19:07:08] cpuhog queue: finished rules (exit 0)
+[19:08:08] cpuhog queue: starting llm
+[19:26:40] cpuhog queue: finished llm (exit 0)
+[19:27:40] cpuhog queue: starting hpa
+[19:46:13] cpuhog queue: finished hpa (exit 0)
+[19:47:13] cpuhog queue: all done
+[19:48:37] v5 queue: starting cpuhog
+[20:07:10] v5 queue: finished cpuhog (exit 0)
+[20:09:10] v5 queue: starting cpuhog
+[20:27:42] v5 queue: finished cpuhog (exit 0)
+[20:29:42] v5 queue: starting stuck
+[20:48:14] v5 queue: finished stuck (exit 0)
+[20:50:14] v5 queue: starting baseline
+[21:30:45] v5 queue: finished baseline (exit 0)
+[21:32:50] v5 queue: all done (comparison.md regenerated)
+[22:54:25] mem queue: starting run 1
+[23:12:57] mem queue: finished run 1 (exit 0)
+[23:13:57] mem queue: starting run 2
+[23:32:29] mem queue: finished run 2 (exit 0)
+[23:33:29] mem queue: starting run 3
+[23:52:01] mem queue: finished run 3 (exit 0)
+[23:52:05] mem queue: all done (comparison.md regenerated)
+restored 44 entries from 3-ai-agent/chroma_snapshot_2026-10-01_2300_before_memory_test.json (removed 44)
+[00:00:02] mem2 queue: starting run 1 (memory restored)
+[00:18:34] mem2 queue: finished run 1 (exit 0)
+restored 44 entries from 3-ai-agent/chroma_snapshot_2026-10-01_2300_before_memory_test.json (removed 45)
+[00:19:38] mem2 queue: starting run 2 (memory restored)
+[00:38:10] mem2 queue: finished run 2 (exit 0)
+restored 44 entries from 3-ai-agent/chroma_snapshot_2026-10-01_2300_before_memory_test.json (removed 45)
+[00:39:13] mem2 queue: starting run 3 (memory restored)
+[00:57:46] mem2 queue: finished run 3 (exit 0)
+[00:57:50] mem2 queue: all done (comparison.md regenerated)
+[14:20:32] 2026-10-03 session: starting extra hpa demo run
+[14:45:07] hpa extra run ABORTED at 14:44 (run_experiment.sh edited while running: bash syntax error); not scored
+[15:09:19] v6 queue: starting badconfig llm-v6
+[15:27:52] v6 queue: finished badconfig llm-v6 (exit 0)
+[15:29:27] v6 queue: starting cpuhog llm-v6
+[15:48:04] v6 queue: finished cpuhog llm-v6 (exit 0)
+[15:49:39] v6 queue: starting badconfig rules-v2
+[16:08:20] v6 queue: finished badconfig rules-v2 (exit 0)
+[16:09:55] v6 queue: starting stuck llm-v6
+[16:28:33] v6 queue: finished stuck llm-v6 (exit 0)
+[16:30:08] v6 queue: starting badconfig hpa
+[16:48:46] v6 queue: finished badconfig hpa (exit 0)
+[16:50:21] v6 queue: starting cpuhog rules-v2
+[17:08:58] v6 queue: finished cpuhog rules-v2 (exit 0)
+[17:10:33] v6 queue: starting badconfig llm-v6
+[17:29:11] v6 queue: finished badconfig llm-v6 (exit 0)
+[17:30:46] v6 queue: starting stuck rules-v2
+[17:49:23] v6 queue: finished stuck rules-v2 (exit 0)
+[17:50:59] v6 queue: starting baseline llm-v6
+[18:15:35] v6 queue: finished baseline llm-v6 (exit 0)
+[18:17:11] v6 queue: starting badconfig rules
+[18:22:25] queues v6_queue/v6_queue2/v6_queue3 stopped (the running badconfig rules run continues); replaced by v7_queue.sh (v7 validation first)
+[18:35:52] v7 queue: starting
+[18:35:52] v7 queue: starting baseline llm-v7
+[19:16:28] v7 queue: finished baseline llm-v7 (exit 0)
+[19:18:04] v7 queue: starting cpuhog llm-v7
+[19:36:41] v7 queue: finished cpuhog llm-v7 (exit 0)
+[19:38:17] v7 queue: starting badconfig llm-v7
+[19:56:54] v7 queue: finished badconfig llm-v7 (exit 0)
+[19:58:30] v7 queue: starting stuck llm-v7
+[20:17:07] v7 queue: finished stuck llm-v7 (exit 0)
+[20:18:43] v7 queue: starting baseline llm-v7
+[20:59:19] v7 queue: finished baseline llm-v7 (exit 0)
+[21:00:55] v7 queue: starting badconfig llm-v7
+[21:19:32] v7 queue: finished badconfig llm-v7 (exit 0)
+[21:21:09] v7 queue: starting cpuhog llm-v7
+[21:39:47] v7 queue: finished cpuhog llm-v7 (exit 0)
+[21:41:23] v7 queue: starting cpuhog llm-v6
+[21:43:03] v7_queue.sh stopped after starting cpuhog llm-v6 (that run continues); replaced by v8_queue.sh (v8 validation first)
+[22:00:05] v8 queue: starting
+[22:00:06] v8 queue: starting badconfig llm-v8
+[22:18:43] v8 queue: finished badconfig llm-v8 (exit 0)
+[22:20:19] v8 queue: starting baseline llm-v8
+[23:00:56] v8 queue: finished baseline llm-v8 (exit 0)
+[23:02:32] v8 queue: starting cpuhog llm-v8
+[23:21:10] v8 queue: finished cpuhog llm-v8 (exit 0)
+[23:22:46] v8 queue: starting stuck llm-v8
+[23:41:24] v8 queue: finished stuck llm-v8 (exit 0)
+[23:43:01] v8 queue: starting badconfig llm-v8
+[00:01:39] v8 queue: finished badconfig llm-v8 (exit 0)
+[00:03:15] v8 queue: starting baseline llm-v8
+[00:43:52] v8 queue: finished baseline llm-v8 (exit 0)
+[00:45:29] v8 queue: starting badconfig llm-v6
+[01:04:06] v8 queue: finished badconfig llm-v6 (exit 0)
+[01:05:43] v8 queue: starting badconfig llm-v5
+[01:24:20] v8 queue: finished badconfig llm-v5 (exit 0)
+[01:25:57] v8 queue: starting badconfig llm
+[01:44:35] v8 queue: finished badconfig llm (exit 0)
+[01:46:12] v8 queue: starting baseline rules-v2
+[02:26:49] v8 queue: finished baseline rules-v2 (exit 0)
+[02:28:26] v8 queue: starting baseline rules
+[03:09:01] v8 queue: finished baseline rules (exit 0)
+[03:10:38] v8 queue: starting baseline hpa
+[03:51:14] v8 queue: finished baseline hpa (exit 0)
+[03:52:51] v8 queue: starting baseline llm-v6
+[04:33:27] v8 queue: finished baseline llm-v6 (exit 0)
+[04:35:04] v8 queue: all done (comparison.md regenerated)

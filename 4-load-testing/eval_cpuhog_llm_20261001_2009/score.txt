@@ -1,0 +1,24 @@
+             label: llm-v5
+             start: 2026-10-01 20:11:19
+               end: 2026-10-01 20:27:21
+      duration_min: 16.0
+   slo_violation_s: 90
+        pressure_s: 480
+          p95_mean: 0.187
+           p95_p99: 0.481
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 30.8
+             notes: prompt v5 (CPU per request), tested after the v4 cpuhog failure
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 90
+    cpu_recovery_s: 120
+max_replicas_after_fault: 1
+     agent_actions: restart

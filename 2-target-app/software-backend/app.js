@@ -113,6 +113,46 @@ app.use((req, res, next) => {
 });
 
 /**
+ * Chaos: "runaway background job" fault (second fault type, added 2026-10-01 AFTER
+ * prompt v4 was frozen, as a blind generalization test).
+ * POST /chaos/cpuhog starts a scheduled job in THIS process that never finishes: it
+ * blocks the event loop for HOG_BUSY_MS of pure CPU work, pauses a random 100-400 ms
+ * (random, so closed-loop k6 VUs cannot phase-lock into the gaps), and repeats. The pod
+ * then looks overloaded (CPU at its 1-core limit, latency up) at a load it normally
+ * handles easily. More replicas only dilute it (the job keeps running in the old
+ * process); only a process restart stops it.
+ */
+const HOG_BUSY_MS = 600;
+let hogSince = null;
+app.post('/chaos/cpuhog', (_, res) => {
+  if (process.env.CHAOS_ENABLED !== 'true') {
+    return res.status(404).json({ error: 'CHAOS_DISABLED' });
+  }
+  if (!hogSince) {
+    hogSince = Date.now();
+    let iteration = 0;
+    const runIteration = () => {
+      const started = Date.now();
+      while (Date.now() - started < HOG_BUSY_MS) {
+        Math.sqrt(Math.random()); // "re-indexing"
+      }
+      iteration += 1;
+      if (iteration % 10 === 0) {
+        console.warn(
+          `[${new Date().toISOString()}] [WARN] [scheduler] - job "rebuild-search-index" still running ` +
+          `after ${Math.round((Date.now() - hogSince) / 1000)}s (iteration ${iteration}, expected 1); ` +
+          `event loop blocked ${HOG_BUSY_MS}ms per iteration`
+        );
+      }
+      setTimeout(runIteration, 100 + Math.random() * 300);
+    };
+    setTimeout(runIteration, 0);
+  }
+  console.warn(`[${new Date().toISOString()}] [WARN] [scheduler] - job "rebuild-search-index" started`);
+  res.status(200).json({ cpuhog: true, since: new Date(hogSince).toISOString(), busyMs: HOG_BUSY_MS });
+});
+
+/**
  * Swagger API Documentation
  * Serves interactive API documentation at /api-docs
  */

@@ -1,0 +1,305 @@
+[15:09:22] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[15:09:22] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v6
+[15:11:29] k6 fault_load.js started
+[15:27:30] k6 finished (exit 0)
+             label: llm-v6
+             start: 2026-10-03 15:11:29
+               end: 2026-10-03 15:27:30
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 470
+          p95_mean: 0.235
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 2
+      agent_s_mean: 4.2
+             notes: blind test: prompt v6, memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 100
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 70
+      rule_actions: 
+[15:27:51] done
+[15:29:30] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[15:29:30] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v6
+[15:29:36] rollout history reset: 1 ReplicaSet(s) left
+[15:31:42] k6 fault_load.js started
+[15:47:43] k6 finished (exit 0)
+             label: llm-v6
+             start: 2026-10-03 15:31:42
+               end: 2026-10-03 15:47:43
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 370
+          p95_mean: 0.187
+           p95_p99: 0.439
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 7
+      agent_s_mean: 13.9
+             notes: prompt v6, memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 110
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[15:48:04] done
+[15:49:43] scenario=badconfig strategy=rules: reset to 1 replica(s)
+[15:49:43] env: AIOPS_PROMPT=v4 AIOPS_MEMORY=on RULES_RESTART=on LABEL=rules-v2
+[15:49:49] rollout history reset: 1 ReplicaSet(s) left
+[15:51:55] k6 fault_load.js started
+[16:07:59] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-03 15:51:55
+               end: 2026-10-03 16:07:59
+      duration_min: 16.1
+   slo_violation_s: 710
+        pressure_s: 730
+          p95_mean: 1.231
+           p95_p99: 4.618
+   replica_minutes: 18.2
+      under_prov_s: 0
+       over_prov_s: 120
+  correct_prov_pct: 87.4
+     scale_actions: 2
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: blind test: rules v2 (R1 stuck, R2 runaway)
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 710
+    cpu_recovery_s: never
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 15:53:52 scale->2 | 15:55:52 scale->1 | 15:57:53 restart R2 | 15:58:53 restart R2 | 15:59:53 restart R2 | 16:00:53 restart R2 | 16:01:53 restart R2 | 16:02:54 restart R2 | 16:03:54 restart R2 | 16:04:54 restart R2 | 16:05:54 restart R2 | 16:06:54 restart R2 | 16:07:55 restart R2
+[16:08:20] done
+[16:09:59] scenario=stuck strategy=llm: reset to 1 replica(s)
+[16:09:59] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v6
+[16:09:59] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[16:10:05] rollout history reset: 1 ReplicaSet(s) left
+[16:12:10] k6 fault_load.js started
+[16:28:12] k6 finished (exit 0)
+             label: llm-v6
+             start: 2026-10-03 16:12:10
+               end: 2026-10-03 16:28:12
+      duration_min: 16.0
+   slo_violation_s: 90
+        pressure_s: 250
+          p95_mean: 0.562
+           p95_p99: 4.85
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 8
+      agent_s_mean: 16.7
+             notes: prompt v6, memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 90
+    cpu_recovery_s: 0
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[16:28:33] done
+[16:30:12] scenario=badconfig strategy=hpa: reset to 1 replica(s)
+[16:30:12] env: AIOPS_PROMPT=v4 AIOPS_MEMORY=on RULES_RESTART=off LABEL=hpa
+[16:30:18] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[16:32:23] k6 fault_load.js started
+[16:48:25] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-03 16:32:23
+               end: 2026-10-03 16:48:25
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 270
+          p95_mean: 0.371
+           p95_p99: 0.998
+   replica_minutes: 38.5
+      under_prov_s: 0
+       over_prov_s: 690
+  correct_prov_pct: 27.4
+     scale_actions: 2
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: blind test
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 3
+     agent_actions: 
+      rule_actions: 
+[16:48:45] done
+[16:50:24] scenario=cpuhog strategy=rules: reset to 1 replica(s)
+[16:50:24] env: AIOPS_PROMPT=v4 AIOPS_MEMORY=on RULES_RESTART=on LABEL=rules-v2
+[16:50:24] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[16:50:30] rollout history reset: 1 ReplicaSet(s) left
+[16:52:35] k6 fault_load.js started
+[17:08:37] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-03 16:52:35
+               end: 2026-10-03 17:08:37
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 200
+          p95_mean: 0.17
+           p95_p99: 0.38
+   replica_minutes: 20.2
+      under_prov_s: 0
+       over_prov_s: 240
+  correct_prov_pct: 74.7
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: rules v2 (R1 stuck, R2 runaway)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 110
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 16:53:42 scale->2 | 16:55:43 scale->1 | 16:57:43 restart R2 | 16:58:44 scale->2 | 17:00:44 scale->1
+[17:08:58] done
+[17:10:37] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[17:10:37] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v6
+[17:10:43] rollout history reset: 1 ReplicaSet(s) left
+[17:12:48] k6 fault_load.js started
+[17:28:49] k6 finished (exit 0)
+             label: llm-v6
+             start: 2026-10-03 17:12:48
+               end: 2026-10-03 17:28:49
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 100
+          p95_mean: 0.237
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 0
+         llm_calls: 2
+      agent_s_mean: 6.2
+             notes: blind test: prompt v6, memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 100
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 98
+      rule_actions: 
+[17:29:10] done
+[17:30:49] scenario=stuck strategy=rules: reset to 1 replica(s)
+[17:30:49] env: AIOPS_PROMPT=v4 AIOPS_MEMORY=on RULES_RESTART=on LABEL=rules-v2
+[17:30:56] rollout history reset: 1 ReplicaSet(s) left
+[17:33:01] k6 fault_load.js started
+[17:49:02] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-03 17:33:01
+               end: 2026-10-03 17:49:02
+      duration_min: 16.0
+   slo_violation_s: 90
+        pressure_s: 60
+          p95_mean: 0.434
+           p95_p99: 4.657
+   replica_minutes: 18.2
+      under_prov_s: 0
+       over_prov_s: 120
+  correct_prov_pct: 87.4
+     scale_actions: 2
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: rules v2 (R1 stuck, R2 runaway)
+      fault_at_min: 4.0
+        recovery_s: 90
+slo_violation_after_fault_s: 70
+    cpu_recovery_s: 0
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 17:37:38 restart R1 | 17:39:59 scale->2 | 17:41:59 scale->1
+[17:49:23] done
+[17:51:02] scenario=baseline strategy=llm: reset to 1 replica(s)
+[17:51:02] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=on RULES_RESTART=off LABEL=llm-v6
+[17:51:08] rollout history reset: 1 ReplicaSet(s) left
+[17:53:13] k6 baseline.js started
+[18:15:14] k6 finished (exit 0)
+             label: llm-v6
+             start: 2026-10-03 17:53:13
+               end: 2026-10-03 18:15:14
+      duration_min: 22.0
+   slo_violation_s: 40
+        pressure_s: 350
+          p95_mean: 0.143
+           p95_p99: 0.364
+   replica_minutes: 46.5
+      under_prov_s: 260
+       over_prov_s: 490
+  correct_prov_pct: 41.9
+     scale_actions: 2
+         incidents: 9
+            stable: 2
+         llm_calls: 36
+      agent_s_mean: 10.0
+             notes: prompt v6, memory on: regression check on normal scaling
+[18:15:35] done
+[18:17:14] scenario=badconfig strategy=rules: reset to 1 replica(s)
+[18:17:14] env: AIOPS_PROMPT=v4 AIOPS_MEMORY=on RULES_RESTART=off LABEL=rules
+[18:17:21] rollout history reset: 1 ReplicaSet(s) left
+[18:19:26] k6 fault_load.js started
+[18:35:28] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-03 18:19:26
+               end: 2026-10-03 18:35:28
+      duration_min: 16.0
+   slo_violation_s: 710
+        pressure_s: 370
+          p95_mean: 0.527
+           p95_p99: 1.482
+   replica_minutes: 36.5
+      under_prov_s: 0
+       over_prov_s: 670
+  correct_prov_pct: 29.5
+     scale_actions: 2
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: blind test: rules v1 (scaling only)
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 710
+    cpu_recovery_s: never
+max_replicas_after_fault: 3
+     agent_actions: 
+      rule_actions: 18:24:14 scale->2 | 18:26:14 scale->3
+[18:35:49] done

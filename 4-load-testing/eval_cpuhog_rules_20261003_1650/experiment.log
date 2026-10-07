@@ -1,0 +1,8 @@
+[16:50:24] scenario=cpuhog strategy=rules: reset to 1 replica(s)
+[16:50:24] env: AIOPS_PROMPT=v4 AIOPS_MEMORY=on RULES_RESTART=on LABEL=rules-v2
+[16:50:24] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[16:50:30] rollout history reset: 1 ReplicaSet(s) left
+[16:52:35] k6 fault_load.js started
+[16:56:36] inject cpuhog -> aiops-backend-deployment-5f9f9646df-pbm8b: {"cpuhog":true,"since":"2026-10-03T13:56:36.372Z","busyMs":600}
+[17:08:37] k6 finished (exit 0)
+[17:08:58] done

@@ -1,0 +1,84 @@
+[22:54:28] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[22:56:34] k6 fault_load.js started
+[23:12:35] k6 finished (exit 0)
+             label: llm-v4-mem
+             start: 2026-10-01 22:56:34
+               end: 2026-10-01 23:12:36
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 490
+          p95_mean: 0.185
+           p95_p99: 0.47
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 2
+      agent_s_mean: 7.4
+             notes: memory test: prompt v4, memory holds v5 restarts
+      fault_at_min: 4.0
+        recovery_s: 80
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 100
+max_replicas_after_fault: 1
+     agent_actions: restart
+[23:12:57] done
+[23:14:00] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[23:16:06] k6 fault_load.js started
+[23:32:08] k6 finished (exit 0)
+             label: llm-v4-mem
+             start: 2026-10-01 23:16:06
+               end: 2026-10-01 23:32:08
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 550
+          p95_mean: 0.189
+           p95_p99: 0.396
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 21.5
+             notes: memory test: prompt v4, memory holds v5 restarts
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 130
+max_replicas_after_fault: 1
+     agent_actions: restart
+[23:32:29] done
+[23:33:32] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[23:35:38] k6 fault_load.js started
+[23:51:40] k6 finished (exit 0)
+             label: llm-v4-mem
+             start: 2026-10-01 23:35:38
+               end: 2026-10-01 23:51:40
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 840
+          p95_mean: 0.397
+           p95_p99: 0.661
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 6
+            stable: 0
+         llm_calls: 24
+      agent_s_mean: 50.1
+             notes: memory test: prompt v4, memory holds v5 restarts
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 1
+     agent_actions: none | none | none | none | none | none
+[23:52:01] done

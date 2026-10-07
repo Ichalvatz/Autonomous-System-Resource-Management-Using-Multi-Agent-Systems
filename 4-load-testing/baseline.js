@@ -13,15 +13,15 @@ import { check, sleep } from 'k6';
 export const options = {
     stages: [
         { duration: '2m', target: 5 },   // warm-up                      -> 1 replica
-        { duration: '3m', target: 5 },   // steady, healthy baseline      -> 1 replica
-        { duration: '3m', target: 20 },  // overloads 1 replica           -> scale UP to 2
-        { duration: '5m', target: 20 },
-        { duration: '3m', target: 30 },  // overloads 2 replicas          -> scale UP to 3
-        { duration: '5m', target: 30 },
+        { duration: '2m', target: 5 },   // steady, healthy baseline      -> 1 replica
+        { duration: '2m', target: 20 },  // overloads 1 replica           -> scale UP to 2
+        { duration: '2m', target: 20 },
+        { duration: '2m', target: 30 },  // overloads 2 replicas          -> scale UP to 3
+        { duration: '2m', target: 30 },
         { duration: '3m', target: 14 },  // 3 replicas over-provisioned   -> scale DOWN to 2
-        { duration: '5m', target: 14 },
+        { duration: '2m', target: 14 },
         { duration: '3m', target: 5 },   // 2 replicas over-provisioned   -> scale DOWN to 1
-        { duration: '6m', target: 5 },
+        { duration: '2m', target: 5 },
     ],
 };
 

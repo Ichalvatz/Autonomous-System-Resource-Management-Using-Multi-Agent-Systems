@@ -1,0 +1,25 @@
+# Python dependencies of the AIOps runtime, ML pipeline, experiment scoring and tests.
+# Pinned to the versions every measured run used (Python 3.13, 2026-10-03).
+#   python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# The trained detector model (5-ml-training/health_model.pkl) is NOT in git: train it with the three
+# scripts in 5-ml-training/ (see CLAUDE.md, "ML pipeline") or copy it from a machine that has it.
+# k6 (load generator), kind, kubectl, helm and Docker are installed separately (see deploy.sh).
+
+# agent + LLM
+smolagents==1.24.0
+litellm==1.83.4
+# incident memory
+chromadb==1.5.8
+# cluster access
+kubernetes==35.0.0
+requests==2.33.1
+# anomaly detector (One-Class SVM) and data handling
+scikit-learn==1.8.0
+numpy==2.4.4
+pandas==3.0.2
+joblib==1.5.3
+# evaluation: statistics and figures
+scipy==1.17.1
+matplotlib==3.10.8
+# unit tests
+pytest==9.1.1

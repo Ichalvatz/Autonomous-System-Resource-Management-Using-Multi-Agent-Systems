@@ -1,0 +1,7 @@
+[15:29:30] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[15:29:30] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v6
+[15:29:36] rollout history reset: 1 ReplicaSet(s) left
+[15:31:42] k6 fault_load.js started
+[15:35:42] inject cpuhog -> aiops-backend-deployment-6d55b6958c-tf7nd: {"cpuhog":true,"since":"2026-10-03T12:35:42.870Z","busyMs":600}
+[15:47:43] k6 finished (exit 0)
+[15:48:04] done

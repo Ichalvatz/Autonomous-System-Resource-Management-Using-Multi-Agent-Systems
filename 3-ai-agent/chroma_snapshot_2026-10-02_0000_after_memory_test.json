@@ -1,0 +1,626 @@
+[
+ {
+  "id": "incident_1790800384",
+  "document": "State -> CPU:0.83cores | Throttle:9.6% | Tput:13.0rps | Reps:1",
+  "metadata": {
+   "action_taken": "scale 1->2",
+   "status": "resolved",
+   "root_cause": "Root cause: The current replica count of 1 was insufficient, causing CPU saturation (0.83 cores) and CPU throttling (9.6%), which exceeded the SLO targets. Action: Scaled up to 2 replicas to restore performance and comply with service level objectives."
+  }
+ },
+ {
+  "id": "incident_1790800745",
+  "document": "State -> CPU:0.6cores | Throttle:4.5% | Tput:17.0rps | Reps:2",
+  "metadata": {
+   "status": "resolved",
+   "action_taken": "scale 2->3",
+   "root_cause": "Root cause: The system was experiencing latency (0.333s) that exceeded the defined SLO target of 0.300s. Action: Scaled up from 2 to 3 replicas to relieve performance pressure and restore SLO compliance."
+  }
+ },
+ {
+  "id": "incident_1790801415",
+  "document": "State -> CPU:0.32cores | Throttle:1.2% | Tput:13.0rps | Reps:3",
+  "metadata": {
+   "action_taken": "scale 3->2",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.4 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790801865",
+  "document": "State -> CPU:0.2cores | Throttle:0.3% | Tput:6.0rps | Reps:2",
+  "metadata": {
+   "action_taken": "scale 2->1",
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating significantly below the required capacity for the current throughput of 6.36 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790808133",
+  "document": "State -> CPU:0.85cores | Throttle:12.2% | Tput:12.0rps | Reps:1",
+  "metadata": {
+   "p95": 0.1485,
+   "action_taken": "scale 1->2",
+   "cpu": 0.8492,
+   "rps": 12.28,
+   "root_cause": "Root cause: The current replica count of 1 was insufficient, causing CPU saturation (0.85 cores) and CPU throttling (12.16%), which exceeded the SLO targets. Action: Scaled up to 2 replicas to restore performance and comply with service level objectives.",
+   "status": "resolved",
+   "throttling": 0.1216,
+   "replicas": 1
+  }
+ },
+ {
+  "id": "incident_1790808629",
+  "document": "State -> CPU:0.82cores | Throttle:4.5% | Tput:24.0rps | Reps:2",
+  "metadata": {
+   "cpu": 0.8249,
+   "rps": 23.96,
+   "p95": 0.1365,
+   "throttling": 0.0449,
+   "action_taken": "scale 2->3",
+   "replicas": 2,
+   "root_cause": "Root cause: The system was experiencing high CPU saturation (0.82 cores per pod) exceeding the 0.75 SLO limit, indicating potential performance degradation. Action: Scaled up from 2 to 3 replicas to reduce CPU load per pod and restore system health.",
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790809155",
+  "document": "State -> CPU:0.32cores | Throttle:1.1% | Tput:13.0rps | Reps:3",
+  "metadata": {
+   "cpu": 0.3191,
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.34 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "rps": 13.34,
+   "p95": 0.0956,
+   "replicas": 3,
+   "throttling": 0.0112,
+   "status": "resolved",
+   "action_taken": "scale 3->2"
+  }
+ },
+ {
+  "id": "incident_1790809602",
+  "document": "State -> CPU:0.22cores | Throttle:0.8% | Tput:6.0rps | Reps:2",
+  "metadata": {
+   "cpu": 0.2202,
+   "throttling": 0.0083,
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating well below the capacity required for the current throughput of 6.44 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "action_taken": "scale 2->1",
+   "replicas": 2,
+   "p95": 0.1379,
+   "rps": 6.44,
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790815953",
+  "document": "State -> CPU:0.81cores | Throttle:8.4% | Tput:12.0rps | Reps:1",
+  "metadata": {
+   "rps": 12.12,
+   "p95": 0.1535,
+   "status": "resolved",
+   "replicas": 1,
+   "throttling": 0.0842,
+   "action_taken": "scale 1->2",
+   "root_cause": "Root cause: The current replica count of 1 was insufficient to handle the throughput of 12.12 rps, leading to CPU saturation (0.81 cores) and throttling (8.4%), violating SLO targets. Action: Scaled the deployment up to 2 replicas to restore performance and comply with service level objectives.",
+   "cpu": 0.8103
+  }
+ },
+ {
+  "id": "incident_1790816443",
+  "document": "State -> CPU:0.81cores | Throttle:5.7% | Tput:24.0rps | Reps:2",
+  "metadata": {
+   "replicas": 2,
+   "rps": 23.92,
+   "status": "resolved",
+   "throttling": 0.0569,
+   "cpu": 0.8124,
+   "action_taken": "scale 2->3",
+   "root_cause": "Root cause: The system was experiencing high CPU saturation (0.812 cores per pod) and CPU throttling (5.69%) exceeding SLO limits due to traffic exceeding the capacity of 2 replicas. Action: Scaled up from 2 to 3 replicas to restore system health and comply with SLO targets.",
+   "p95": 0.1404
+  }
+ },
+ {
+  "id": "incident_1790816984",
+  "document": "State -> CPU:0.27cores | Throttle:1.8% | Tput:13.0rps | Reps:3",
+  "metadata": {
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 13.28 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "cpu": 0.273,
+   "status": "resolved",
+   "replicas": 3,
+   "rps": 13.28,
+   "throttling": 0.018,
+   "p95": 0.0978,
+   "action_taken": "scale 3->2"
+  }
+ },
+ {
+  "id": "incident_1790817426",
+  "document": "State -> CPU:0.24cores | Throttle:1.4% | Tput:7.0rps | Reps:2",
+  "metadata": {
+   "action_taken": "scale 2->1",
+   "replicas": 2,
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating well below the capacity required for the current throughput of 6.56 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "cpu": 0.2411,
+   "throttling": 0.0137,
+   "rps": 6.56,
+   "status": "resolved",
+   "p95": 0.0953
+  }
+ },
+ {
+  "id": "incident_1790826484",
+  "document": "State -> CPU:0.87cores | Throttle:11.2% | Tput:13.0rps | Reps:1",
+  "metadata": {
+   "action_taken": "scale 1->2",
+   "rps": 12.88,
+   "p95": 0.1482,
+   "cpu": 0.8706,
+   "root_cause": "Root cause: Current replica count of 1 was insufficient to handle the throughput of 12.87 rps, leading to CPU saturation (0.87 cores) and significant CPU throttling (11.2%). Action: Scaled the deployment to 2 replicas to restore system health and comply with SLO targets.",
+   "throttling": 0.1121,
+   "status": "resolved",
+   "replicas": 1
+  }
+ },
+ {
+  "id": "incident_1790826966",
+  "document": "State -> CPU:0.74cores | Throttle:6.0% | Tput:24.0rps | Reps:2",
+  "metadata": {
+   "action_taken": "scale 2->3",
+   "replicas": 2,
+   "p95": 0.1388,
+   "root_cause": "Root cause: The system was experiencing CPU throttling (5.99%) exceeding the 5.0% SLO limit, indicating performance degradation under the current load. Action: Scaled up from 2 to 3 replicas to relieve CPU pressure and restore system health.",
+   "throttling": 0.0599,
+   "cpu": 0.7366,
+   "rps": 23.98,
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790827489",
+  "document": "State -> CPU:0.28cores | Throttle:1.2% | Tput:14.0rps | Reps:3",
+  "metadata": {
+   "p95": 0.0984,
+   "replicas": 3,
+   "action_taken": "scale 3->2",
+   "throttling": 0.0122,
+   "rps": 14.5,
+   "cpu": 0.2768,
+   "status": "resolved",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for a throughput of 14.5 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency."
+  }
+ },
+ {
+  "id": "incident_1790827963",
+  "document": "State -> CPU:0.25cores | Throttle:0.4% | Tput:6.0rps | Reps:2",
+  "metadata": {
+   "throttling": 0.0045,
+   "rps": 5.88,
+   "action_taken": "scale 2->1",
+   "p95": 0.0958,
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas for the current throughput of 5.88 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps.",
+   "cpu": 0.2485,
+   "status": "resolved",
+   "replicas": 2
+  }
+ },
+ {
+  "id": "incident_1790841093",
+  "document": "State -> CPU:0.12cores | Throttle:1.3% | Tput:4.0rps | Reps:3 | P95:4.58s",
+  "metadata": {
+   "rps": 3.726,
+   "action_taken": "restart",
+   "replicas": 3,
+   "status": "resolved",
+   "root_cause": "Root cause: Database connection pool exhaustion caused high P95 latency. Action: Triggered a rolling restart of the deployment to reset connection pools, as scaling up was restricted by system constraints.",
+   "throttling": 0.013,
+   "cpu": 0.1181,
+   "p95": 4.5766
+  }
+ },
+ {
+  "id": "incident_1790841929",
+  "document": "State -> CPU:0.34cores | Throttle:6.6% | Tput:4.0rps | Reps:1 | P95:4.42s",
+  "metadata": {
+   "rps": 4.28,
+   "throttling": 0.0655,
+   "replicas": 1,
+   "action_taken": "restart",
+   "root_cause": "Root cause: The database connection pool was exhausted, leading to application-level request queuing and high latency. Action: Triggered a rolling restart of the deployment to reset the connection pool and restore service health.",
+   "p95": 4.4164,
+   "status": "resolved",
+   "cpu": 0.3417
+  }
+ },
+ {
+  "id": "incident_1790843228",
+  "document": "State -> CPU:0.27cores | Throttle:2.7% | Tput:4.0rps | Reps:1 | P95:4.56s",
+  "metadata": {
+   "root_cause": "Root cause: The database connection pool was exhausted, causing request queuing and high latency (Tier 1 violation). Action: Triggered a rolling restart of the deployment to reset the connection pool and restore service health.",
+   "cpu": 0.2701,
+   "action_taken": "restart",
+   "p95": 4.5617,
+   "rps": 3.74,
+   "status": "resolved",
+   "replicas": 1,
+   "throttling": 0.0274
+  }
+ },
+ {
+  "id": "incident_1790844687",
+  "document": "State -> CPU:0.66cores | Throttle:8.8% | Tput:13.0rps | Reps:1 | P95:0.15s",
+  "metadata": {
+   "throttling": 0.0879,
+   "cpu": 0.6559,
+   "replicas": 1,
+   "root_cause": "Root cause: The current replica count of 1 was insufficient to handle the throughput of 12.83 rps, causing CPU throttling (8.78%), which violates SLO targets. Action: Scaled the deployment up to 2 replicas to provide sufficient CPU capacity and restore compliance with service level objectives.",
+   "p95": 0.1468,
+   "rps": 12.827,
+   "status": "resolved",
+   "action_taken": "scale 1->2"
+  }
+ },
+ {
+  "id": "incident_1790845180",
+  "document": "State -> CPU:0.83cores | Throttle:3.6% | Tput:24.0rps | Reps:2 | P95:0.14s",
+  "metadata": {
+   "cpu": 0.829,
+   "throttling": 0.0358,
+   "p95": 0.1396,
+   "rps": 23.879,
+   "action_taken": "scale 2->3",
+   "replicas": 2,
+   "status": "resolved",
+   "root_cause": "Root cause: The system was experiencing high CPU saturation (0.83 cores per pod) exceeding the 0.75 SLO limit due to throughput exceeding the capacity of 2 replicas. Action: Scaled up from 2 to 3 replicas to reduce CPU load per pod and restore system health."
+  }
+ },
+ {
+  "id": "incident_1790845708",
+  "document": "State -> CPU:0.33cores | Throttle:0.8% | Tput:13.0rps | Reps:3 | P95:0.13s",
+  "metadata": {
+   "status": "resolved",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.44 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "p95": 0.1268,
+   "replicas": 3,
+   "cpu": 0.3313,
+   "rps": 13.44,
+   "action_taken": "scale 3->2",
+   "throttling": 0.0077
+  }
+ },
+ {
+  "id": "incident_1790846157",
+  "document": "State -> CPU:0.27cores | Throttle:1.0% | Tput:6.0rps | Reps:2 | P95:0.1s",
+  "metadata": {
+   "throttling": 0.0105,
+   "p95": 0.0987,
+   "status": "resolved",
+   "replicas": 2,
+   "rps": 6.34,
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas, as 1 replica is sufficient to handle the current throughput of ~6.34 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency.",
+   "action_taken": "scale 2->1",
+   "cpu": 0.2653
+  }
+ },
+ {
+  "id": "incident_1790847204",
+  "document": "State -> CPU:0.3cores | Throttle:1.4% | Tput:4.0rps | Reps:1 | P95:4.49s",
+  "metadata": {
+   "root_cause": "Root cause: The database connection pool was exhausted, causing request queuing and high latency. Action: Triggered a rolling restart of the deployment to reset the connection pool and restore service health.",
+   "p95": 4.4857,
+   "replicas": 1,
+   "cpu": 0.298,
+   "rps": 3.84,
+   "throttling": 0.0145,
+   "action_taken": "restart",
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790848504",
+  "document": "State -> CPU:0.26cores | Throttle:3.9% | Tput:4.0rps | Reps:1 | P95:4.59s",
+  "metadata": {
+   "root_cause": "Root cause: The database connection pool was exhausted, causing request queuing and high latency. Action: Triggered a rolling restart of the deployment to reset the connection pool and restore service health.",
+   "action_taken": "restart",
+   "cpu": 0.2588,
+   "status": "resolved",
+   "p95": 4.5875,
+   "throttling": 0.0393,
+   "rps": 3.52,
+   "replicas": 1
+  }
+ },
+ {
+  "id": "incident_1790849966",
+  "document": "State -> CPU:0.89cores | Throttle:4.8% | Tput:14.0rps | Reps:1 | P95:0.15s",
+  "metadata": {
+   "rps": 13.521,
+   "p95": 0.1484,
+   "throttling": 0.048,
+   "status": "resolved",
+   "action_taken": "scale 1->2",
+   "cpu": 0.8866,
+   "replicas": 1,
+   "root_cause": "Root cause: The current replica count of 1 was insufficient to handle the throughput of 13.52 rps, leading to CPU saturation (0.8865 cores), which violated SLO targets. Action: Scaled the deployment up to 2 replicas to restore performance and comply with service level objectives."
+  }
+ },
+ {
+  "id": "incident_1790850434",
+  "document": "State -> CPU:0.81cores | Throttle:6.8% | Tput:24.0rps | Reps:2 | P95:0.14s",
+  "metadata": {
+   "p95": 0.1409,
+   "cpu": 0.8149,
+   "replicas": 2,
+   "throttling": 0.0678,
+   "root_cause": "Root cause: The system was experiencing CPU saturation (0.81 cores per pod) and CPU throttling (6.78%) exceeding SLO limits due to traffic exceeding the capacity of 2 replicas. Action: Scaled up from 2 to 3 replicas to relieve CPU pressure and restore system health.",
+   "rps": 23.66,
+   "status": "resolved",
+   "action_taken": "scale 2->3"
+  }
+ },
+ {
+  "id": "incident_1790850971",
+  "document": "State -> CPU:0.31cores | Throttle:1.3% | Tput:13.0rps | Reps:3 | P95:0.13s",
+  "metadata": {
+   "status": "resolved",
+   "replicas": 3,
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.48 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "rps": 13.48,
+   "throttling": 0.0127,
+   "action_taken": "scale 3->2",
+   "p95": 0.1344,
+   "cpu": 0.3145
+  }
+ },
+ {
+  "id": "incident_1790851431",
+  "document": "State -> CPU:0.23cores | Throttle:0.8% | Tput:6.0rps | Reps:2 | P95:0.14s",
+  "metadata": {
+   "rps": 6.3,
+   "action_taken": "scale 2->1",
+   "replicas": 2,
+   "cpu": 0.2263,
+   "status": "resolved",
+   "p95": 0.1411,
+   "throttling": 0.008,
+   "root_cause": "Root cause: The system was over-provisioned, with 2 replicas operating well below the capacity required for the current throughput of 6.30 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency, as 1 replica is sufficient to handle up to 11.13 rps."
+  }
+ },
+ {
+  "id": "incident_1790868868",
+  "document": "State -> CPU:0.61cores | Throttle:4.1% | Tput:6.0rps | Reps:1 | P95:0.37s",
+  "metadata": {
+   "p95": 0.3744,
+   "status": "resolved",
+   "rps": 6.44,
+   "action_taken": "scale 1->2",
+   "replicas": 1,
+   "cpu": 0.6124,
+   "root_cause": "Root cause: The system was experiencing elevated latency (0.37s) violating the SLO of 0.35s despite no explicit CPU bottleneck. Action: Scaled the deployment up to 2 replicas to distribute the load and improve latency, as the current 1-replica configuration was insufficient to maintain performance compliance.",
+   "throttling": 0.0411
+  }
+ },
+ {
+  "id": "incident_1790869044",
+  "document": "State -> CPU:0.87cores | Throttle:6.4% | Tput:5.0rps | Reps:2 | P95:0.27s",
+  "metadata": {
+   "throttling": 0.0638,
+   "p95": 0.2688,
+   "status": "resolved",
+   "root_cause": "Root cause: The system was experiencing CPU saturation (0.87 cores) and throttling (6.38%), which violated the SLO performance baseline. Action: Scaled up from 2 to 3 replicas to increase total CPU capacity and restore SLO compliance.",
+   "rps": 5.34,
+   "cpu": 0.8714,
+   "action_taken": "scale 2->3",
+   "replicas": 2
+  }
+ },
+ {
+  "id": "incident_1790871366",
+  "document": "State -> CPU:0.48cores | Throttle:9.5% | Tput:5.0rps | Reps:1 | P95:0.46s",
+  "metadata": {
+   "p95": 0.4555,
+   "throttling": 0.0949,
+   "cpu": 0.4775,
+   "action_taken": "scale 1->2",
+   "replicas": 1,
+   "root_cause": "Root cause: The system was experiencing elevated latency (0.46s) and CPU throttling (9.5%) violating service level objectives despite current CPU usage being within limits. Action: Scaled the deployment from 1 to 2 replicas to provide additional capacity, as the CPU throttling indicated a bottleneck requiring more resources.",
+   "status": "resolved",
+   "rps": 5.12
+  }
+ },
+ {
+  "id": "incident_1790871548",
+  "document": "State -> CPU:0.55cores | Throttle:7.5% | Tput:6.0rps | Reps:2 | P95:0.22s",
+  "metadata": {
+   "p95": 0.2179,
+   "rps": 6.36,
+   "root_cause": "Root cause: The system was experiencing CPU throttling (7.45%), which violated the Tier 1 performance baseline. Action: Scaled up from 2 to 3 replicas to increase CPU capacity and mitigate throttling.",
+   "status": "resolved",
+   "throttling": 0.0745,
+   "cpu": 0.5515,
+   "replicas": 2,
+   "action_taken": "scale 2->3"
+  }
+ },
+ {
+  "id": "incident_1790873805",
+  "document": "State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s",
+  "metadata": {
+   "root_cause": "Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.",
+   "action_taken": "restart",
+   "status": "resolved",
+   "throttling": 0.1348,
+   "replicas": 1,
+   "cpu": 0.7525,
+   "rps": 5.2,
+   "p95": 0.46
+  }
+ },
+ {
+  "id": "incident_1790875040",
+  "document": "State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s",
+  "metadata": {
+   "root_cause": "Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.",
+   "status": "resolved",
+   "throttling": 0.1122,
+   "cpu": 0.7778,
+   "replicas": 1,
+   "rps": 4.96,
+   "p95": 0.4711,
+   "action_taken": "restart"
+  }
+ },
+ {
+  "id": "incident_1790876272",
+  "document": "State -> CPU:0.22cores | Throttle:2.4% | Tput:3.0rps | Reps:1 | P95:4.65s",
+  "metadata": {
+   "cpu": 0.2207,
+   "rps": 3.2,
+   "replicas": 1,
+   "p95": 4.6471,
+   "status": "resolved",
+   "root_cause": "Root cause: The database connection pool was exhausted, causing request queuing and high latency. Action: Triggered a rolling restart of the deployment to reset the connection pool and restore service health.",
+   "action_taken": "restart",
+   "throttling": 0.0244
+  }
+ },
+ {
+  "id": "incident_1790877641",
+  "document": "State -> CPU:0.81cores | Throttle:7.1% | Tput:12.0rps | Reps:1 | P95:0.17s",
+  "metadata": {
+   "replicas": 1,
+   "rps": 12.1,
+   "action_taken": "scale 1->2",
+   "root_cause": "Root cause: Current replica count of 1 was insufficient to handle the throughput of 12.1 rps, leading to CPU saturation (0.81 cores) and throttling (7.1%), violating SLO targets. Action: Scaled the deployment to 2 replicas to restore performance and comply with service level objectives.",
+   "status": "resolved",
+   "p95": 0.1732,
+   "throttling": 0.071,
+   "cpu": 0.8143
+  }
+ },
+ {
+  "id": "incident_1790878138",
+  "document": "State -> CPU:0.82cores | Throttle:7.0% | Tput:24.0rps | Reps:2 | P95:0.14s",
+  "metadata": {
+   "throttling": 0.0702,
+   "replicas": 2,
+   "cpu": 0.8226,
+   "status": "resolved",
+   "rps": 24.199,
+   "p95": 0.1428,
+   "action_taken": "scale 2->3",
+   "root_cause": "Root cause: The system was experiencing CPU saturation (0.82 cores per pod) and CPU throttling (7.0%) due to traffic exceeding the capacity of 2 replicas. Action: Scaled up from 2 to 3 replicas to relieve CPU pressure and restore system health in accordance with SLO targets."
+  }
+ },
+ {
+  "id": "incident_1790878790",
+  "document": "State -> CPU:0.28cores | Throttle:1.9% | Tput:13.0rps | Reps:3 | P95:0.09s",
+  "metadata": {
+   "status": "resolved",
+   "rps": 12.74,
+   "action_taken": "scale 3->2",
+   "replicas": 3,
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 12.74 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "throttling": 0.0192,
+   "cpu": 0.2834,
+   "p95": 0.0939
+  }
+ },
+ {
+  "id": "incident_1790879125",
+  "document": "State -> CPU:0.27cores | Throttle:0.4% | Tput:7.0rps | Reps:2 | P95:0.1s",
+  "metadata": {
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas as 1 replica is sufficient for the current traffic level. Action: Scaled down from 2 to 1 replicas to improve resource efficiency.",
+   "cpu": 0.2698,
+   "rps": 6.68,
+   "action_taken": "scale 2->1",
+   "p95": 0.0981,
+   "throttling": 0.0044,
+   "replicas": 2,
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790883401",
+  "document": "State -> CPU:0.97cores | Throttle:15.1% | Tput:14.0rps | Reps:1 | P95:0.27s",
+  "metadata": {
+   "throttling": 0.1514,
+   "cpu": 0.9688,
+   "root_cause": "Root cause: Current replica count of 1 was insufficient to handle the throughput of 13.82 rps, leading to CPU saturation (0.97 cores) and significant CPU throttling (15.1%). Action: Scaled the deployment to 2 replicas to restore system health and comply with SLO targets.",
+   "status": "resolved",
+   "p95": 0.2729,
+   "replicas": 1,
+   "action_taken": "scale 1->2",
+   "rps": 13.825
+  }
+ },
+ {
+  "id": "incident_1790883628",
+  "document": "State -> CPU:0.83cores | Throttle:5.9% | Tput:23.0rps | Reps:2 | P95:0.14s",
+  "metadata": {
+   "status": "resolved",
+   "action_taken": "scale 2->3",
+   "cpu": 0.831,
+   "throttling": 0.0595,
+   "p95": 0.1449,
+   "replicas": 2,
+   "rps": 23.42,
+   "root_cause": "Root cause: High CPU saturation (0.83 cores) and CPU throttling (5.9%) due to traffic exceeding the capacity of 2 replicas. Action: Scaled up from 2 to 3 replicas to restore system health and comply with SLO targets."
+  }
+ },
+ {
+  "id": "incident_1790883957",
+  "document": "State -> CPU:0.34cores | Throttle:0.4% | Tput:14.0rps | Reps:3 | P95:0.1s",
+  "metadata": {
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current throughput of 13.64 rps, which can be safely handled by 2 replicas. Action: Scaled down from 3 to 2 replicas to improve resource efficiency.",
+   "p95": 0.0957,
+   "throttling": 0.0036,
+   "status": "resolved",
+   "replicas": 3,
+   "action_taken": "scale 3->2",
+   "rps": 13.64,
+   "cpu": 0.3393
+  }
+ },
+ {
+  "id": "incident_1790884234",
+  "document": "State -> CPU:0.21cores | Throttle:0.3% | Tput:6.0rps | Reps:2 | P95:0.1s",
+  "metadata": {
+   "status": "resolved",
+   "replicas": 2,
+   "rps": 6.32,
+   "p95": 0.0992,
+   "cpu": 0.2131,
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas, as 1 replica is sufficient to handle the current throughput of 6.32 rps. Action: Scaled down from 2 to 1 replicas to improve resource efficiency.",
+   "throttling": 0.0029,
+   "action_taken": "scale 2->1"
+  }
+ },
+ {
+  "id": "incident_1790884932",
+  "document": "State -> CPU:0.84cores | Throttle:9.7% | Tput:5.0rps | Reps:1 | P95:0.46s",
+  "metadata": {
+   "throttling": 0.0972,
+   "rps": 4.88,
+   "action_taken": "restart",
+   "replicas": 1,
+   "cpu": 0.84,
+   "root_cause": "Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency, consistent with past incident signatures. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.",
+   "p95": 0.4576,
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1790886138",
+  "document": "State -> CPU:0.97cores | Throttle:9.3% | Tput:4.0rps | Reps:1 | P95:0.39s",
+  "metadata": {
+   "root_cause": "Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.",
+   "status": "resolved",
+   "cpu": 0.9672,
+   "throttling": 0.0927,
+   "p95": 0.39,
+   "rps": 4.4,
+   "replicas": 1,
+   "action_taken": "restart"
+  }
+ }
+]

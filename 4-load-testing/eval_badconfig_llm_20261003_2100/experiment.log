@@ -1,0 +1,7 @@
+[21:00:58] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[21:00:58] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v7
+[21:01:05] rollout history reset: 1 ReplicaSet(s) left
+[21:03:10] k6 fault_load.js started
+[21:07:10] inject badconfig: deployment.apps/aiops-backend-deployment env updated
+[21:19:11] k6 finished (exit 0)
+[21:19:32] done

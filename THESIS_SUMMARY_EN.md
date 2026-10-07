@@ -8,21 +8,31 @@ This thesis project aims to design and implement an autonomous agent that acts a
 
 This repository implements an AIOps-style prototype for autonomous resource management. It combines:
 
-- A target application deployed in Kubernetes.
-- Prometheus-based observability and metric collection.
-- An anomaly-detection model trained with Isolation Forest.
-- An LLM-powered agent that interprets anomalies and can trigger scaling actions.
-- A knowledge base stored in ChromaDB for storing previous resolved incidents.
+- A target application deployed in Kubernetes (Node.js backend, 1 core per pod, 1–3 replicas).
+- Prometheus-based observability: five features (CPU per pod, throughput, p95 latency, CPU throttling, replicas).
+- An anomaly detector: one One-Class SVM per replica count, trained only on healthy data (it replaced an
+  Isolation Forest on 2026-09-30, which could not tell *how far* a reading was outside the healthy range).
+- An LLM agent (smolagents CodeAgent + Gemini) that investigates the anomaly with observation tools (per-pod view,
+  deployment history, logs) and acts through safety-guarded tools: scale, rolling restart, restart one pod, rollback
+  (fixed target, 1–3 replicas, ±2 per call, cooldowns). Final version: prompt v8 (2026-10-04).
+- Code around the LLM: verification of every action against the SLO, automatic rollback of failed scale-downs,
+  an incident memory in ChromaDB (nearest past incidents by metric distance, only verified fixes are stored), and
+  three behaviour guards (evidence before action; no claimed action without a tool call; full diagnosis before a
+  restart or rollback).
 
 ## End-to-End Workflow
 
-1. The backend application is deployed in Kubernetes.
-2. Prometheus scrapes operational metrics such as CPU usage, memory usage, throughput, latency, error rate, and replica count.
-3. A baseline anomaly-detection model is trained from normal system behavior.
-4. The monitoring script continuously queries Prometheus and applies the trained model to detect anomalies.
-5. When an anomaly is detected, the agent receives the metrics and uses LLM reasoning to decide on a corrective action.
-6. The agent can inspect logs, query a knowledge base, and scale the Kubernetes deployment.
-7. Successful resolutions are stored in ChromaDB for future reuse.
+1. Prometheus scrapes the backend (`/metrics`) and cAdvisor / kube-state-metrics.
+2. The monitor (`3-ai-agent/anomaly_detector.py`) reads the five features every 10 s and scores them with the
+   One-Class SVM for the current replica count (too much load, too little, or abnormal latency all score as anomalies).
+3. After 3 anomalous readings in a row, it wakes the agent with the metrics, code-computed facts (minimum replica
+   count for the load, CPU per request vs healthy), the two most similar verified past incidents and its own
+   actions of the last 15 minutes with their verdicts.
+4. The LLM classifies the problem: capacity (traffic explains it → scale to the minimum that fits) or anything else
+   (investigate: per-pod view → what changed → logs; then act on the cause: rollback a bad change, restart a bad
+   process state, or no action for a transient).
+5. Code waits for the rollout, re-measures, and judges the action STABLE / UNSTABLE; a failed scale-down is
+   rolled back, a STABLE fix is stored in memory. Every run is logged to `3-ai-agent/incident_log.csv`.
 
 ## Strengths of the Project
 
@@ -113,3 +123,39 @@ Added by Claude after the overnight and day experiments; details in `NOTES_2026-
 - **Research question 2 (RAG):** ablation done for the stuck fault: memory off recovered in 100 / 100 s with 2–3 LLM
   calls, the same as memory on (mean 100 s, 2.75 calls). No measurable effect for this incident type (the prompt
   and the logs are enough); a fault the logs do not explain would be the next test.
+- **Generalization (blind test, 2026-10-01 evening):** a second fault, a runaway background job that burns CPU
+  (`/chaos/cpuhog`), designed after the final prompt was frozen. The agent did **not** generalize: it treated the CPU
+  saturation as load (scale up), then, once the server-side latency looked healthy, as waste (scale down, rolled
+  back by the verification code). Rules and HPA did not recover either. Root cause: the in-app latency histogram
+  cannot see requests queued behind a blocked event loop, and the agent is not shown CPU per request or event-loop
+  lag, two signals that separate this fault from overload cleanly. A prompt with CPU per request (v5) is under test.
+  Thesis framing: the LLM generalizes *reasoning* (bottleneck first, logs, restart) but only over the evidence it
+  is given; observability design is a first-class part of an LLM operator.
+- **Statistics:** exact tests only (n = 1–5 per arm). Stuck-fault recovery 9/9 LLM vs 0/5 baselines, Fisher
+  p = 0.0005. Scaling cost LLM < HPA and LLM < rules, permutation p = 0.048 each (the minimum possible with 5 vs 2
+  runs; one more HPA and rules run would allow p < 0.02).
+- **Research question 2 (RAG), revised 2026-10-01 23:55:** memory had no effect where prompt + logs sufficed (stuck fault),
+  but **carried a diagnosis the prompt lacked**: prompt v4 on the cpuhog fault fixed it 0/2 times with no similar memory and
+  2/2 (restart at the first wake-up) once memory held verified restarts, and 3/3 in a repeat where memory was reset to the
+  same snapshot before every run (independent; Fisher p = 0.10 vs 0/2). It also showed the risk: one run acted on memory alone without reading the logs.
+
+## Status (2026-10-04, final): experiments complete
+Supersedes the 2026-10-01 numbers above where they differ; full log in `NOTES_2026-10-03.md`, one-page summary in
+`thesis_notes/results_summary.md`, all tables in `4-load-testing/comparison.md`.
+
+- **Agent versions:** v6 replaced the code-computed hint of v5 with investigation tools (frozen 2026-10-03 14:28);
+  v7 added a classify step and two code guards; **v8 (final, default)** added a third guard (full diagnosis before a
+  disruptive action). v4–v7 stay selectable and byte-identical for reproducibility.
+- **v8:** 6/6 scenario runs right at the first wake-up (demo ×2: 4/4 scaling actions, 0 s SLO violation, 71.0 / 71.7
+  replica-min; stuck restart 120 s; cpuhog restart 130 s; badconfig rollback ×2, 160 / 110 s).
+- **Blind generalization test (badconfig, designed after v6 was frozen):** agents with investigation tools recovered
+  7/7 (v6 ×3, v7 ×2, v8 ×2); everything else 0/5 (v4, v5, rules, rules-v2, HPA). Fisher exact p = 0.0013. Rules
+  written for the known faults (rules-v2) matched the signature but not the cause: 11 useless restarts.
+- **Cost (normal load):** the agent's capacity tiers (v3/v4/v7/v8, n = 9) 71.5 replica-min vs HPA 79.5 (n = 3,
+  permutation p = 0.005) and rules 76.5 (n = 4, p = 0.001; a small difference, −6.5%).
+- **Stuck fault:** all LLM versions 13/13 vs baselines 1/6 (only rules-v2, written after seeing it), p = 0.0005.
+- **Engineering:** 74 unit tests; `requirements.txt`; fallback LLM (`gemini-2.5-flash`, after all measurements).
+- **Limits (stated first):** n = 1–2 per scenario for v7/v8; v7/v8 were designed after seeing all four scenarios
+  (only v4 on cpuhog and v6 on badconfig are blind); one laptop node, at most 3 pods, closed-loop load, one LLM provider.
+- **Open:** a blind fault for v8 designed by someone other than the agent's designer (`thesis_notes/manual_testing.md`
+  §7); the written thesis.

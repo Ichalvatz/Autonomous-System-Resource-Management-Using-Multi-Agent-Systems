@@ -1,0 +1,235 @@
+[18:35:55] scenario=baseline strategy=llm: reset to 1 replica(s)
+[18:35:55] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=on RULES_RESTART=off LABEL=llm-v7
+[18:35:55] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[18:36:01] rollout history reset: 1 ReplicaSet(s) left
+[18:38:06] k6 baseline_eval.js started
+[19:16:07] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 18:38:06
+               end: 2026-10-03 19:16:07
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 210
+          p95_mean: 0.111
+           p95_p99: 0.183
+   replica_minutes: 72.0
+      under_prov_s: 120
+       over_prov_s: 240
+  correct_prov_pct: 83.9
+     scale_actions: 4
+         incidents: 4
+            stable: 4
+         llm_calls: 9
+      agent_s_mean: 7.0
+             notes: prompt v7 (final), memory on: normal scaling
+[19:16:28] done
+[19:18:07] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[19:18:07] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v7
+[19:18:13] rollout history reset: 1 ReplicaSet(s) left
+[19:20:18] k6 fault_load.js started
+[19:36:20] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 19:20:18
+               end: 2026-10-03 19:36:20
+      duration_min: 16.0
+   slo_violation_s: 0
+        pressure_s: 280
+          p95_mean: 0.145
+           p95_p99: 0.289
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 5.5
+             notes: prompt v7 (final), memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 0
+slo_violation_after_fault_s: 0
+    cpu_recovery_s: 100
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[19:36:41] done
+[19:38:20] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[19:38:20] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v7
+[19:38:27] rollout history reset: 1 ReplicaSet(s) left
+[19:40:32] k6 fault_load.js started
+[19:56:33] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 19:40:32
+               end: 2026-10-03 19:56:33
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 330
+          p95_mean: 0.236
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 4
+      agent_s_mean: 8.5
+             notes: prompt v7 (final), memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 110
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 108
+      rule_actions: 
+[19:56:54] done
+[19:58:33] scenario=stuck strategy=llm: reset to 1 replica(s)
+[19:58:33] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v7
+[19:58:39] rollout history reset: 1 ReplicaSet(s) left
+[20:00:44] k6 fault_load.js started
+[20:16:46] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 20:00:44
+               end: 2026-10-03 20:16:46
+      duration_min: 16.0
+   slo_violation_s: 290
+        pressure_s: 70
+          p95_mean: 1.406
+           p95_p99: 4.85
+   replica_minutes: 20.2
+      under_prov_s: 0
+       over_prov_s: 240
+  correct_prov_pct: 74.7
+     scale_actions: 1
+         incidents: 3
+            stable: 2
+         llm_calls: 17
+      agent_s_mean: 49.4
+             notes: prompt v7 (final), memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 280
+slo_violation_after_fault_s: 290
+    cpu_recovery_s: 0
+max_replicas_after_fault: 2
+     agent_actions: none | restart | scale 1->2
+      rule_actions: 
+[20:17:07] done
+[20:18:46] scenario=baseline strategy=llm: reset to 1 replica(s)
+[20:18:46] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=on RULES_RESTART=off LABEL=llm-v7
+[20:18:51] rollout history reset: 1 ReplicaSet(s) left
+[20:20:56] k6 baseline_eval.js started
+[20:58:58] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 20:20:56
+               end: 2026-10-03 20:58:58
+      duration_min: 38.0
+   slo_violation_s: 40
+        pressure_s: 180
+          p95_mean: 0.15
+           p95_p99: 0.359
+   replica_minutes: 70.8
+      under_prov_s: 170
+       over_prov_s: 230
+  correct_prov_pct: 82.1
+     scale_actions: 4
+         incidents: 5
+            stable: 5
+         llm_calls: 16
+      agent_s_mean: 12.1
+             notes: prompt v7 (final), memory on: normal scaling
+[20:59:19] done
+[21:00:58] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[21:00:58] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v7
+[21:01:05] rollout history reset: 1 ReplicaSet(s) left
+[21:03:10] k6 fault_load.js started
+[21:19:11] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 21:03:10
+               end: 2026-10-03 21:19:11
+      duration_min: 16.0
+   slo_violation_s: 230
+        pressure_s: 460
+          p95_mean: 0.401
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 2
+            stable: 1
+         llm_calls: 7
+      agent_s_mean: 27.6
+             notes: prompt v7 (final), memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 260
+slo_violation_after_fault_s: 230
+    cpu_recovery_s: 250
+max_replicas_after_fault: 1
+     agent_actions: restart | rollback to revision 114
+      rule_actions: 
+[21:19:32] done
+[21:21:12] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[21:21:12] env: AIOPS_PROMPT=v7 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v7
+[21:21:19] rollout history reset: 1 ReplicaSet(s) left
+[21:23:24] k6 fault_load.js started
+[21:39:25] k6 finished (exit 0)
+             label: llm-v7
+             start: 2026-10-03 21:23:24
+               end: 2026-10-03 21:39:25
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 440
+          p95_mean: 0.154
+           p95_p99: 0.398
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 60.8
+             notes: prompt v7 (final), memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 120
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 130
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[21:39:46] done
+[21:41:26] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[21:41:26] env: AIOPS_PROMPT=v6 AIOPS_MEMORY=off RULES_RESTART=off LABEL=llm-v6
+[21:41:32] rollout history reset: 1 ReplicaSet(s) left
+[21:43:37] k6 fault_load.js started
+[21:59:39] k6 finished (exit 0)
+             label: llm-v6
+             start: 2026-10-03 21:43:37
+               end: 2026-10-03 21:59:39
+      duration_min: 16.0
+   slo_violation_s: 100
+        pressure_s: 460
+          p95_mean: 0.2
+           p95_p99: 0.39
+   replica_minutes: 26.3
+      under_prov_s: 0
+       over_prov_s: 610
+  correct_prov_pct: 35.8
+     scale_actions: 1
+         incidents: 5
+            stable: 2
+         llm_calls: 14
+      agent_s_mean: 34.5
+             notes: prompt v6, memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 0
+slo_violation_after_fault_s: 100
+    cpu_recovery_s: 610
+max_replicas_after_fault: 2
+     agent_actions: none | scale 1->2 | none | none | restart pod aiops-backend-deployment-85b9689959-qqzx6
+      rule_actions: 
+[22:00:00] done

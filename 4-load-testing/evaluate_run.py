@@ -34,6 +34,9 @@ INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
 CAPACITY = os.path.join(ROOT, "5-ml-training", "capacity_table.json")
 SLO_P95 = 0.35
 RECOVERY_HOLD_S = 60
+# Highest CPU cost per request in the healthy training data (core-seconds; median 0.073).
+# Above it, CPU is being burned by something other than user traffic.
+HEALTHY_MAX_CPU_PER_REQUEST = 0.10
 
 QUERIES = {
     "throughput": 'sum(rate(http_requests_total{app="aiops-backend"}[1m]))',
@@ -58,6 +61,25 @@ def needed_replicas(rps, table):
         if rps <= table[n]:
             return n
     return max(table)  # beyond the cap: the most we are allowed to run
+
+
+def append_row(path, row):
+    """Append to the results CSV. If the row has columns the file lacks, rewrite the file with
+    the union header (a plain DictWriter append would silently shift the columns)."""
+    rows, fields = [], []
+    if os.path.exists(path):
+        with open(path, newline="") as f:
+            reader = csv.DictReader(f)
+            fields, rows = list(reader.fieldnames or []), list(reader)
+    new_fields = [k for k in row if k not in fields]
+    if rows and not new_fields:
+        with open(path, "a", newline="") as f:
+            csv.DictWriter(f, fieldnames=fields).writerow(row)
+        return
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields + new_fields)
+        w.writeheader()
+        w.writerows(rows + [row])
 
 
 def main():
@@ -144,10 +166,38 @@ def main():
               and series["latency_p95"][t] <= SLO_P95 for t in after]
         hold = RECOVERY_HOLD_S // STEP
         recovered_at = next((after[i] for i in range(len(after) - hold + 1) if all(ok[i:i + hold])), None)
+        # Second recovery signal, for faults the server-side p95 cannot see (cpuhog: time
+        # queued behind a blocked event loop is never timed by the app's histogram): the
+        # fault is gone once CPU per request is back in the healthy range and stays there.
+        cpu_ok = []
+        for t in after:
+            cpu, rps, reps = (series["avg_cpu_per_pod"].get(t), series["throughput"].get(t),
+                              series["desired_replicas"].get(t))
+            cpu_ok.append(cpu is not None and rps is not None and rps >= 1 and reps is not None
+                          and cpu == cpu and cpu * reps / rps <= HEALTHY_MAX_CPU_PER_REQUEST)
+        cleared_at = next((after[i] for i in range(len(after) - hold + 1) if all(cpu_ok[i:i + hold])), None)
         row["fault_at_min"] = round((fault - start) / 60, 1)
         row["recovery_s"] = int(recovered_at - fault) if recovered_at is not None else "never"
         row["slo_violation_after_fault_s"] = sum(STEP for flag in ok if not flag)
+        row["cpu_recovery_s"] = int(cleared_at - fault) if cleared_at is not None else "never"
         row["max_replicas_after_fault"] = int(max(series["desired_replicas"].get(t, 0) for t in after)) if after else ""
+        row["agent_actions"] = ""  # filled below for LLM runs: restart vs scale is the point of a fault run
+
+    if args.run_dir and "agent_actions" in row:
+        # Rule-based runs: restarts do not change the replica count, so list the actions from
+        # the controller log (rules v2 restarts for R1/R2; scale actions as "scale->N").
+        import re
+        log_path = os.path.join(args.run_dir, "controller.log")
+        if os.path.exists(log_path):
+            acts = []
+            for line in open(log_path, errors="replace"):
+                if "RULE ACTION" not in line or "✅" not in line:
+                    continue
+                ts = line[1:9]
+                rule = re.search(r"\((R\d) ", line)
+                to = re.search(r"to (\d+) replicas", line)
+                acts.append(f"{ts} restart {rule.group(1)}" if rule else f"{ts} scale->{to.group(1) if to else '?'}")
+            row["rule_actions"] = " | ".join(acts)
 
     if os.path.exists(INCIDENTS):
         with open(INCIDENTS) as f:
@@ -158,13 +208,10 @@ def main():
             row["stable"] = sum(r["verification"] == "STABLE" for r in inc)
             row["llm_calls"] = sum(int(r["llm_calls"] or 0) for r in inc)
             row["agent_s_mean"] = round(sum(float(r["agent_seconds"]) for r in inc) / len(inc), 1)
+            if "agent_actions" in row:
+                row["agent_actions"] = " | ".join(r["actions"] or "none" for r in inc)
 
-    new = not os.path.exists(args.results)
-    with open(args.results, "a", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(row))
-        if new:
-            w.writeheader()
-        w.writerow(row)
+    append_row(args.results, row)
     for k, v in row.items():
         print(f"{k:>18}: {v}")
 

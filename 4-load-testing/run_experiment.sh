@@ -13,15 +13,42 @@
 #   fault_load.js (8 VUs, 16 min, 1-replica band); at t=4 min every backend pod gets
 #   POST /chaos/stuck (requests wait 3 s on a "leaked DB connection", no CPU; only a
 #   restart fixes it). Scored with recovery time into evaluation_results_stuck.csv.
+# SCENARIO=cpuhog: same load and timing, but POST /chaos/cpuhog (a background job that
+#   never ends and blocks the event loop 600 ms at a time: CPU ~0.9, throttling ~18%,
+#   p95 ~0.5 s at only ~4 rps). Looks like overload, but only a restart fixes it. Added
+#   after prompt v4 was frozen: a blind test. Results in evaluation_results_cpuhog.csv.
+# SCENARIO=badconfig: same load and timing, but at t=4 min "someone else" deploys a config
+#   change (kubectl set env FEATURE_LOGIN_AUDIT=true): every login then runs a synchronous
+#   PBKDF2 (1.5M iterations). The bad state lives in the deployment, not in the processes:
+#   restarts and new pods do not help, only a rollback does. Designed after prompt v6 was
+#   frozen (2026-10-03): the blind test for v6. Results in evaluation_results_badconfig.csv.
+# Env switches passed through to the controller: AIOPS_PROMPT (v4|v5|v6|v7|v8, default v8),
+#   AIOPS_MEMORY (on|off), RULES_RESTART (on = rules v2), LABEL (result label). Without LABEL the
+#   label follows the version: llm-<prompt> (plain "llm" only for v4, the label its measured runs
+#   carry), rules-v2 when RULES_RESTART=on, else the strategy name.
 # Output: 4-load-testing/eval_[stuck_]<strategy>_<time>/ + one row in the results CSV
+# The whole body is one { ... } block: bash parses it completely before running, so editing
+# this file while it runs cannot break the running copy (an edit at 14:44 on 2026-10-03 did).
+{
 set -u
 cd "$(dirname "$0")/.."
 STRATEGY=$1
 NOTES=${2:-}
 SCENARIO=${SCENARIO:-baseline}
+# "llm" in the results CSVs means prompt v4 (the 2026-10-01 runs): a run of any other prompt must
+# not land in that group (before 2026-10-07 a default-v8 run without LABEL would have).
+DEFAULT_LABEL=$STRATEGY
+if [ "$STRATEGY" = "llm" ]; then
+  PROMPT=$(echo "${AIOPS_PROMPT:-v8}" | tr '[:upper:]' '[:lower:]')
+  [ "$PROMPT" != "v4" ] && DEFAULT_LABEL="llm-$PROMPT"
+fi
+[ "$STRATEGY" = "rules" ] && [ "$(echo "${RULES_RESTART:-off}" | tr '[:upper:]' '[:lower:]')" = "on" ] && DEFAULT_LABEL=rules-v2
+LABEL=${LABEL:-$DEFAULT_LABEL}
 case "$SCENARIO" in
-  baseline) K6_SCRIPT=4-load-testing/baseline.js; PREFIX=""; RESULTS=4-load-testing/evaluation_results.csv ;;
+  baseline) K6_SCRIPT=4-load-testing/baseline_eval.js; PREFIX=""; RESULTS=4-load-testing/evaluation_results.csv ;;
   stuck)    K6_SCRIPT=4-load-testing/fault_load.js; PREFIX="stuck_"; RESULTS=4-load-testing/evaluation_results_stuck.csv ;;
+  cpuhog)   K6_SCRIPT=4-load-testing/fault_load.js; PREFIX="cpuhog_"; RESULTS=4-load-testing/evaluation_results_cpuhog.csv ;;
+  badconfig) K6_SCRIPT=4-load-testing/fault_load.js; PREFIX="badconfig_"; RESULTS=4-load-testing/evaluation_results_badconfig.csv ;;
   *) echo "unknown SCENARIO $SCENARIO"; exit 1 ;;
 esac
 FAULT_AFTER_SECONDS=240
@@ -58,10 +85,23 @@ caffeinate -dimsu -w $$ &
 stop_all_controllers
 START_REPLICAS=1; [ "$STRATEGY" = "static-3" ] && START_REPLICAS=3
 log "scenario=$SCENARIO strategy=$STRATEGY: reset to $START_REPLICAS replica(s)"
+log "env: AIOPS_PROMPT=${AIOPS_PROMPT:-default(v8)} AIOPS_MEMORY=${AIOPS_MEMORY:-on} RULES_RESTART=${RULES_RESTART:-off} LABEL=$LABEL"
+# Undo a bad-config change an earlier run may have left behind (no-op if absent).
+if kubectl get $DEPLOY -o jsonpath='{.spec.template.spec.containers[0].env[*].name}' | grep -qw FEATURE_LOGIN_AUDIT; then
+  log "removing FEATURE_LOGIN_AUDIT left by an earlier run"
+  kubectl set env $DEPLOY FEATURE_LOGIN_AUDIT- >/dev/null
+fi
 # Fresh pods for the fault scenario: a pod left stuck by an earlier run stays stuck.
-[ "$SCENARIO" = "stuck" ] && kubectl rollout restart $DEPLOY >/dev/null
+[ "$SCENARIO" != "baseline" ] && kubectl rollout restart $DEPLOY >/dev/null
 kubectl scale $DEPLOY --replicas=$START_REPLICAS >/dev/null
 kubectl rollout status $DEPLOY --timeout=180s >/dev/null
+# Fresh rollout history for every run (added 2026-10-03 15:30, moved after the restart 15:45):
+# prompt v6's get_deployment_history would otherwise show the changes and rollbacks of earlier runs,
+# a hint that leaks across runs. revisionHistoryLimit 0 deletes the old ReplicaSets (back to 10 after).
+# Done after the restart above, so the current ReplicaSet is a fresh one with no re-use history.
+kubectl patch $DEPLOY -p '{"spec":{"revisionHistoryLimit":0}}' >/dev/null; sleep 5
+kubectl patch $DEPLOY -p '{"spec":{"revisionHistoryLimit":10}}' >/dev/null
+log "rollout history reset: $(kubectl get rs -l app=aiops-backend --no-headers 2>/dev/null | wc -l | tr -d ' ') ReplicaSet(s) left"
 sleep 120   # past the detector's 90 s settle window, host idle
 
 case "$STRATEGY" in
@@ -81,13 +121,17 @@ sleep 5
 [ -n "$CTRL_PID" ] && ! kill -0 "$CTRL_PID" 2>/dev/null && { log "controller died at start:"; tail -5 "$OUT/controller.log"; exit 1; }
 
 date "+%Y-%m-%d %H:%M:%S" > "$OUT/window.txt"
-if [ "$SCENARIO" = "stuck" ]; then
+if [ "$SCENARIO" != "baseline" ]; then
   (
     sleep $FAULT_AFTER_SECONDS
     date "+%Y-%m-%d %H:%M:%S" > "$OUT/fault_at.txt"
-    for pod in $(kubectl get pods -l app=aiops-backend --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}'); do
-      echo "[$(date +%H:%M:%S)] inject stuck -> $pod: $(kubectl exec "$pod" -- wget -qO- --post-data='' http://127.0.0.1:3001/chaos/stuck 2>&1)" >> "$OUT/experiment.log"
-    done
+    if [ "$SCENARIO" = "badconfig" ]; then
+      echo "[$(date +%H:%M:%S)] inject badconfig: $(kubectl set env $DEPLOY FEATURE_LOGIN_AUDIT=true 2>&1)" >> "$OUT/experiment.log"
+    else
+      for pod in $(kubectl get pods -l app=aiops-backend --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}'); do
+        echo "[$(date +%H:%M:%S)] inject $SCENARIO -> $pod: $(kubectl exec "$pod" -- wget -qO- --post-data='' http://127.0.0.1:3001/chaos/$SCENARIO 2>&1)" >> "$OUT/experiment.log"
+      done
+    fi
   ) & INJECT_PID=$!
 fi
 log "k6 $(basename $K6_SCRIPT) started"
@@ -99,6 +143,8 @@ cleanup; CTRL_PID=""
 
 sleep 20  # let the last Prometheus samples land
 FAULT_ARG=""; [ -f "$OUT/fault_at.txt" ] && FAULT_ARG="--fault-at $(cat "$OUT/fault_at.txt" | tr ' ' 'T')"
-$PY 4-load-testing/evaluate_run.py --label "${LABEL:-$STRATEGY}" --run-dir "$OUT" --notes "$NOTES" \
+$PY 4-load-testing/evaluate_run.py --label "$LABEL" --run-dir "$OUT" --notes "$NOTES" \
   --results "$RESULTS" $FAULT_ARG | tee "$OUT/score.txt"
 log "done"
+exit
+}

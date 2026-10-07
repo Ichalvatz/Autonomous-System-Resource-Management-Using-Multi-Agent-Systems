@@ -1,0 +1,24 @@
+             label: llm-v4-mem
+             start: 2026-10-01 23:16:06
+               end: 2026-10-01 23:32:08
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 550
+          p95_mean: 0.189
+           p95_p99: 0.396
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 21.5
+             notes: memory test: prompt v4, memory holds v5 restarts
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 130
+max_replicas_after_fault: 1
+     agent_actions: restart

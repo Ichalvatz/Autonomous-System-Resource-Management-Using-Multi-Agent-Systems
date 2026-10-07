@@ -1,0 +1,25 @@
+             label: rules-v2
+             start: 2026-10-03 16:52:35
+               end: 2026-10-03 17:08:37
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 200
+          p95_mean: 0.17
+           p95_p99: 0.38
+   replica_minutes: 20.2
+      under_prov_s: 0
+       over_prov_s: 240
+  correct_prov_pct: 74.7
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: rules v2 (R1 stuck, R2 runaway)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 110
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 16:53:42 scale->2 | 16:55:43 scale->1 | 16:57:43 restart R2 | 16:58:44 scale->2 | 17:00:44 scale->1

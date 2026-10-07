@@ -1,0 +1,4 @@
+# The image installs its own packages (RUN npm install in the Dockerfile); without this file
+# `COPY . .` copied the host's (macOS) node_modules over them.
+node_modules
+coverage

@@ -13,3 +13,13 @@ hpa,2026-10-01 05:56:11,2026-10-01 06:34:12,38.0,0,170,0.106,0.167,79.3,60,630,6
 llm-v3,2026-10-01 06:39:41,2026-10-01 07:17:43,38.0,0,440,0.11,0.171,71.5,100,210,86.2,4,4,4,8,6.0,"agent v3: metric memory, rollout+45s SLO verification, rollback"
 llm,2026-10-01 11:43:01,2026-10-01 12:21:03,38.0,0,210,0.115,0.223,71.5,90,210,86.6,4,4,4,9,7.1,agent v4 regression check (baseline scenario)
 llm,2026-10-01 13:10:47,2026-10-01 13:48:49,38.0,0,180,0.112,0.167,71.5,130,230,83.9,4,4,4,8,6.9,agent v4 (baseline scenario)
+llm-v5,2026-10-01 20:52:23,2026-10-01 21:30:24,38.0,0,350,0.114,0.174,73.8,100,340,80.4,4,5,4,13,18.4,"prompt v5 (CPU per request), tested after the v4 cpuhog failure"
+llm-v6-INVALID,2026-10-03 17:53:13,2026-10-03 18:15:14,22.0,40,350,0.143,0.364,46.5,260,490,41.9,2,9,2,36,10.0,"prompt v6, memory on: regression check on normal scaling; INVALID for comparison: ran the 22-min baseline.js (shortened 2026-10-01 22:29), not the 38-min evaluation scenario. Its decisions are still evidence (no scale-down in 5 wake-ups, one wrong pod restart)."
+llm-v7,2026-10-03 18:38:06,2026-10-03 19:16:07,38.0,0,210,0.111,0.183,72.0,120,240,83.9,4,4,4,9,7.0,"prompt v7 (final), memory on: normal scaling"
+llm-v7,2026-10-03 20:20:56,2026-10-03 20:58:58,38.0,40,180,0.15,0.359,70.8,170,230,82.1,4,5,5,16,12.1,"prompt v7 (final), memory on: normal scaling"
+llm-v8,2026-10-03 22:22:33,2026-10-03 23:00:35,38.0,0,260,0.127,0.229,71.0,200,270,79.0,4,4,4,10,27.8,"prompt v8, memory on: normal scaling"
+llm-v8,2026-10-04 00:05:29,2026-10-04 00:43:31,38.0,0,200,0.107,0.182,71.7,110,220,85.3,4,4,4,9,20.9,"prompt v8, memory on: normal scaling"
+rules-v2,2026-10-04 01:48:27,2026-10-04 02:26:28,38.0,0,130,0.115,0.157,72.8,30,220,88.8,4,,,,,rules v2: do the restart rules misfire on normal load?
+rules,2026-10-04 02:30:39,2026-10-04 03:08:40,38.0,0,110,0.113,0.184,76.5,40,450,78.2,4,,,,,extra run for statistics (2026-10-03)
+hpa,2026-10-04 03:12:52,2026-10-04 03:50:53,38.0,0,40,0.112,0.157,79.5,60,650,68.3,4,,,,,extra run for statistics (2026-10-03)
+llm-v6,2026-10-04 03:55:05,2026-10-04 04:33:06,38.0,0,330,0.122,0.26,69.3,280,260,75.9,4,5,4,22,22.9,"prompt v6, memory on: normal scaling, 38-min scenario"

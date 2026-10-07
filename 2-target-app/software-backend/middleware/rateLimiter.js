@@ -5,8 +5,18 @@
 import rateLimit from 'express-rate-limit';
 
 // --- Time Constants ---
-const FIFTEEN_MINUTES = 0;
-const ONE_MINUTE = 0;
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+const ONE_MINUTE = 60 * 1000;
+
+/**
+ * Auth rate limiting is on unless AUTH_RATE_LIMIT_ENABLED=false.
+ * The thesis load-test deployment (2-target-app/backend-deployment.yaml) turns it off:
+ * k6 sends every login from one IP, and in-flight requests count against the limit
+ * until they succeed. (Replaces the earlier hack that set both windows to 0.)
+ * Read per request, so the flag can be changed without reloading the module.
+ * @returns {boolean}
+ */
+export const isAuthRateLimitEnabled = () => process.env.AUTH_RATE_LIMIT_ENABLED !== 'false';
 
 /**
  * Factory to create a consistent rate limiter
@@ -29,7 +39,8 @@ export const authLimiter = createLimiter({
     windowMs: FIFTEEN_MINUTES,
     max: 10,
     messageText: 'Too many auth attempts',
-    skipSuccessfulRequests: true
+    skipSuccessfulRequests: true,
+    skip: () => !isAuthRateLimitEnabled()
 });
 
 /** API rate limiter (1 min window) */
@@ -39,5 +50,5 @@ export const apiLimiter = createLimiter({
     messageText: 'Too many requests'
 });
 
-export default { authLimiter, apiLimiter };
+export default { authLimiter, apiLimiter, isAuthRateLimitEnabled };
 

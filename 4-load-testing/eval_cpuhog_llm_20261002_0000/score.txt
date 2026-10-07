@@ -1,0 +1,24 @@
+             label: llm-v4-mem-indep
+             start: 2026-10-02 00:02:11
+               end: 2026-10-02 00:18:13
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 150
+          p95_mean: 0.195
+           p95_p99: 0.53
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 3
+      agent_s_mean: 11.4
+             notes: memory test, independent: v4, memory reset to 23:00 snapshot before the run
+      fault_at_min: 4.0
+        recovery_s: 100
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 110
+max_replicas_after_fault: 1
+     agent_actions: restart

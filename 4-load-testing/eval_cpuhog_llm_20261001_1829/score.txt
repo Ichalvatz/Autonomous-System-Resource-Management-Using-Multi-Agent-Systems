@@ -1,0 +1,23 @@
+             label: llm
+             start: 2026-10-01 18:31:11
+               end: 2026-10-01 18:47:14
+      duration_min: 16.1
+   slo_violation_s: 380
+        pressure_s: 560
+          p95_mean: 0.402
+           p95_p99: 1.773
+   replica_minutes: 31.7
+      under_prov_s: 0
+       over_prov_s: 560
+  correct_prov_pct: 41.1
+     scale_actions: 9
+         incidents: 5
+            stable: 2
+         llm_calls: 14
+      agent_s_mean: 17.3
+             notes: cpuhog blind test, prompt v4 unchanged
+      fault_at_min: 4.0
+        recovery_s: 0
+slo_violation_after_fault_s: 320
+max_replicas_after_fault: 3
+     agent_actions: scale 1->2 | scale 2->3 | scale 3->1; rollback to 3 | scale 3->1; rollback to 3 | scale 3->1; rollback to 3

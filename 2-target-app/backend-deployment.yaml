@@ -23,6 +23,10 @@ spec:
           value: "0.0.0.0"
         - name: CHAOS_ENABLED
           value: "true"
+        # Load tests send every login from one IP; in-flight requests would hit the
+        # auth limiter (middleware/rateLimiter.js). Off here, on by default elsewhere.
+        - name: AUTH_RATE_LIMIT_ENABLED
+          value: "false"
         # CPU is deliberately exactly 1 core (see "Pod sizing" in CLAUDE.md):
         # Node.js runs requests on one thread, so it cannot use more than 1 core,
         # and a login (bcrypt) costs ~70ms CPU. With 1 core that fits inside a

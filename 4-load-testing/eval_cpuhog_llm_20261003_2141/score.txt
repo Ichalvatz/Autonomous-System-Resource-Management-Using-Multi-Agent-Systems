@@ -1,0 +1,25 @@
+             label: llm-v6
+             start: 2026-10-03 21:43:37
+               end: 2026-10-03 21:59:39
+      duration_min: 16.0
+   slo_violation_s: 100
+        pressure_s: 460
+          p95_mean: 0.2
+           p95_p99: 0.39
+   replica_minutes: 26.3
+      under_prov_s: 0
+       over_prov_s: 610
+  correct_prov_pct: 35.8
+     scale_actions: 1
+         incidents: 5
+            stable: 2
+         llm_calls: 14
+      agent_s_mean: 34.5
+             notes: prompt v6, memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 0
+slo_violation_after_fault_s: 100
+    cpu_recovery_s: 610
+max_replicas_after_fault: 2
+     agent_actions: none | scale 1->2 | none | none | restart pod aiops-backend-deployment-85b9689959-qqzx6
+      rule_actions: 

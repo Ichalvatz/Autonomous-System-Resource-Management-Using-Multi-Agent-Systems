@@ -1,0 +1,90 @@
+📏 Rule-based scaler v2 (with restart rules). Safe rps per replica count: {1: 11.13, 2: 20.88, 3: 27.47}
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+[17:33:17] rps 1.7 cpu 0.09 thr 1.8% p95 0.447s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:33:27] rps 2.8 cpu 0.07 thr 1.8% p95 0.372s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:33:37] rps 4.1 cpu 0.21 thr 3.1% p95 0.299s reps 1 -> target 1
+[17:33:47] rps 5.3 cpu 0.33 thr 3.8% p95 0.248s reps 1 -> target 1
+[17:33:57] rps 6.5 cpu 0.30 thr 3.8% p95 0.236s reps 1 -> target 1
+[17:34:07] rps 7.1 cpu 0.43 thr 2.4% p95 0.178s reps 1 -> target 1
+[17:34:17] rps 7.1 cpu 0.44 thr 2.1% p95 0.171s reps 1 -> target 1
+[17:34:27] rps 7.1 cpu 0.54 thr 2.3% p95 0.171s reps 1 -> target 1
+[17:34:37] rps 7.1 cpu 0.38 thr 2.7% p95 0.171s reps 1 -> target 1
+[17:34:47] rps 7.1 cpu 0.47 thr 2.6% p95 0.169s reps 1 -> target 1
+[17:34:57] rps 7.2 cpu 0.56 thr 2.5% p95 0.156s reps 1 -> target 1
+[17:35:07] rps 7.2 cpu 0.42 thr 2.2% p95 0.147s reps 1 -> target 1
+[17:35:18] rps 7.1 cpu 0.44 thr 3.5% p95 0.150s reps 1 -> target 1
+[17:35:28] rps 7.0 cpu 0.54 thr 3.0% p95 0.173s reps 1 -> target 1
+[17:35:38] rps 7.0 cpu 0.44 thr 3.6% p95 0.175s reps 1 -> target 1
+[17:35:48] rps 7.1 cpu 0.54 thr 2.2% p95 0.177s reps 1 -> target 1
+[17:35:58] rps 7.0 cpu 0.41 thr 2.2% p95 0.177s reps 1 -> target 1
+[17:36:08] rps 7.0 cpu 0.44 thr 2.6% p95 0.180s reps 1 -> target 1
+[17:36:18] rps 7.0 cpu 0.52 thr 2.2% p95 0.171s reps 1 -> target 1
+[17:36:28] rps 7.0 cpu 0.39 thr 2.3% p95 0.180s reps 1 -> target 1
+[17:36:38] rps 6.9 cpu 0.53 thr 1.7% p95 0.179s reps 1 -> target 1
+[17:36:48] rps 7.0 cpu 0.40 thr 1.7% p95 0.180s reps 1 -> target 1
+[17:36:58] rps 7.0 cpu 0.45 thr 3.2% p95 0.176s reps 1 -> target 1
+[17:37:08] rps 7.1 cpu 0.55 thr 3.8% p95 0.172s reps 1 -> target 1
+[17:37:18] rps 6.0 cpu 0.44 thr 3.8% p95 2.169s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:37:28] rps 5.1 cpu 0.37 thr 2.4% p95 4.047s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:37:38] rps 4.0 cpu 0.34 thr 1.9% p95 4.464s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[17:37:38] RULE ACTION (R1 stuck (p95 above SLO while CPU idle)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[17:37:48] rps 2.6 cpu 0.13 thr 1.0% p95 4.657s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:37:58] rps 1.2 cpu 0.14 thr 2.0% p95 4.850s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:38:08] rps 3.3 cpu 0.24 thr 4.7% p95 4.473s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:38:18] rps 4.1 cpu 0.31 thr 4.9% p95 3.742s reps 1 -> target restart [R1 stuck (p95 above SLO while CPU idle)]
+[17:38:28] rps 4.8 cpu 0.32 thr 4.8% p95 0.199s reps 1 -> target 1
+[17:38:38] rps 6.0 cpu 0.32 thr 4.8% p95 0.189s reps 1 -> target 1
+[17:38:48] rps 6.9 cpu 0.39 thr 3.4% p95 0.187s reps 1 -> target 1
+[17:38:58] rps 7.0 cpu 0.41 thr 4.4% p95 0.170s reps 1 -> target 1
+[17:39:08] rps 7.1 cpu 0.52 thr 4.0% p95 0.164s reps 1 -> target 1
+[17:39:18] rps 7.1 cpu 0.40 thr 3.3% p95 0.151s reps 1 -> target 1
+[17:39:28] rps 7.2 cpu 0.42 thr 4.9% p95 0.146s reps 1 -> target 1
+[17:39:39] rps 7.2 cpu 0.53 thr 5.6% p95 0.125s reps 1 -> target 2
+[17:39:49] rps 7.3 cpu 0.38 thr 6.2% p95 0.091s reps 1 -> target 2
+[17:39:59] rps 7.3 cpu 0.53 thr 5.2% p95 0.091s reps 1 -> target 2
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=1 to=2 cooldown=30s
+[17:39:59] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 2 replicas in namespace 'default'.
+[17:41:39] rps 7.3 cpu 0.28 thr 2.0% p95 0.100s reps 2 -> target 1
+[17:41:49] rps 7.3 cpu 0.25 thr 2.4% p95 0.129s reps 2 -> target 1
+[17:41:59] rps 7.2 cpu 0.26 thr 1.7% p95 0.099s reps 2 -> target 1
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=2 to=1 cooldown=30s
+[17:41:59] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 1 replicas in namespace 'default'.
+[17:43:39] rps 7.2 cpu 0.51 thr 2.9% p95 0.147s reps 1 -> target 1
+[17:43:49] rps 7.2 cpu 0.43 thr 3.9% p95 0.143s reps 1 -> target 1
+[17:43:59] rps 7.2 cpu 0.52 thr 4.7% p95 0.134s reps 1 -> target 1
+[17:44:09] rps 7.2 cpu 0.43 thr 3.9% p95 0.091s reps 1 -> target 1
+[17:44:19] rps 7.2 cpu 0.51 thr 3.5% p95 0.090s reps 1 -> target 1
+[17:44:29] rps 7.3 cpu 0.52 thr 2.8% p95 0.090s reps 1 -> target 1
+[17:44:40] rps 7.3 cpu 0.52 thr 2.2% p95 0.090s reps 1 -> target 1
+[17:44:50] rps 7.3 cpu 0.52 thr 3.5% p95 0.090s reps 1 -> target 1
+[17:45:00] rps 7.4 cpu 0.52 thr 3.9% p95 0.090s reps 1 -> target 1
+[17:45:10] rps 7.4 cpu 0.52 thr 3.9% p95 0.090s reps 1 -> target 1
+[17:45:20] rps 7.3 cpu 0.51 thr 3.8% p95 0.090s reps 1 -> target 1
+[17:45:30] rps 7.3 cpu 0.52 thr 2.4% p95 0.090s reps 1 -> target 1
+[17:45:40] rps 7.2 cpu 0.52 thr 2.4% p95 0.091s reps 1 -> target 1
+[17:45:50] rps 7.2 cpu 0.51 thr 1.6% p95 0.090s reps 1 -> target 1
+[17:46:00] rps 7.2 cpu 0.52 thr 2.0% p95 0.090s reps 1 -> target 1
+[17:46:10] rps 7.3 cpu 0.52 thr 2.0% p95 0.090s reps 1 -> target 1
+[17:46:20] rps 7.3 cpu 0.51 thr 2.2% p95 0.090s reps 1 -> target 1
+[17:46:30] rps 7.3 cpu 0.52 thr 3.6% p95 0.090s reps 1 -> target 1
+[17:46:40] rps 7.4 cpu 0.51 thr 2.8% p95 0.090s reps 1 -> target 1
+[17:46:50] rps 7.4 cpu 0.52 thr 2.8% p95 0.090s reps 1 -> target 1
+[17:47:00] rps 7.3 cpu 0.53 thr 3.3% p95 0.096s reps 1 -> target 1
+[17:47:10] rps 7.2 cpu 0.46 thr 2.0% p95 0.147s reps 1 -> target 1
+[17:47:20] rps 7.1 cpu 0.54 thr 2.0% p95 0.160s reps 1 -> target 1
+[17:47:30] rps 7.1 cpu 0.54 thr 2.8% p95 0.173s reps 1 -> target 1
+[17:47:40] rps 7.0 cpu 0.52 thr 2.3% p95 0.178s reps 1 -> target 1
+[17:47:50] rps 7.0 cpu 0.44 thr 2.3% p95 0.177s reps 1 -> target 1
+[17:48:00] rps 7.0 cpu 0.52 thr 3.2% p95 0.170s reps 1 -> target 1
+[17:48:10] rps 7.0 cpu 0.51 thr 3.1% p95 0.174s reps 1 -> target 1
+[17:48:20] rps 6.9 cpu 0.51 thr 3.2% p95 0.175s reps 1 -> target 1
+[17:48:30] rps 6.9 cpu 0.51 thr 3.4% p95 0.177s reps 1 -> target 1
+[17:48:40] rps 6.9 cpu 0.50 thr 3.9% p95 0.176s reps 1 -> target 1
+[17:48:50] rps 7.0 cpu 0.51 thr 4.5% p95 0.169s reps 1 -> target 1
+[17:49:00] rps 7.1 cpu 0.51 thr 3.4% p95 0.154s reps 1 -> target 1
+
+⏹️ Rule-based scaler stopped.

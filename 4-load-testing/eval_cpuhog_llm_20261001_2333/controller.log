@@ -1,0 +1,1354 @@
+Loading anomaly detection model from: ./5-ml-training/health_model.pkl
+Model: ocsvm per replica count [1, 2, 3], features ['avg_cpu_per_pod', 'latency_p95', 'cpu_throttling', 'throughput']
+✅ Model loaded. Starting continuous monitoring...
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metrics unavailable: ['throughput', 'latency_p95']. Skipping ML prediction and remediation.
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metrics unavailable: ['throughput', 'latency_p95']. Skipping ML prediction and remediation.
+cpu: 0.049, throttling: 0.016, latency: 0.147, throughput: 1.788, replicas: 1, prediction: -1 (score -0.0313)
+[23:35:57] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.039, throttling: 0.016, latency: 0.143, throughput: 3.003, replicas: 1, prediction: -1 (score -0.0617)
+[23:36:07] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.311, throttling: 0.035, latency: 0.144, throughput: 4.212, replicas: 1, prediction: 1 (score +0.0935)
+[23:36:17]  Normal operation.
+cpu: 0.512, throttling: 0.027, latency: 0.149, throughput: 5.418, replicas: 1, prediction: 1 (score +0.0678)
+[23:36:27]  Normal operation.
+cpu: 0.534, throttling: 0.027, latency: 0.184, throughput: 6.960, replicas: 1, prediction: 1 (score +0.0549)
+[23:36:37]  Normal operation.
+cpu: 0.537, throttling: 0.034, latency: 0.149, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0528)
+[23:36:48]  Normal operation.
+cpu: 0.409, throttling: 0.034, latency: 0.167, throughput: 7.080, replicas: 1, prediction: 1 (score +0.0671)
+[23:36:58]  Normal operation.
+cpu: 0.526, throttling: 0.055, latency: 0.175, throughput: 7.020, replicas: 1, prediction: 1 (score +0.0552)
+[23:37:08]  Normal operation.
+cpu: 0.342, throttling: 0.045, latency: 0.176, throughput: 7.020, replicas: 1, prediction: 1 (score +0.0726)
+[23:37:18]  Normal operation.
+cpu: 0.522, throttling: 0.044, latency: 0.178, throughput: 7.020, replicas: 1, prediction: 1 (score +0.0558)
+[23:37:28]  Normal operation.
+cpu: 0.385, throttling: 0.040, latency: 0.192, throughput: 6.880, replicas: 1, prediction: 1 (score +0.0707)
+[23:37:38]  Normal operation.
+cpu: 0.527, throttling: 0.043, latency: 0.222, throughput: 6.840, replicas: 1, prediction: 1 (score +0.0523)
+[23:37:48]  Normal operation.
+cpu: 0.533, throttling: 0.058, latency: 0.215, throughput: 6.900, replicas: 1, prediction: 1 (score +0.0527)
+[23:37:58]  Normal operation.
+cpu: 0.386, throttling: 0.066, latency: 0.205, throughput: 6.900, replicas: 1, prediction: 1 (score +0.0677)
+[23:38:08]  Normal operation.
+cpu: 0.534, throttling: 0.051, latency: 0.204, throughput: 6.940, replicas: 1, prediction: 1 (score +0.0549)
+[23:38:18]  Normal operation.
+cpu: 0.537, throttling: 0.053, latency: 0.159, throughput: 7.100, replicas: 1, prediction: 1 (score +0.0535)
+[23:38:28]  Normal operation.
+cpu: 0.432, throttling: 0.039, latency: 0.124, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0636)
+[23:38:38]  Normal operation.
+cpu: 0.540, throttling: 0.080, latency: 0.116, throughput: 7.240, replicas: 1, prediction: 1 (score +0.0435)
+[23:38:48]  Normal operation.
+cpu: 0.404, throttling: 0.080, latency: 0.132, throughput: 7.300, replicas: 1, prediction: 1 (score +0.0571)
+[23:38:58]  Normal operation.
+cpu: 0.544, throttling: 0.080, latency: 0.138, throughput: 7.280, replicas: 1, prediction: 1 (score +0.0428)
+[23:39:08]  Normal operation.
+cpu: 0.468, throttling: 0.052, latency: 0.143, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0603)
+[23:39:18]  Normal operation.
+cpu: 0.553, throttling: 0.056, latency: 0.136, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0505)
+[23:39:28]  Normal operation.
+cpu: 0.346, throttling: 0.052, latency: 0.137, throughput: 7.240, replicas: 1, prediction: 1 (score +0.0706)
+[23:39:38]  Normal operation.
+cpu: 0.549, throttling: 0.065, latency: 0.196, throughput: 6.760, replicas: 1, prediction: 1 (score +0.0523)
+[23:39:48]  Normal operation.
+cpu: 0.407, throttling: 0.077, latency: 0.233, throughput: 5.956, replicas: 1, prediction: 1 (score +0.0589)
+[23:39:58]  Normal operation.
+cpu: 0.707, throttling: 0.120, latency: 0.366, throughput: 5.660, replicas: 1, prediction: -1 (score -0.1325)
+[23:40:08] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.629, throttling: 0.159, latency: 0.383, throughput: 5.100, replicas: 1, prediction: -1 (score -0.1957)
+[23:40:19] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.921, throttling: 0.183, latency: 0.427, throughput: 4.500, replicas: 1, prediction: -1 (score -0.3091)
+
+[23:40:29] ANOMALY DETECTED!
+Metrics: Tput: 4.5 | CPU: 0.92 | Throttling: 18.3% | Latency: 0.427s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.92cores | Throttle:18.3% | Tput:4.0rps | Reps:1 | P95:0.43s
+🧠 [Memory] NO similar past incident at 1 replica(s): the closest (distance 3.0, >3 = a different situation) describe DIFFERENT problems. Do NOT reuse their actions; decide from the current metrics. For reference only:
+  - distance 3.0 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 3.8 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.9205423060970553, "throughput": 4.5,  │
+│ "latency_p95": 0.4275, "active_replicas": 1.0, "cpu_throttling":             │
+│ 0.18257261410788383}                                                         │
+│ Assigned Signature: "State -> CPU:0.92cores | Throttle:18.3% | Tput:4.0rps | │
+│ Reps:1 | P95:0.43s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ NO similar past incident at 1 replica(s): the closest (distance 3.0, >3 = a  │
+│ different situation) describe DIFFERENT problems. Do NOT reuse their         │
+│ actions; decide from the current metrics. For reference only:                │
+│   - distance 3.0 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 3.8 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 3/3 in 30s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8\] nodename nor servname 
+provided, or not known
+[Step 1: Duration 50.20 seconds]
+
+[AIOps Agent] Agent crashed during execution: Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8] nodename nor servname provided, or not known
+
+ [AIOps Agent] No action applied to the cluster.
+Agent Final Output: 
+
+[23:41:19] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.927, throttling: 0.170, latency: 0.579, throughput: 4.220, replicas: 1, prediction: -1 (score -0.4304)
+[23:41:29] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.719, throttling: 0.168, latency: 0.626, throughput: 4.160, replicas: 1, prediction: -1 (score -0.4508)
+[23:41:39] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.880, throttling: 0.153, latency: 0.661, throughput: 4.000, replicas: 1, prediction: -1 (score -0.4728)
+[23:41:49] Anomaly confirmed, but agent cooldown has 30s left.
+cpu: 0.869, throttling: 0.169, latency: 0.676, throughput: 3.840, replicas: 1, prediction: -1 (score -0.5025)
+[23:41:59] Anomaly confirmed, but agent cooldown has 20s left.
+cpu: 0.880, throttling: 0.192, latency: 0.656, throughput: 4.000, replicas: 1, prediction: -1 (score -0.5199)
+[23:42:09] Anomaly confirmed, but agent cooldown has 10s left.
+cpu: 0.880, throttling: 0.192, latency: 0.627, throughput: 4.140, replicas: 1, prediction: -1 (score -0.4976)
+
+[23:42:19] ANOMALY DETECTED!
+Metrics: Tput: 4.1 | CPU: 0.88 | Throttling: 19.2% | Latency: 0.627s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.88cores | Throttle:19.2% | Tput:4.0rps | Reps:1 | P95:0.63s
+🧠 [Memory] NO similar past incident at 1 replica(s): the closest (distance 3.5, >3 = a different situation) describe DIFFERENT problems. Do NOT reuse their actions; decide from the current metrics. For reference only:
+  - distance 3.5 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 4.3 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.8802184507104992, "throughput": 4.14, │
+│ "latency_p95": 0.6269736842105259, "active_replicas": 1.0, "cpu_throttling": │
+│ 0.1915367483296214}                                                          │
+│ Assigned Signature: "State -> CPU:0.88cores | Throttle:19.2% | Tput:4.0rps | │
+│ Reps:1 | P95:0.63s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ NO similar past incident at 1 replica(s): the closest (distance 3.5, >3 = a  │
+│ different situation) describe DIFFERENT problems. Do NOT reuse their         │
+│ actions; decide from the current metrics. For reference only:                │
+│   - distance 3.5 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 4.3 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 3/3 in 30s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8\] nodename nor servname 
+provided, or not known
+[Step 1: Duration 50.10 seconds]
+
+[AIOps Agent] Agent crashed during execution: Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8] nodename nor servname provided, or not known
+
+ [AIOps Agent] No action applied to the cluster.
+Agent Final Output: 
+
+[23:43:09] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.944, throttling: 0.180, latency: 0.459, throughput: 4.320, replicas: 1, prediction: -1 (score -0.3364)
+[23:43:19] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.942, throttling: 0.201, latency: 0.459, throughput: 4.360, replicas: 1, prediction: -1 (score -0.3754)
+[23:43:29] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.944, throttling: 0.209, latency: 0.459, throughput: 4.220, replicas: 1, prediction: -1 (score -0.3901)
+[23:43:39] Anomaly confirmed, but agent cooldown has 30s left.
+cpu: 0.936, throttling: 0.210, latency: 0.475, throughput: 4.320, replicas: 1, prediction: -1 (score -0.4061)
+[23:43:49] Anomaly confirmed, but agent cooldown has 20s left.
+cpu: 0.938, throttling: 0.230, latency: 0.475, throughput: 4.180, replicas: 1, prediction: -1 (score -0.4459)
+[23:43:59] Anomaly confirmed, but agent cooldown has 10s left.
+cpu: 0.936, throttling: 0.210, latency: 0.472, throughput: 4.180, replicas: 1, prediction: -1 (score -0.4027)
+
+[23:44:10] ANOMALY DETECTED!
+Metrics: Tput: 4.2 | CPU: 0.94 | Throttling: 21.0% | Latency: 0.472s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.94cores | Throttle:21.0% | Tput:4.0rps | Reps:1 | P95:0.47s
+🧠 [Memory] NO similar past incident at 1 replica(s): the closest (distance 4.3, >3 = a different situation) describe DIFFERENT problems. Do NOT reuse their actions; decide from the current metrics. For reference only:
+  - distance 4.3 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 5.2 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.9357388871424075, "throughput": 4.18, │
+│ "latency_p95": 0.4719565217391304, "active_replicas": 1.0, "cpu_throttling": │
+│ 0.20964360587002095}                                                         │
+│ Assigned Signature: "State -> CPU:0.94cores | Throttle:21.0% | Tput:4.0rps | │
+│ Reps:1 | P95:0.47s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ NO similar past incident at 1 replica(s): the closest (distance 4.3, >3 = a  │
+│ different situation) describe DIFFERENT problems. Do NOT reuse their         │
+│ actions; decide from the current metrics. For reference only:                │
+│   - distance 4.3 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 5.2 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 3/3 in 30s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8\] nodename nor servname 
+provided, or not known
+[Step 1: Duration 50.09 seconds]
+
+[AIOps Agent] Agent crashed during execution: Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8] nodename nor servname provided, or not known
+
+ [AIOps Agent] No action applied to the cluster.
+Agent Final Output: 
+
+[23:45:00] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.936, throttling: 0.193, latency: 0.469, throughput: 4.280, replicas: 1, prediction: -1 (score -0.3686)
+[23:45:10] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.932, throttling: 0.161, latency: 0.479, throughput: 4.280, replicas: 1, prediction: -1 (score -0.3245)
+[23:45:20] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.908, throttling: 0.132, latency: 0.480, throughput: 4.140, replicas: 1, prediction: -1 (score -0.2848)
+[23:45:30] Anomaly confirmed, but agent cooldown has 30s left.
+cpu: 0.908, throttling: 0.130, latency: 0.480, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2819)
+[23:45:40] Anomaly confirmed, but agent cooldown has 20s left.
+cpu: 0.912, throttling: 0.123, latency: 0.482, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2766)
+[23:45:50] Anomaly confirmed, but agent cooldown has 10s left.
+cpu: 0.920, throttling: 0.156, latency: 0.483, throughput: 4.300, replicas: 1, prediction: -1 (score -0.3195)
+
+[23:46:00] ANOMALY DETECTED!
+Metrics: Tput: 4.3 | CPU: 0.92 | Throttling: 15.6% | Latency: 0.483s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.92cores | Throttle:15.6% | Tput:4.0rps | Reps:1 | P95:0.48s
+🧠 [Memory] 19 past incident(s) at 1 replica(s); most similar first (distance ~0-1 = nearly the same state, >3 = a different situation):
+  - distance 2.2 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 2.7 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.9196814034584887, "throughput":       │
+│ 4.299828006879725, "latency_p95": 0.4831730769230769, "active_replicas":     │
+│ 1.0, "cpu_throttling": 0.15550239234449761}                                  │
+│ Assigned Signature: "State -> CPU:0.92cores | Throttle:15.6% | Tput:4.0rps | │
+│ Reps:1 | P95:0.48s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ 19 past incident(s) at 1 replica(s); most similar first (distance ~0-1 =     │
+│ nearly the same state, >3 = a different situation):                          │
+│   - distance 2.2 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 2.7 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 3/3 in 30s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8\] nodename nor servname 
+provided, or not known
+[Step 1: Duration 50.10 seconds]
+
+[AIOps Agent] Agent crashed during execution: Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8] nodename nor servname provided, or not known
+
+ [AIOps Agent] No action applied to the cluster.
+Agent Final Output: 
+
+[23:46:50] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.925, throttling: 0.135, latency: 0.477, throughput: 4.180, replicas: 1, prediction: -1 (score -0.2860)
+[23:47:00] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.925, throttling: 0.135, latency: 0.474, throughput: 4.140, replicas: 1, prediction: -1 (score -0.2829)
+[23:47:10] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.927, throttling: 0.144, latency: 0.470, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2907)
+[23:47:20] Anomaly confirmed, but agent cooldown has 30s left.
+cpu: 0.938, throttling: 0.116, latency: 0.464, throughput: 4.280, replicas: 1, prediction: -1 (score -0.2533)
+[23:47:30] Anomaly confirmed, but agent cooldown has 20s left.
+cpu: 0.791, throttling: 0.116, latency: 0.460, throughput: 4.320, replicas: 1, prediction: -1 (score -0.2349)
+[23:47:40] Anomaly confirmed, but agent cooldown has 10s left.
+cpu: 0.922, throttling: 0.137, latency: 0.460, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2710)
+
+[23:47:50] ANOMALY DETECTED!
+Metrics: Tput: 4.2 | CPU: 0.92 | Throttling: 13.7% | Latency: 0.460s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.92cores | Throttle:13.7% | Tput:4.0rps | Reps:1 | P95:0.46s
+🧠 [Memory] 19 past incident(s) at 1 replica(s); most similar first (distance ~0-1 = nearly the same state, >3 = a different situation):
+  - distance 2.0 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 2.1 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.9215958376030832, "throughput": 4.16, │
+│ "latency_p95": 0.45999999999999996, "active_replicas": 1.0,                  │
+│ "cpu_throttling": 0.13691931540342298}                                       │
+│ Assigned Signature: "State -> CPU:0.92cores | Throttle:13.7% | Tput:4.0rps | │
+│ Reps:1 | P95:0.46s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ 19 past incident(s) at 1 replica(s); most similar first (distance ~0-1 =     │
+│ nearly the same state, >3 = a different situation):                          │
+│   - distance 2.0 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 2.1 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 3/3 in 30s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8\] nodename nor servname 
+provided, or not known
+[Step 1: Duration 50.10 seconds]
+
+[AIOps Agent] Agent crashed during execution: Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8] nodename nor servname provided, or not known
+
+ [AIOps Agent] No action applied to the cluster.
+Agent Final Output: 
+
+[23:48:40] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.921, throttling: 0.116, latency: 0.482, throughput: 4.180, replicas: 1, prediction: -1 (score -0.2709)
+[23:48:50] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.913, throttling: 0.109, latency: 0.482, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2630)
+[23:49:01] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.911, throttling: 0.130, latency: 0.483, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2855)
+[23:49:11] Anomaly confirmed, but agent cooldown has 30s left.
+cpu: 0.911, throttling: 0.130, latency: 0.482, throughput: 4.160, replicas: 1, prediction: -1 (score -0.2838)
+[23:49:21] Anomaly confirmed, but agent cooldown has 20s left.
+cpu: 0.906, throttling: 0.144, latency: 0.483, throughput: 4.160, replicas: 1, prediction: -1 (score -0.3019)
+[23:49:31] Anomaly confirmed, but agent cooldown has 10s left.
+cpu: 0.914, throttling: 0.182, latency: 0.485, throughput: 4.160, replicas: 1, prediction: -1 (score -0.3629)
+
+[23:49:41] ANOMALY DETECTED!
+Metrics: Tput: 4.2 | CPU: 0.91 | Throttling: 18.2% | Latency: 0.485s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.91cores | Throttle:18.2% | Tput:4.0rps | Reps:1 | P95:0.48s
+🧠 [Memory] NO similar past incident at 1 replica(s): the closest (distance 3.1, >3 = a different situation) describe DIFFERENT problems. Do NOT reuse their actions; decide from the current metrics. For reference only:
+  - distance 3.1 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 3.9 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.9135526846776068, "throughput":       │
+│ 4.15966722662187, "latency_p95": 0.48489795918367345, "active_replicas":     │
+│ 1.0, "cpu_throttling": 0.1824686940966011}                                   │
+│ Assigned Signature: "State -> CPU:0.91cores | Throttle:18.2% | Tput:4.0rps | │
+│ Reps:1 | P95:0.48s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ NO similar past incident at 1 replica(s): the closest (distance 3.1, >3 = a  │
+│ different situation) describe DIFFERENT problems. Do NOT reuse their         │
+│ actions; decide from the current metrics. For reference only:                │
+│   - distance 3.1 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 3.9 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 3/3 in 30s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8\] nodename nor servname 
+provided, or not known
+[Step 1: Duration 50.08 seconds]
+
+[AIOps Agent] Agent crashed during execution: Error in generating model output:
+litellm.APIConnectionError: GeminiException - [Errno 8] nodename nor servname provided, or not known
+
+ [AIOps Agent] No action applied to the cluster.
+Agent Final Output: 
+
+[23:50:31] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.938, throttling: 0.190, latency: 0.460, throughput: 4.280, replicas: 1, prediction: -1 (score -0.3554)
+[23:50:41] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.933, throttling: 0.152, latency: 0.460, throughput: 4.200, replicas: 1, prediction: -1 (score -0.2922)
+[23:50:51] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.932, throttling: 0.165, latency: 0.460, throughput: 4.160, replicas: 1, prediction: -1 (score -0.3117)
+[23:51:01] Anomaly confirmed, but agent cooldown has 30s left.
+cpu: 0.934, throttling: 0.141, latency: 0.461, throughput: 4.320, replicas: 1, prediction: -1 (score -0.2785)
+[23:51:11] Anomaly confirmed, but agent cooldown has 20s left.
+cpu: 0.941, throttling: 0.142, latency: 0.450, throughput: 4.380, replicas: 1, prediction: -1 (score -0.2699)
+[23:51:21] Anomaly confirmed, but agent cooldown has 10s left.
+cpu: 0.833, throttling: 0.202, latency: 0.430, throughput: 4.320, replicas: 1, prediction: -1 (score -0.3409)
+
+[23:51:31] ANOMALY DETECTED!
+Metrics: Tput: 4.3 | CPU: 0.83 | Throttling: 20.2% | Latency: 0.430s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v4)! Assigned Signature: State -> CPU:0.83cores | Throttle:20.2% | Tput:4.0rps | Reps:1 | P95:0.43s
+🧠 [Memory] NO similar past incident at 1 replica(s): the closest (distance 3.6, >3 = a different situation) describe DIFFERENT problems. Do NOT reuse their actions; decide from the current metrics. For reference only:
+  - distance 3.6 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps | Reps:1 | P95:0.46s | p95 0.46
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: The system was suffering from a runaway background job ('rebuild-search-index') which was blocking the event loop and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+  - distance 4.6 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps | Reps:1 | P95:0.47s | p95 0.4711
+    Action taken: restart (verified STABLE)
+    Root cause: Root cause: A runaway background job ('rebuild-search-index') was blocking the event loop and causing CPU throttling and high latency. Action: Triggered a rolling restart of the deployment to clear the stuck process and restore service health.
+These are hints only: always check them against the current metrics.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent. An anomaly was detected by the Machine      │
+│ Learning monitor.                                                            │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics: {"avg_cpu_per_pod": 0.8326011437410874, "throughput": 4.32, │
+│ "latency_p95": 0.42999999999999994, "active_replicas": 1.0,                  │
+│ "cpu_throttling": 0.2020997375328084}                                        │
+│ Assigned Signature: "State -> CPU:0.83cores | Throttle:20.2% | Tput:4.0rps | │
+│ Reps:1 | P95:0.43s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ The following capacity limits were measured via load testing.                │
+│ Use them to reason about whether the current replica count matches the       │
+│ traffic level.                                                               │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ NO similar past incident at 1 replica(s): the closest (distance 3.6, >3 = a  │
+│ different situation) describe DIFFERENT problems. Do NOT reuse their         │
+│ actions; decide from the current metrics. For reference only:                │
+│   - distance 3.6 | State -> CPU:0.75cores | Throttle:13.5% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.46s | p95 0.46                                                │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: The system was suffering from a runaway          │
+│ background job ('rebuild-search-index') which was blocking the event loop    │
+│ and consuming excessive CPU (2.0x the healthy baseline). Action: Triggered a │
+│ rolling restart of the deployment to clear the stuck process and restore     │
+│ service health.                                                              │
+│   - distance 4.6 | State -> CPU:0.78cores | Throttle:11.2% | Tput:5.0rps |   │
+│ Reps:1 | P95:0.47s | p95 0.4711                                              │
+│     Action taken: restart (verified STABLE)                                  │
+│     Root cause: Root cause: A runaway background job                         │
+│ ('rebuild-search-index') was blocking the event loop and causing CPU         │
+│ throttling and high latency. Action: Triggered a rolling restart of the      │
+│ deployment to clear the stuck process and restore service health.            │
+│ These are hints only: always check them against the current metrics.         │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. You cannot call multiple tools   │
+│ in the same python block. Call one tool, print its result, and STOP to wait  │
+│ for the system output.                                                       │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ Diagnose the anomaly, decide on the correct remediation, and execute it.     │
+│                                                                              │
+│ Step 1 — GATHER INFORMATION:                                                 │
+│   - The metrics, capacity reference and incident memory above are usually    │
+│ enough. Overload and over-provisioning are visible in the metrics alone.     │
+│   - Call `get_kubernetes_logs()` ONLY if the metrics suggest application     │
+│ errors or a frozen app (e.g. high latency with low CPU). It returns only     │
+│ warnings, errors and 5xx lines.                                              │
+│                                                                              │
+│ Step 2 — REASON AND DECIDE (SRE HIERARCHICAL DECISION FRAMEWORK):            │
+│   Follow this strict 3-tier priority framework to make your decision:        │
+│                                                                              │
+│   * TIER 1: SERVICE LEVEL OBJECTIVES & SYSTEM HEALTH (HIGHEST PRIORITY):     │
+│     - SLO Baseline Targets: Latency P95 < 0.35s | CPU Throttling < 5.0% |    │
+│ CPU per pod < 0.75 cores.                                                    │
+│     - If Latency is elevated (> 0.35s) OR CPU Throttling is significant (>   │
+│ 5.0%) OR CPU per pod is near/above 0.75:                                     │
+│       -> The system is suffering from performance degradation and user SLOs  │
+│ are violated. Act now, but first identify the bottleneck.                    │
+│       -> CPU bottleneck (CPU per pod near/above 0.75 OR throttling > 5%):    │
+│ more pods add CPU, so Scale UP is MANDATORY, REGARDLESS of whether           │
+│ throughput appears within the capacity table range.                          │
+│       -> NOT a CPU bottleneck (latency high while CPU per pod is well below  │
+│ 0.75 and throttling is low): more pods will NOT fix it, because the pods are │
+│ waiting on something, not computing. The app itself is stuck (deadlock,      │
+│ exhausted connection pool, hung dependency). Call `get_kubernetes_logs()`;   │
+│ if they show the app is stuck, call `restart_kubernetes_deployment()`.       │
+│                                                                              │
+│   * TIER 2: CAPACITY PROVISIONING (TRAFFIC MATCHING):                        │
+│     - Apply this ONLY if Tier 1 targets are met (latency is low and          │
+│ throttling is negligible).                                                   │
+│     - Compare current throughput with the System Capacity Reference:         │
+│       -> If throughput is approaching or exceeding the safe limit of the     │
+│ current replicas, scale UP to the required replica count.                    │
+│                                                                              │
+│   * TIER 3: RESOURCE EFFICIENCY (SCALE DOWN):                                │
+│     - Apply this when considering scaling DOWN due to low                    │
+│ traffic/over-provisioning.                                                   │
+│     - If Tier 1 targets are met and current throughput is significantly      │
+│ lower than the capacity of the current replicas, you MUST scale down to save │
+│ resources.                                                                   │
+│     - Find the MINIMUM number of replicas that can safely handle the current │
+│ throughput based on the System Capacity Reference.                           │
+│     - If this minimum required replicas is lower than the current active     │
+│ replicas, call `scale_kubernetes_deployment` to scale down to that minimum   │
+│ number.                                                                      │
+│                                                                              │
+│   * SUMMARY OF ACTIONS:                                                      │
+│     - Scale UP: If Tier 1 is violated by a CPU bottleneck (CPU saturation /  │
+│ throttling, with or without high latency) OR Tier 2 demands more pods.       │
+│     - Scale DOWN: If Tier 1 is satisfied AND Tier 3 shows the system is      │
+│ over-provisioned for the current throughput.                                 │
+│     - Restart: If latency is high while CPU is low and the logs show the app │
+│ is stuck (deadlock, exhausted pool, hung dependency).                        │
+│     - NO ACTION: If the system is operating within healthy limits and        │
+│ current replicas perfectly match the traffic.                                │
+│                                                                              │
+│ Step 3 — EXECUTE:                                                            │
+│   - If an action is needed, call                                             │
+│ `scale_kubernetes_deployment(replicas=<int>)` (target deployment             │
+│ 'aiops-backend-deployment' is automatic) or                                  │
+│ `restart_kubernetes_deployment()`.                                           │
+│   - If NO ACTION is needed (e.g., hysteresis prevents scaling, or metrics    │
+│ are within safe limits despite the ML anomaly trigger), DO NOT call any      │
+│ execution tools. Instead, immediately call `final_answer("No action taken:   │
+│ <state your reason>")` WRAPPED IN A ```python ... ``` BLOCK and STOP.        │
+│                                                                              │
+│ Step 4 — REPORT (after the action succeeded, or right away for no action):   │
+│   - Call `final_answer("Root cause: <one sentence>. Action: <what you did    │
+│ and why>.")` WRAPPED IN A ```python ... ``` BLOCK.                           │
+│   - Do NOT verify or save anything yourself: the system verifies the metrics │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] APIConnectionError from gemini/gemini-3.1-flash-lite, retry 2/3 in 15s
+[Step 1: Duration 8.45 seconds]
+
+⏹️ Monitoring stopped by user.
+
+--- Monitor summary (16.0 min) ---
+  Readings evaluated:          64
+  Anomalous readings:          41 (64.1%)
+  Woke the agent:              7 (26.2/hour)
+  Skipped readings:            settling=0 low_traffic=0 missing_metrics=2

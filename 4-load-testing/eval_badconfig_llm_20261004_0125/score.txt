@@ -1,0 +1,25 @@
+             label: llm
+             start: 2026-10-04 01:28:12
+               end: 2026-10-04 01:44:14
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 480
+          p95_mean: 0.52
+           p95_p99: 1.4
+   replica_minutes: 33.0
+      under_prov_s: 0
+       over_prov_s: 600
+  correct_prov_pct: 36.8
+     scale_actions: 4
+         incidents: 4
+            stable: 0
+         llm_calls: 12
+      agent_s_mean: 23.2
+             notes: blind test: prompt v4, memory off (no rollback tool)
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 3
+     agent_actions: scale 1->2 | scale 2->3 | restart | scale 3->1; rollback to 3
+      rule_actions: 

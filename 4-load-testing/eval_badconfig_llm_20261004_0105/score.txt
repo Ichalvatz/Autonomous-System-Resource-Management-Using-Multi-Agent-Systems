@@ -1,0 +1,25 @@
+             label: llm-v5
+             start: 2026-10-04 01:07:57
+               end: 2026-10-04 01:23:59
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 750
+          p95_mean: 0.572
+           p95_p99: 1.4
+   replica_minutes: 24.8
+      under_prov_s: 0
+       over_prov_s: 520
+  correct_prov_pct: 45.3
+     scale_actions: 1
+         incidents: 4
+            stable: 0
+         llm_calls: 9
+      agent_s_mean: 21.5
+             notes: blind test: prompt v5, memory off (hint, no rollback tool)
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 2
+     agent_actions: restart | scale 1->2 | restart | restart
+      rule_actions: 

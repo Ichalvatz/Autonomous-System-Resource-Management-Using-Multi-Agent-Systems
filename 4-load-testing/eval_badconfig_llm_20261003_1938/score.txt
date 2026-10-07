@@ -1,0 +1,25 @@
+             label: llm-v7
+             start: 2026-10-03 19:40:32
+               end: 2026-10-03 19:56:33
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 330
+          p95_mean: 0.236
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 4
+      agent_s_mean: 8.5
+             notes: prompt v7 (final), memory off (tools only)
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 110
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 108
+      rule_actions: 

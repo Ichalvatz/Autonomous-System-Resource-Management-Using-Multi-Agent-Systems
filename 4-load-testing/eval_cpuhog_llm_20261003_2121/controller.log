@@ -1,0 +1,397 @@
+Loading anomaly detection model from: ./5-ml-training/health_model.pkl
+Model: ocsvm per replica count [1, 2, 3], features ['avg_cpu_per_pod', 'latency_p95', 'cpu_throttling', 'throughput']
+✅ Model loaded. Starting continuous monitoring...
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metrics unavailable: ['throughput', 'latency_p95']. Skipping ML prediction and remediation.
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metrics unavailable: ['throughput', 'latency_p95']. Skipping ML prediction and remediation.
+cpu: 0.102, throttling: 0.025, latency: 0.176, throughput: 1.740, replicas: 1, prediction: 1 (score +0.0503)
+[21:23:43]  Normal operation.
+cpu: 0.077, throttling: 0.025, latency: 0.163, throughput: 2.974, replicas: 1, prediction: 1 (score +0.0301)
+[21:23:53]  Normal operation.
+cpu: 0.309, throttling: 0.043, latency: 0.158, throughput: 4.109, replicas: 1, prediction: 1 (score +0.0941)
+[21:24:03]  Normal operation.
+cpu: 0.425, throttling: 0.055, latency: 0.164, throughput: 5.322, replicas: 1, prediction: 1 (score +0.0778)
+[21:24:13]  Normal operation.
+cpu: 0.407, throttling: 0.052, latency: 0.184, throughput: 6.881, replicas: 1, prediction: 1 (score +0.0688)
+[21:24:23]  Normal operation.
+cpu: 0.408, throttling: 0.052, latency: 0.147, throughput: 7.120, replicas: 1, prediction: 1 (score +0.0669)
+[21:24:33]  Normal operation.
+cpu: 0.505, throttling: 0.052, latency: 0.145, throughput: 7.120, replicas: 1, prediction: 1 (score +0.0570)
+[21:24:44]  Normal operation.
+cpu: 0.508, throttling: 0.049, latency: 0.137, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0562)
+[21:24:54]  Normal operation.
+cpu: 0.514, throttling: 0.064, latency: 0.092, throughput: 7.240, replicas: 1, prediction: 1 (score +0.0534)
+[21:25:04]  Normal operation.
+cpu: 0.377, throttling: 0.072, latency: 0.092, throughput: 7.280, replicas: 1, prediction: 1 (score +0.0633)
+[21:25:14]  Normal operation.
+cpu: 0.519, throttling: 0.084, latency: 0.136, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0439)
+[21:25:24]  Normal operation.
+cpu: 0.508, throttling: 0.071, latency: 0.137, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0520)
+[21:25:34]  Normal operation.
+cpu: 0.507, throttling: 0.059, latency: 0.138, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0555)
+[21:25:44]  Normal operation.
+cpu: 0.347, throttling: 0.050, latency: 0.143, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0708)
+[21:25:54]  Normal operation.
+cpu: 0.504, throttling: 0.053, latency: 0.150, throughput: 7.080, replicas: 1, prediction: 1 (score +0.0573)
+[21:26:04]  Normal operation.
+cpu: 0.507, throttling: 0.054, latency: 0.149, throughput: 7.160, replicas: 1, prediction: 1 (score +0.0564)
+[21:26:14]  Normal operation.
+cpu: 0.507, throttling: 0.054, latency: 0.155, throughput: 7.120, replicas: 1, prediction: 1 (score +0.0567)
+[21:26:24]  Normal operation.
+cpu: 0.503, throttling: 0.039, latency: 0.163, throughput: 7.120, replicas: 1, prediction: 1 (score +0.0573)
+[21:26:34]  Normal operation.
+cpu: 0.504, throttling: 0.035, latency: 0.156, throughput: 7.060, replicas: 1, prediction: 1 (score +0.0576)
+[21:26:44]  Normal operation.
+cpu: 0.509, throttling: 0.035, latency: 0.148, throughput: 7.160, replicas: 1, prediction: 1 (score +0.0564)
+[21:26:54]  Normal operation.
+cpu: 0.410, throttling: 0.032, latency: 0.140, throughput: 7.159, replicas: 1, prediction: 1 (score +0.0665)
+[21:27:04]  Normal operation.
+cpu: 0.513, throttling: 0.046, latency: 0.145, throughput: 7.199, replicas: 1, prediction: 1 (score +0.0555)
+[21:27:14]  Normal operation.
+cpu: 0.402, throttling: 0.044, latency: 0.147, throughput: 7.160, replicas: 1, prediction: 1 (score +0.0671)
+[21:27:24]  Normal operation.
+cpu: 0.506, throttling: 0.050, latency: 0.194, throughput: 6.720, replicas: 1, prediction: 1 (score +0.0598)
+[21:27:34]  Normal operation.
+cpu: 0.582, throttling: 0.065, latency: 0.292, throughput: 6.240, replicas: 1, prediction: -1 (score -0.0027)
+[21:27:44] Anomalous reading 1/3 — waiting for confirmation.
+cpu: 0.714, throttling: 0.084, latency: 0.345, throughput: 5.641, replicas: 1, prediction: -1 (score -0.0780)
+[21:27:54] Anomalous reading 2/3 — waiting for confirmation.
+cpu: 0.720, throttling: 0.101, latency: 0.369, throughput: 5.000, replicas: 1, prediction: -1 (score -0.1153)
+
+[21:28:04] ANOMALY DETECTED!
+Metrics: Tput: 5.0 | CPU: 0.72 | Throttling: 10.1% | Latency: 0.369s
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (prompt v7)! Assigned Signature: State -> CPU:0.72cores | Throttle:10.1% | Tput:5.0rps | Reps:1 | P95:0.37s
+🧠 [Memory] Incident memory disabled for this run.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent responsible for the backend deployment. An   │
+│ anomaly was detected by the Machine Learning monitor.                        │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current Metrics (whole deployment, 1-minute windows): {"avg_cpu_per_pod":    │
+│ 0.7198616729341448, "throughput": 5.000400032002561, "latency_p95":          │
+│ 0.36935483870967734, "active_replicas": 1.0, "cpu_throttling":               │
+│ 0.10089020771513353}                                                         │
+│ Assigned Signature: "State -> CPU:0.72cores | Throttle:10.1% | Tput:5.0rps | │
+│ Reps:1 | P95:0.37s"                                                          │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ Measured via load testing on the normal workload. Use it to reason about     │
+│ whether the current replica count matches the traffic level.                 │
+│   - 1 replica(s): safe up to ~11.13 rps, breaks at ~12.96 rps [Breaking      │
+│ trigger: CPU 0.83 > 0.75\]                                                   │
+│   - 2 replica(s): safe up to ~20.88 rps, breaks at ~22.89 rps [Breaking      │
+│ trigger: CPU 0.84 > 0.75\]                                                   │
+│   - 3 replica(s): safe up to ~27.47 rps, breaks at ~29.0 rps [Breaking       │
+│ trigger: CPU 0.81 > 0.75\]                                                   │
+│                                                                              │
+│ === COMPUTED FACTS (by the monitoring code from the metrics above; use them, │
+│ do not recompute) ===                                                        │
+│ - Load: 5.0 rps on 1 replica(s). Minimum replica count whose safe limit      │
+│ covers this load: 1.                                                         │
+│ - CPU per request: 0.144 core-s = 2.0x the healthy reference (0.073 core-s   │
+│ on healthy traffic; healthy readings stayed below 0.1). Below ~3 rps per pod │
+│ the process's idle CPU inflates it.                                          │
+│                                                                              │
+│ === YOUR RECENT ACTIONS (last 15 minutes; verdicts from the automatic        │
+│ verification) ===                                                            │
+│ None in the last 15 minutes.                                                 │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ Incident memory disabled for this run.                                       │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. Call one tool, print its result, │
+│ and STOP to wait for the system output.                                      │
+│ 4. Never decide in the same step in which you observe: the system refuses an │
+│ action or a final answer written in the same step as an observation tool.    │
+│ 5. Only a tool call changes the cluster. If you did not execute an action    │
+│ tool, your final answer must start with "No action taken:".                  │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ First decide which kind of problem this is, then act on it.                  │
+│                                                                              │
+│ Step 1 - CLASSIFY, using the computed facts.                                 │
+│   (A) CAPACITY: the symptoms are explained by the traffic: CPU per request   │
+│ is close to the healthy reference and nothing else is abnormal (latency is   │
+│ not high while CPU is idle, the metrics show no errors). Go to Step 2A; no   │
+│ investigation is needed.                                                     │
+│   (B) SOMETHING ELSE: CPU per request is far from the healthy reference, OR  │
+│ latency is high while CPU per pod is well below 0.75, OR you are not sure.   │
+│ Go to Step 2B.                                                               │
+│                                                                              │
+│ Step 2A - CAPACITY (SLO: latency p95 < 0.35 s | CPU throttling < 5% | CPU    │
+│ per pod < 0.75 cores):                                                       │
+│   - SLO violated by CPU pressure (CPU per pod near/above 0.75 or throttling  │
+│ > 5%), OR throughput approaching/exceeding the safe limit of the current     │
+│ replicas: scale UP with `scale_kubernetes_deployment(replicas=N)` to the     │
+│ minimum replica count in the facts, and at least one more than now.          │
+│   - SLO met and throughput significantly lower than the capacity of the      │
+│ current replicas: you MUST scale DOWN to save resources, to the minimum      │
+│ replica count in the facts.                                                  │
+│   - SLO met and the current replica count already equals that minimum: no    │
+│ action.                                                                      │
+│                                                                              │
+│ Step 2B - INVESTIGATE, then act on the cause. Observation tools (one per     │
+│ step):                                                                       │
+│   - `get_pod_breakdown()`: per pod: CPU, throttling, request rate, CPU cost  │
+│ per request, p95, 5xx rate, event-loop lag, memory, restarts, age, revision. │
+│   - `get_deployment_history()`: recent revisions of the deployment and what  │
+│ changed in each.                                                             │
+│   - `get_kubernetes_logs()`: warnings, errors and 5xx lines of every pod.    │
+│   Then choose the action that addresses the cause:                           │
+│   - One pod clearly misbehaving while the others are healthy (errors, or     │
+│ event-loop lag or CPU per request several times the other pods'):            │
+│ `restart_kubernetes_pod(pod_name=...)`. Uneven CPU between pods under load   │
+│ is normal load imbalance, not a fault.                                       │
+│   - The application is in a bad state in its running processes (stuck,       │
+│ erroring, burning CPU without serving the traffic):                          │
+│ `restart_kubernetes_deployment()` (rolling, no downtime).                    │
+│   - A recent change to the deployment caused the problem:                    │
+│ `rollback_kubernetes_deployment()` (previous revision) or                    │
+│ `rollback_kubernetes_deployment(revision=N)`.                                │
+│   - It is capacity after all: scale as in Step 2A.                           │
+│   More pods only help when CPU is the bottleneck. A restart only helps when  │
+│ the bad state lives in the running processes. A rollback only helps when a   │
+│ change caused it. If one of your recent actions failed verification, do not  │
+│ repeat it without new evidence: the cause is probably something else.        │
+│                                                                              │
+│ Step 3 - EXECUTE exactly one remediation action, or none. The system         │
+│ verifies it automatically afterwards and wakes you again if the problem      │
+│ persists.                                                                    │
+│                                                                              │
+│ Step 4 - REPORT in a later step than the action: `final_answer("Root cause:  │
+│ <one sentence, with the evidence>. Action: <what you did and why>.")`, or    │
+│ `final_answer("No action taken: <reason>")`, WRAPPED IN A ```python ... ```  │
+│ BLOCK.                                                                       │
+│   Do NOT verify or save anything yourself: the system verifies the metrics   │
+│ and stores verified incidents in memory automatically after you finish.      │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  print(get_pod_breakdown())                                                    
+ ────────────────────────────────────────────────────────────────────────────── 
+Execution logs:
+1 backend pod(s). Healthy reference (training data, normal login traffic): CPU 
+per request ~0.073 core-s (max 0.1), p95 <= 0.2 s, throttling <= 6%. Below ~3 
+req/s per pod the process's idle CPU inflates CPU per request.
+- aiops-backend-deployment-65fc5c5d4-k4ks6 | revision 118 | age 7m02s | ready | 
+container restarts 0
+    CPU 0.75 cores (throttled 10.1%) | 4.0 req/s | CPU per request 0.186 core-s 
+| p95 0.38 s | 5xx 0.00/s | event-loop lag p99 1.00 s | memory 102 MiB / 1024 
+MiB limit
+
+Out: None
+[Step 1: Duration 9.58 seconds| Input tokens: 4,223 | Output tokens: 14]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  # The current CPU per request is 0.186, which is more than double the         
+  healthy reference of 0.073.                                                   
+  # The p95 latency is 0.38s (above the SLO of 0.35s).                          
+  # Throttling is at 10.1% (above the 5% threshold).                            
+  # The event-loop lag is quite high at 1.00s.                                  
+  # Since the CPU per request is abnormal (2x healthy) and there is             
+  significant event-loop lag,                                                   
+  # this suggests an application issue within the process rather than just a    
+  capacity issue.                                                               
+  # I will inspect the deployment history to see if a recent change could have  
+  caused this.                                                                  
+  print(get_deployment_history())                                               
+ ────────────────────────────────────────────────────────────────────────────── 
+Execution logs:
+Deployment aiops-backend-deployment: current revision 118, 1/1 replicas 
+available. Newest first:
+- revision 118 (CURRENT): created 21:21:12 (7m13s ago): oldest revision kept
+
+Out: None
+[Step 2: Duration 11.21 seconds| Input tokens: 8,730 | Output tokens: 182]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 3 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  # The history shows no recent changes that could have triggered this (only    
+  one revision exists).                                                         
+  # The high event-loop lag (1.00s) and high CPU/throttling for only 4 rps      
+  strongly suggest                                                              
+  # the application process is in a degraded state (e.g., event loop blocked).  
+  # A rolling restart is appropriate to clear the process state.                
+  print(restart_kubernetes_deployment())                                        
+ ────────────────────────────────────────────────────────────────────────────── 
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+Execution logs:
+✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+
+Out: None
+[Step 3: Duration 13.10 seconds| Input tokens: 13,680 | Output tokens: 276]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 4 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] ServiceUnavailableError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  final_answer("Root cause: The backend process was in a degraded state with a  
+  blocked event loop, indicated by a high p99 event-loop lag (1.0s) and         
+  excessive CPU usage (0.186 core-s/req vs 0.073 healthy) for the current       
+  traffic load. Action: Performed a rolling restart of the deployment to clear  
+  the application state.")                                                      
+ ────────────────────────────────────────────────────────────────────────────── 
+Final answer: Root cause: The backend process was in a degraded state with a 
+blocked event loop, indicated by a high p99 event-loop lag (1.0s) and excessive 
+CPU usage (0.186 core-s/req vs 0.073 healthy) for the current traffic load. 
+Action: Performed a rolling restart of the deployment to clear the application 
+state.
+[Step 4: Duration 26.86 seconds| Input tokens: 18,883 | Output tokens: 365]
+
+ [AIOps Agent] Actions ['restart'] applied. Verifying...
+⏳ Rollout converged after 0s; waiting 50s for metrics to reflect the new state...
+STABLE
+Checks: {'availability': True, 'throughput_preserved': True, 'latency_slo': True, 'cpu_slo': True, 'throttling_ok': True}
+📊 Pre-Intervention Metrics:
+- Throughput: 5.000400032002561 req/sec
+- P95 Latency: 0.36935483870967734 seconds
+- Avg CPU per Pod: 0.7198616729341448 cores
+- CPU Throttling: 10.09%
+📊 Post-Intervention Metrics:
+- Throughput: 6.9326 req/sec
+- P95 Latency: 0.18 seconds
+- Active Replicas: 1.0
+- Avg CPU per Pod: 0.4868 cores
+- CPU Throttling: 6.87%
+💾 [Memory] Not saved: memory disabled (AIOPS_MEMORY=off).
+
+ [AIOps Agent] Actions ['restart'] verified STABLE.
+Summary: Root cause: The backend process was in a degraded state with a blocked event loop, indicated by a high p99 event-loop lag (1.0s) and excessive CPU usage (0.186 core-s/req vs 0.073 healthy) for the current traffic load. Action: Performed a rolling restart of the deployment to clear the application state.
+
+[21:29:55]  Το πρόβλημα επιλύθηκε από τον Agent. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+cpu: 0.500, throttling: 0.062, latency: 0.171, throughput: 6.980, replicas: 1, prediction: 1 (score +0.0573)
+[21:30:05]  Normal operation.
+cpu: 0.364, throttling: 0.064, latency: 0.163, throughput: 7.060, replicas: 1, prediction: 1 (score +0.0690)
+[21:30:15]  Normal operation.
+cpu: 0.508, throttling: 0.034, latency: 0.148, throughput: 7.060, replicas: 1, prediction: 1 (score +0.0572)
+[21:30:25]  Normal operation.
+cpu: 0.512, throttling: 0.047, latency: 0.139, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0556)
+[21:30:35]  Normal operation.
+cpu: 0.399, throttling: 0.043, latency: 0.096, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0669)
+[21:30:45]  Normal operation.
+cpu: 0.518, throttling: 0.064, latency: 0.091, throughput: 7.240, replicas: 1, prediction: 1 (score +0.0529)
+[21:30:55]  Normal operation.
+cpu: 0.515, throttling: 0.057, latency: 0.091, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0543)
+[21:31:05]  Normal operation.
+cpu: 0.512, throttling: 0.052, latency: 0.091, throughput: 7.300, replicas: 1, prediction: 1 (score +0.0549)
+[21:31:15]  Normal operation.
+cpu: 0.425, throttling: 0.053, latency: 0.091, throughput: 7.320, replicas: 1, prediction: 1 (score +0.0637)
+[21:31:26]  Normal operation.
+cpu: 0.511, throttling: 0.050, latency: 0.096, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0553)
+[21:31:36]  Normal operation.
+cpu: 0.514, throttling: 0.037, latency: 0.141, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0553)
+[21:31:46]  Normal operation.
+cpu: 0.389, throttling: 0.037, latency: 0.143, throughput: 7.160, replicas: 1, prediction: 1 (score +0.0682)
+[21:31:56]  Normal operation.
+cpu: 0.510, throttling: 0.033, latency: 0.143, throughput: 7.120, replicas: 1, prediction: 1 (score +0.0565)
+[21:32:06]  Normal operation.
+cpu: 0.510, throttling: 0.037, latency: 0.143, throughput: 7.100, replicas: 1, prediction: 1 (score +0.0566)
+[21:32:16]  Normal operation.
+cpu: 0.509, throttling: 0.054, latency: 0.137, throughput: 7.219, replicas: 1, prediction: 1 (score +0.0557)
+[21:32:26]  Normal operation.
+cpu: 0.346, throttling: 0.061, latency: 0.094, throughput: 7.280, replicas: 1, prediction: 1 (score +0.0692)
+[21:32:36]  Normal operation.
+cpu: 0.515, throttling: 0.049, latency: 0.090, throughput: 7.320, replicas: 1, prediction: 1 (score +0.0545)
+[21:32:46]  Normal operation.
+cpu: 0.375, throttling: 0.044, latency: 0.090, throughput: 7.340, replicas: 1, prediction: 1 (score +0.0679)
+[21:32:56]  Normal operation.
+cpu: 0.514, throttling: 0.039, latency: 0.090, throughput: 7.360, replicas: 1, prediction: 1 (score +0.0543)
+[21:33:06]  Normal operation.
+cpu: 0.514, throttling: 0.043, latency: 0.096, throughput: 7.301, replicas: 1, prediction: 1 (score +0.0547)
+[21:33:16]  Normal operation.
+cpu: 0.419, throttling: 0.050, latency: 0.140, throughput: 7.160, replicas: 1, prediction: 1 (score +0.0656)
+[21:33:26]  Normal operation.
+cpu: 0.510, throttling: 0.035, latency: 0.159, throughput: 7.120, replicas: 1, prediction: 1 (score +0.0565)
+[21:33:36]  Normal operation.
+cpu: 0.390, throttling: 0.035, latency: 0.159, throughput: 7.080, replicas: 1, prediction: 1 (score +0.0687)
+[21:33:46]  Normal operation.
+cpu: 0.432, throttling: 0.011, latency: 0.163, throughput: 7.080, replicas: 1, prediction: 1 (score +0.0649)
+[21:33:56]  Normal operation.
+cpu: 0.518, throttling: 0.017, latency: 0.156, throughput: 7.080, replicas: 1, prediction: 1 (score +0.0559)
+[21:34:06]  Normal operation.
+cpu: 0.523, throttling: 0.034, latency: 0.147, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0544)
+[21:34:16]  Normal operation.
+cpu: 0.518, throttling: 0.047, latency: 0.130, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0551)
+[21:34:26]  Normal operation.
+cpu: 0.400, throttling: 0.047, latency: 0.135, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0665)
+[21:34:36]  Normal operation.
+cpu: 0.431, throttling: 0.057, latency: 0.138, throughput: 7.160, replicas: 1, prediction: 1 (score +0.0641)
+[21:34:46]  Normal operation.
+cpu: 0.524, throttling: 0.035, latency: 0.137, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0542)
+[21:34:56]  Normal operation.
+cpu: 0.409, throttling: 0.035, latency: 0.137, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0657)
+[21:35:07]  Normal operation.
+cpu: 0.517, throttling: 0.046, latency: 0.133, throughput: 7.300, replicas: 1, prediction: 1 (score +0.0544)
+[21:35:17]  Normal operation.
+cpu: 0.383, throttling: 0.046, latency: 0.097, throughput: 7.280, replicas: 1, prediction: 1 (score +0.0678)
+[21:35:27]  Normal operation.
+cpu: 0.515, throttling: 0.060, latency: 0.090, throughput: 7.360, replicas: 1, prediction: 1 (score +0.0532)
+[21:35:37]  Normal operation.
+cpu: 0.519, throttling: 0.047, latency: 0.090, throughput: 7.300, replicas: 1, prediction: 1 (score +0.0542)
+[21:35:47]  Normal operation.
+cpu: 0.519, throttling: 0.047, latency: 0.090, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0545)
+[21:35:57]  Normal operation.
+cpu: 0.510, throttling: 0.041, latency: 0.090, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0557)
+[21:36:07]  Normal operation.
+cpu: 0.515, throttling: 0.045, latency: 0.091, throughput: 7.199, replicas: 1, prediction: 1 (score +0.0553)
+[21:36:17]  Normal operation.
+cpu: 0.380, throttling: 0.047, latency: 0.137, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0686)
+[21:36:27]  Normal operation.
+cpu: 0.418, throttling: 0.045, latency: 0.137, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0654)
+[21:36:37]  Normal operation.
+cpu: 0.512, throttling: 0.056, latency: 0.136, throughput: 7.240, replicas: 1, prediction: 1 (score +0.0551)
+[21:36:47]  Normal operation.
+cpu: 0.402, throttling: 0.056, latency: 0.136, throughput: 7.280, replicas: 1, prediction: 1 (score +0.0658)
+[21:36:57]  Normal operation.
+cpu: 0.507, throttling: 0.061, latency: 0.135, throughput: 7.301, replicas: 1, prediction: 1 (score +0.0543)
+[21:37:07]  Normal operation.
+cpu: 0.373, throttling: 0.061, latency: 0.090, throughput: 7.340, replicas: 1, prediction: 1 (score +0.0669)
+[21:37:17]  Normal operation.
+cpu: 0.425, throttling: 0.058, latency: 0.090, throughput: 7.360, replicas: 1, prediction: 1 (score +0.0628)
+[21:37:27]  Normal operation.
+cpu: 0.515, throttling: 0.044, latency: 0.090, throughput: 7.319, replicas: 1, prediction: 1 (score +0.0545)
+[21:37:37]  Normal operation.
+cpu: 0.518, throttling: 0.053, latency: 0.090, throughput: 7.281, replicas: 1, prediction: 1 (score +0.0544)
+[21:37:47]  Normal operation.
+cpu: 0.417, throttling: 0.047, latency: 0.090, throughput: 7.260, replicas: 1, prediction: 1 (score +0.0650)
+[21:37:57]  Normal operation.
+cpu: 0.433, throttling: 0.041, latency: 0.091, throughput: 7.220, replicas: 1, prediction: 1 (score +0.0638)
+[21:38:07]  Normal operation.
+cpu: 0.512, throttling: 0.054, latency: 0.090, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0556)
+[21:38:17]  Normal operation.
+cpu: 0.363, throttling: 0.044, latency: 0.090, throughput: 7.240, replicas: 1, prediction: 1 (score +0.0695)
+[21:38:27]  Normal operation.
+cpu: 0.509, throttling: 0.051, latency: 0.090, throughput: 7.280, replicas: 1, prediction: 1 (score +0.0554)
+[21:38:37]  Normal operation.
+cpu: 0.516, throttling: 0.049, latency: 0.090, throughput: 7.320, replicas: 1, prediction: 1 (score +0.0544)
+[21:38:48]  Normal operation.
+cpu: 0.408, throttling: 0.046, latency: 0.090, throughput: 7.340, replicas: 1, prediction: 1 (score +0.0652)
+[21:38:58]  Normal operation.
+cpu: 0.515, throttling: 0.026, latency: 0.094, throughput: 7.360, replicas: 1, prediction: 1 (score +0.0542)
+[21:39:08]  Normal operation.
+cpu: 0.408, throttling: 0.026, latency: 0.132, throughput: 7.200, replicas: 1, prediction: 1 (score +0.0663)
+[21:39:18]  Normal operation.
+
+⏹️ Monitoring stopped by user.
+
+--- Monitor summary (16.0 min) ---
+  Readings evaluated:          83
+  Anomalous readings:          3 (3.6%)
+  Woke the agent:              1 (3.7/hour)
+  Skipped readings:            settling=0 low_traffic=0 missing_metrics=2
