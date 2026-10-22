@@ -6,7 +6,7 @@ Scores of both models (2-replica model, same healthy training data) while ONE th
   right: p95 latency, at mid-band throughput
 Isolation Forest: plain, on the 4 raw features, trained here on baseline_metrics_healthy_filtered.csv
 (the original script was deleted on 2026-09-30; this re-creates the "plain per-replica" variant tested then).
-One-Class SVM: the deployed model from 5-ml-training/health_model.pkl.
+One-Class SVM: the deployed model from 5-ml-training/phase1/health_model.pkl.
 Both: decision_function, > 0 = normal, < 0 = anomaly.
 
 Run from the repo root:  .venv/bin/python3 thesis_notes/figures/make_if_vs_ocsvm.py
@@ -26,10 +26,10 @@ REPLICAS = 2  # the scale-down 2->1 of the demo lives here; the IF missed this w
 CPU_PER_REQUEST = 0.073   # core-s, median of the healthy data (cpu * replicas / rps)
 HEALTHY_P95, HEALTHY_THR = 0.10, 0.03
 
-bundle = joblib.load(os.path.join(ROOT, "5-ml-training", "health_model.pkl"))
+bundle = joblib.load(os.path.join(ROOT, "5-ml-training", "phase1", "health_model.pkl"))
 features = bundle["features"]  # ['avg_cpu_per_pod', 'latency_p95', 'cpu_throttling', 'throughput']
 ocsvm = bundle["models"][REPLICAS]
-data = pd.read_csv(os.path.join(ROOT, "5-ml-training", "baseline_metrics_healthy_filtered.csv"))
+data = pd.read_csv(os.path.join(ROOT, "5-ml-training", "phase1", "baseline_metrics_healthy_filtered.csv"))
 train = data[data["active_replicas"] == REPLICAS][features]
 # contamination = nu of the One-Class SVM (0.02): same share of healthy training readings left outside.
 iforest = IsolationForest(n_estimators=200, contamination=0.02, random_state=42).fit(train)

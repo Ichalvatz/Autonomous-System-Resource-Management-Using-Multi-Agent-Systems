@@ -1,9 +1,9 @@
 """
-The final agent (v8.1 = prompt v8 with the tool descriptions of 2026-10-11): its toolset and tool
-descriptions, the computed facts, the prompt's rules, the three code-enforced guards (evidence before
-action; no claimed action without a tool call; full diagnosis before a restart, pod restart or
-rollback), and replays of the three measured incidents that motivated the guards, run
-through a real smolagents CodeAgent with a scripted model.
+The final agent (v9, thesis phase 2, 2026-10-22): its toolset (3 observation tools, scale, rolling restart of the
+whole app) and tool descriptions, the prompt's rules, the three code-enforced guards (evidence before action; no
+claimed action without a tool call; full diagnosis before a restart), and replays of the three measured incidents
+that motivated the guards (phase 1, agents v6/v7), run through a real smolagents CodeAgent with a scripted model.
+The computed facts are tested in test_agent_logic.py.
 
 Run from the repo root:  .venv/bin/python3 -m pytest 3-ai-agent/tests -q
 """
@@ -20,19 +20,14 @@ import agent  # noqa: E402
 import agent_tools  # noqa: E402
 
 OBSERVE = ["get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs"]
-ACT = ["scale_kubernetes_deployment", "restart_kubernetes_deployment", "restart_kubernetes_pod",
-       "rollback_kubernetes_deployment"]
-
-
-def m(reps, rps, cpu=0.5, thr=0.02, p95=0.12):
-    return {"active_replicas": float(reps), "throughput": rps, "avg_cpu_per_pod": cpu,
-            "cpu_throttling": thr, "latency_p95": p95}
+ACT = ["scale_kubernetes_deployment", "restart_kubernetes_deployment"]
 
 
 # ---------------------------------------------------------------- the agent and its prompt
 
-def test_agent_has_the_seven_tools_and_the_guards():
-    assert list(agent.sre_agent.tools)[:7] == OBSERVE + ACT
+def test_agent_has_the_five_tools_and_the_guards():
+    assert list(agent.sre_agent.tools)[:5] == OBSERVE + ACT
+    assert not {"restart_kubernetes_pod", "rollback_kubernetes_deployment"} & set(agent.sre_agent.tools)
     step_callbacks = [f for fs in agent.sre_agent.step_callbacks._callbacks.values() for f in fs]
     assert agent.guard_step_done in step_callbacks
     assert agent.claim_final_answer_check in agent.sre_agent.final_answer_checks
@@ -41,12 +36,13 @@ def test_agent_has_the_seven_tools_and_the_guards():
 
 def test_prompt_classifies_first_and_has_no_fault_specific_hint():
     p = agent.AGENT_PROMPT.format(metrics_json="{}", signature="s", capacity="c", facts="F", recent="r", memory="m")
-    assert "you MUST scale DOWN" in p and "minimum replica count in the facts" in p
+    assert "you MUST scale DOWN" in p and "minimum pod count in the facts" in p
     assert "Look at ALL THREE observation tools" in p
-    assert p.index("A change to the deployment shortly before") < p.index("EVIDENCE of a bad state")
+    assert "p95 < 0.35 s" in p and "fewer than 1% of requests fail" in p and "at most 3 pods" in p
     assert "not evidence of a cause" in p and "may be a transient" in p
-    assert "normal load imbalance, not a fault" in p
-    assert "over ~2x" not in p and "MANDATORY" not in p
+    assert "you have no tool to undo a change" in p
+    assert "wakes you again at once if it gets worse or stops improving" in p
+    assert "over ~2x" not in p and "MANDATORY" not in p and "0.75" not in p and "throttling <" not in p
     for tool in OBSERVE + ACT:
         assert tool in p
 
@@ -56,31 +52,11 @@ def test_tool_descriptions_agree_with_the_prompt():
     'increased latency -> scale up' and logs said 'only useful when ... errors'. Each action now says what it
     changes and what it leaves unchanged, and the two restarts state their scope."""
     doc = {name: agent.sre_agent.tools[name].description for name in OBSERVE + ACT}
-    assert "latency" not in doc["scale_kubernetes_deployment"] and "1 to 3" in doc["scale_kubernetes_deployment"]
+    assert "short of CPU" not in doc["scale_kubernetes_deployment"] and "1 to 3" in doc["scale_kubernetes_deployment"]
+    assert "load per pod" in doc["scale_kubernetes_deployment"]
     assert "Only useful" not in doc["get_kubernetes_logs"]
     assert "ALL backend pods" in doc["restart_kubernetes_deployment"]
     assert "new revision" in doc["restart_kubernetes_deployment"]
-    assert "ONE backend pod" in doc["restart_kubernetes_pod"] and "no new" in doc["restart_kubernetes_pod"]
-    assert "pod template" in doc["rollback_kubernetes_deployment"]
-
-
-# ---------------------------------------------------------------- computed facts
-
-@pytest.mark.parametrize("state,needed,ratio", [
-    (m(1, 13.0, cpu=0.83), "2.", "0.9x"),                 # real overload: load explains it
-    (m(3, 5.0, cpu=0.1), "1.", "0.8x"),                   # waste: scale down to 1
-    (m(2, 14.0, cpu=0.5), "2.", "1.0x"),                  # correctly provisioned
-    (m(1, 4.2, cpu=0.91), "1.", "3.0x"),                  # cpuhog: 1 pod would be enough, CPU is not the load
-])
-def test_facts_give_minimum_replicas_and_cpu_per_request(state, needed, ratio):
-    facts = agent._computed_facts(state)
-    assert f"covers this load: {needed}" in facts
-    assert f"= {ratio} the healthy reference" in facts
-
-
-def test_facts_beyond_capacity_and_low_traffic():
-    assert "the maximum allowed" in agent._computed_facts(m(3, 35.0, cpu=0.95))
-    assert "not meaningful below 1 rps" in agent._computed_facts(m(1, 0.5))
 
 
 # ---------------------------------------------------------------- guards
@@ -200,7 +176,8 @@ def test_replay_demo_claimed_action_without_tool_call():
 
 def test_replay_badconfig_restart_without_history_is_refused():
     """Measured 2026-10-03 21:08 (agent v7, badconfig): get_pod_breakdown, then a restart (the cause was a
-    config change it never looked at). The restart is refused; after history and logs it may act."""
+    config change it never looked at). The restart is refused; after history and logs it may act. (The
+    badconfig scenario is not part of phase 2; the guard it motivated is.)"""
     applied, _ = _run_scripted([
         "```python\nprint(get_pod_breakdown())\n```",
         "```python\nprint(restart_kubernetes_deployment())\n```",

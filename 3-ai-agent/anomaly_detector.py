@@ -1,72 +1,48 @@
 import argparse
 import csv
+import json
 import os
 import signal
 import time
-import json
-import joblib
-import requests
-import pandas as pd
 from datetime import datetime
 
-PROMETHEUS_URL = "http://prometheus.aiops"
+import health_model
+import nfr_metrics
+
 INTERVAL_SECONDS = 10
 # Paths relative to this file (until 2026-10-11 relative to the working directory, so the detector
 # only worked when started from the repo root).
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_FILENAME = os.path.join(REPO_ROOT, "5-ml-training", "health_model.pkl")
 DRY_RUN_CSV = os.path.join(REPO_ROOT, "5-ml-training", "dry_run_readings.csv")
-# Below this there isn't enough traffic for a meaningful evaluation.
-# Must stay below the 1-VU training data (~0.9 rps) collected by collect_healthy_data.py.
-# Known blind spot: requests that never finish are never counted (http_requests_total and the latency
-# histogram are written when a response ends), so a fully hung or crashed backend also reads as
-# "low traffic" or "missing metrics" and is skipped (thesis_notes/design_decisions.md A21).
-MIN_THROUGHPUT_RPS = 0.8
+# Below this there isn't enough traffic for a meaningful evaluation (= the training filter's MIN_RPS).
+# Phase 2 (2026-10-22): throughput is counted at the ingress for every status, so an app that answers only
+# errors (no ready pod) is not "low traffic"; requests that never finish are still counted only when they end.
+MIN_THROUGHPUT_RPS = 1.0
 # Consecutive anomalous readings required before waking the agent (3 x 10s = 30s).
-# The model flags ~7% of healthy readings on their own (new-day data), almost never 3 in a row.
 ANOMALY_STREAK_REQUIRED = 3
-# The PromQL rate() windows are 1m, so after a replica change the metrics mix old
-# and new pod counts. The training data has no such readings (the collector waits
-# 60s after each replica change), so we skip them too.
+# The PromQL rate() windows are 1m, so after a replica change the metrics mix old and new pod counts. The
+# training data has no such readings (the collector waits for ready pods and 60s), so we skip them too.
 REPLICA_SETTLE_SECONDS = 90
 # Minimum time between two agent runs. Monitoring continues meanwhile.
 AGENT_COOLDOWN_SECONDS = 60
-# The five metrics, in the column order of the dry-run CSV. (Named ML_FEATURES until 2026-10-11, but the
-# model does not use all five: its features are listed in the model bundle.)
-LOGGED_METRICS = ["avg_cpu_per_pod", "latency_p95", "cpu_throttling", "throughput", "active_replicas"]
-# All five metrics go to the agent. The model uses four of them: there is one
-# One-Class SVM per replica count (trained by train_health_baseline.py), and
-# active_replicas selects which one scores the reading.
-QUERIES = {
-    "avg_cpu_per_pod": 'sum(rate(container_cpu_usage_seconds_total{namespace="default", pod=~"aiops-backend-deployment-.*", container!=""}[1m])) / scalar(kube_deployment_status_replicas_available{namespace="default", deployment="aiops-backend-deployment"})',
-    "throughput": 'sum(rate(http_requests_total{app="aiops-backend"}[1m]))',
-    "latency_p95": 'histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app="aiops-backend"}[1m])) by (le))',
-    "active_replicas": 'kube_deployment_status_replicas_available{namespace="default", deployment="aiops-backend-deployment"}',
-    "cpu_throttling": 'sum(increase(container_cpu_cfs_throttled_periods_total{namespace="default", pod=~"aiops-backend-deployment-.*", container!=""}[1m])) / sum(increase(container_cpu_cfs_periods_total{namespace="default", pod=~"aiops-backend-deployment-.*", container!=""}[1m]))'
-}
+# Phase 2: when the verification of an action sees the score get worse or stay stuck, the agent is woken
+# again at once (no streak, no cooldown, no settle: the verification already watched the settled metrics),
+# at most this many times in a row; then the normal streak and cooldown apply again.
+MAX_REWAKES = 2
+# The columns of the dry-run CSV (the NFR reading; CPU per pod for reference only, not a model input).
+LOGGED_METRICS = ["throughput", "rps_per_pod", "latency_p95", "error_rate", "replicas", "ready_replicas",
+                  "avg_cpu_per_pod"]
 
-def fetch_metric(query_name, query_string):
+
+def read_metrics():
+    """One reading of the NFR metrics (nfr_metrics.py), or None if a required one is missing."""
     try:
-        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': query_string}, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        if data.get('status') != 'success':
-            print(f"Metric unavailable: {query_name} (Prometheus status was not success)")
-            return None
-
-        results = data.get('data', {}).get('result', [])
-        if results and len(results) > 0:
-            value = float(results[0]['value'][1])
-            if pd.isna(value):
-                print(f"Metric unavailable: {query_name} returned NaN")
-                return None
-            return value
-
-        print(f"Metric unavailable: {query_name} returned no result")
-        return None
+        return nfr_metrics.fetch_reading()
     except Exception as e:
-        print(f"Metric unavailable: {query_name}: {e}")
+        print(f"Metrics unavailable: {e}")
         return None
+
 
 def print_summary(stats, started_at, dry_run):
     minutes = (time.monotonic() - started_at) / 60
@@ -79,6 +55,8 @@ def print_summary(stats, started_at, dry_run):
     print(f"  Readings evaluated:          {evaluated}")
     print(f"  Anomalous readings:          {stats['anomalous']} ({anomaly_pct:.1f}%)")
     print(f"  {label + ':':<29}{stats['triggers']}{per_hour}")
+    if stats["rewakes"]:
+        print(f"  Of which re-wakes:           {stats['rewakes']} (verification saw no improvement)")
     print(
         f"  Skipped readings:            settling={stats['skipped_settling']} "
         f"low_traffic={stats['skipped_low_traffic']} "
@@ -89,41 +67,38 @@ def print_summary(stats, started_at, dry_run):
     if dry_run:
         print(f"  Per-reading log:             {DRY_RUN_CSV}")
 
-def load_models():
-    """Load the per-replica bundle saved by train_health_baseline.py:
-    {"model_type": ..., "features": [...], "models": {replicas: model}}."""
+
+def load_model():
+    """The phase-2 bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py)."""
     try:
-        bundle = joblib.load(MODEL_FILENAME)
+        return health_model.load(MODEL_FILENAME)
     except FileNotFoundError:
         print("Error: The model file was not found. Run 5-ml-training/train_health_baseline.py first.")
-        return None
-    if not isinstance(bundle, dict) or not {"features", "models"} <= bundle.keys():
-        print(f"Error: {MODEL_FILENAME} is not a per-replica model bundle. Retrain with train_health_baseline.py.")
-        return None
-    return bundle
+    except ValueError as e:
+        print(f"Error: {e}")
+    return None
 
 
-def evaluate(bundle, metrics):
-    """Return (prediction, score) for one reading: -1 = anomaly, 1 = normal.
-    A replica count with no trained model has no known healthy band, so it
-    counts as an anomaly (score None)."""
-    model = bundle["models"].get(int(round(metrics["active_replicas"])))
-    if model is None:
-        return -1, None
-    # Column names must match training; the pipeline selects columns by name.
-    x = pd.DataFrame([metrics])[bundle["features"]]
-    return int(model.predict(x)[0]), float(model.decision_function(x)[0])
+def evaluate(bundle, reading):
+    """(prediction, score) of one reading: -1 = anomaly, 1 = normal; score = the SVM's decision_function."""
+    score = health_model.score(bundle, reading)
+    return (-1 if score < 0 else 1), score
+
+
+def _outcome(result):
+    """trigger_ai_agent returns {"resolved", "rewake", "verdict"}; a bare bool is read as "resolved"."""
+    if isinstance(result, dict):
+        return bool(result.get("resolved")), bool(result.get("rewake")), result.get("verdict", "")
+    return bool(result), False, ""
 
 
 def run_monitor(dry_run=False):
     print(f"Loading anomaly detection model from: {MODEL_FILENAME}")
-    bundle = load_models()
+    bundle = load_model()
     if bundle is None:
         return
-    print(
-        f"Model: {bundle.get('model_type', '?')} per replica count "
-        f"{sorted(bundle['models'])}, features {bundle['features']}"
-    )
+    print(f"Model: {bundle['model_type']} ({bundle['params']['form']}), features {bundle['features']}, "
+          f"trained {bundle.get('trained_at', '?')} on {bundle.get('n_train', '?')} readings")
 
     if dry_run:
         # No agent import: dry runs need no LLM key and never touch the cluster.
@@ -147,7 +122,7 @@ def run_monitor(dry_run=False):
     print("✅ Model loaded. Starting continuous monitoring...")
 
     stats = {
-        "evaluated": 0, "anomalous": 0, "triggers": 0,
+        "evaluated": 0, "anomalous": 0, "triggers": 0, "rewakes": 0,
         "skipped_settling": 0, "skipped_low_traffic": 0, "skipped_missing": 0, "agent_errors": 0,
     }
     started_at = time.monotonic()
@@ -155,37 +130,27 @@ def run_monitor(dry_run=False):
     last_replicas = None
     replicas_changed_at = None
     cooldown_until = 0.0
+    rewake_pending = False
+    rewakes_in_a_row = 0
 
     try:
         while True:
-            current_metrics = {}
-            for name, query in QUERIES.items():
-                current_metrics[name] = fetch_metric(name, query)
-
-            missing_metrics = [
-                name for name, value in current_metrics.items() if value is None
-            ]
-            if missing_metrics:
-                print(
-                    f"Metrics unavailable: {missing_metrics}. "
-                    "Skipping ML prediction and remediation."
-                )
+            reading = read_metrics()
+            if reading is None:
+                print("Metrics unavailable. Skipping ML prediction and remediation.")
                 stats["skipped_missing"] += 1
                 anomaly_streak = 0
                 time.sleep(INTERVAL_SECONDS)
                 continue
 
-            cpu = float(current_metrics.get("avg_cpu_per_pod", 0.0) or 0.0)
-            throttling = float(current_metrics.get("cpu_throttling", 0.0) or 0.0)
-            replicas = float(current_metrics.get("active_replicas", 0.0) or 0.0)
-            latency = float(current_metrics.get("latency_p95", 0.0) or 0.0)
-            throughput = float(current_metrics.get("throughput", 0.0) or 0.0)
-
+            replicas = reading["replicas"]
+            throughput = reading["throughput"]
             timestamp = datetime.now().strftime("%H:%M:%S")
 
-            # Stabilization gate: skip readings while a replica change settles.
+            # Stabilization gate: skip readings while a replica change settles (not on a re-wake: the
+            # verification already watched the metrics after the change).
             if last_replicas is not None and replicas != last_replicas:
-                replicas_changed_at = time.monotonic()
+                replicas_changed_at = None if rewake_pending else time.monotonic()
             last_replicas = replicas
             if replicas_changed_at is not None:
                 settle_left = REPLICA_SETTLE_SECONDS - (time.monotonic() - replicas_changed_at)
@@ -199,26 +164,23 @@ def run_monitor(dry_run=False):
                     time.sleep(INTERVAL_SECONDS)
                     continue
 
-            # Data quality gate: not enough traffic signal for a meaningful
-            # health evaluation (same logic as the NaN skip).
+            # Data quality gate: not enough traffic for a meaningful evaluation.
             if throughput < MIN_THROUGHPUT_RPS:
                 print(f"[{timestamp}] Low traffic ({throughput:.2f} rps) — skipping prediction.")
                 stats["skipped_low_traffic"] += 1
                 anomaly_streak = 0
+                rewake_pending = False
                 time.sleep(INTERVAL_SECONDS)
                 continue
 
-            # The model for the current replica count knows that count's healthy
-            # band: below it = over-provisioned (waste), above it = overloaded,
-            # latency far above it = stuck code.
-            prediction, score = evaluate(bundle, current_metrics)
+            # One model for every replica count: the count is an input, and each count keeps its own
+            # healthy band (below it = over-provisioned, above it = overloaded; latency or errors = broken).
+            prediction, score = evaluate(bundle, reading)
             stats["evaluated"] += 1
-
-            score_text = f"{score:+.4f}" if score is not None else f"no model for {replicas:.0f} replicas"
             print(
-                f"cpu: {cpu:.3f}, throttling: {throttling:.3f}, "
-                f"latency: {latency:.3f}, throughput: {throughput:.3f}, "
-                f"replicas: {replicas:.0f}, prediction: {prediction} (score {score_text})"
+                f"rps: {throughput:.1f} ({reading['rps_per_pod']:.1f}/pod), p95: {reading['latency_p95']:.3f}s, "
+                f"errors: {100 * reading['error_rate']:.1f}%, replicas: {replicas:.0f} "
+                f"(ready {reading.get('ready_replicas') or 0:.0f}), prediction: {prediction} (score {score:+.4f})"
             )
 
             if prediction == -1:
@@ -226,15 +188,18 @@ def run_monitor(dry_run=False):
                 anomaly_streak += 1
             else:
                 anomaly_streak = 0
+                rewake_pending = False
+                rewakes_in_a_row = 0
             cooldown_left = cooldown_until - time.monotonic()
-            should_trigger = anomaly_streak >= ANOMALY_STREAK_REQUIRED and cooldown_left <= 0
+            rewake_now = rewake_pending and prediction == -1
+            should_trigger = rewake_now or (anomaly_streak >= ANOMALY_STREAK_REQUIRED and cooldown_left <= 0)
 
             if dry_run:
                 csv_writer.writerow({
                     "timestamp": timestamp,
-                    **{name: current_metrics[name] for name in LOGGED_METRICS},
+                    **{name: reading.get(name) for name in LOGGED_METRICS},
                     "prediction": prediction,
-                    "score": round(score, 4) if score is not None else "",
+                    "score": round(score, 4),
                     "streak": anomaly_streak,
                     "would_trigger": should_trigger,
                 })
@@ -257,36 +222,45 @@ def run_monitor(dry_run=False):
                 continue
 
             anomaly_streak = 0
+            rewake_pending = False
             stats["triggers"] += 1
+            stats["rewakes"] += rewake_now
+            explanation = health_model.explain(bundle, reading)
 
-            print(f"\n[{timestamp}] ANOMALY DETECTED!")
-            # Για καλύτερη απεικόνιση τυπώνουμε το Throttling ως ποσοστό
-            print(f"Metrics: Tput: {current_metrics['throughput']:.1f} | CPU: {current_metrics['avg_cpu_per_pod']:.2f} | Throttling: {current_metrics['cpu_throttling']*100:.1f}% | Latency: {current_metrics['latency_p95']:.3f}s")
+            print(f"\n[{timestamp}] {'RE-WAKE: the last action did not help' if rewake_now else 'ANOMALY DETECTED!'}")
+            print(f"Score {score:+.3f}: " + "; ".join(explanation))
 
             if dry_run:
                 print("🧪 [DRY RUN] The agent would be woken up now — not calling it.")
             else:
-                metrics_json = json.dumps(current_metrics)
-
+                metrics_json = json.dumps({**reading, "score": round(score, 4), "explanation": explanation})
                 print("Αναμονή ολοκλήρωσης ενεργειών από τον Agent...")
                 try:
-                    is_resolved = trigger_ai_agent(metrics_json)
+                    resolved, rewake, verdict = _outcome(trigger_ai_agent(metrics_json))
                 except Exception as e:
                     # trigger_ai_agent already survives LLM errors; this catches anything else around it
                     # (e.g. a failed write of incident_log.csv). Without it one such error would end
-                    # monitoring in the middle of an experiment, and run_experiment.sh would go on scoring a
-                    # run with no controller. (Added 2026-10-11; no measured run ever hit it.)
+                    # monitoring in the middle of an experiment. (Added 2026-10-11.)
                     stats["agent_errors"] += 1
                     print(f"⚠️ Agent run failed outside the agent: {type(e).__name__}: {e}. Monitoring continues.")
-                    is_resolved = False
+                    resolved, rewake, verdict = False, False, ""
 
-                if is_resolved:
-                    print(f"\n[{datetime.now().strftime('%H:%M:%S')}]  Το πρόβλημα επιλύθηκε από τον Agent. Επανεκκίνηση παρακολούθησης.")
+                now = datetime.now().strftime('%H:%M:%S')
+                if resolved:
+                    rewakes_in_a_row = 0
+                    print(f"\n[{now}]  Το πρόβλημα επιλύθηκε από τον Agent. Επανεκκίνηση παρακολούθησης.")
+                elif rewake and rewakes_in_a_row < MAX_REWAKES:
+                    rewakes_in_a_row += 1
+                    rewake_pending = True
+                    print(f"\n[{now}] {verdict}: ο Agent ξαναξυπνά αν η επόμενη μέτρηση είναι ακόμα ανωμαλία "
+                          f"({rewakes_in_a_row}/{MAX_REWAKES}).")
                 else:
-                    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.")
+                    rewakes_in_a_row = 0
+                    print(f"\n[{now}] Ο Agent δεν επιβεβαίωσε επίλυση. Επανεκκίνηση παρακολούθησης.")
 
-            cooldown_until = time.monotonic() + AGENT_COOLDOWN_SECONDS
-            print(f"Agent cooldown {AGENT_COOLDOWN_SECONDS}s (monitoring continues).")
+            if not rewake_pending:
+                cooldown_until = time.monotonic() + AGENT_COOLDOWN_SECONDS
+                print(f"Agent cooldown {AGENT_COOLDOWN_SECONDS}s (monitoring continues).")
             time.sleep(INTERVAL_SECONDS)
     except KeyboardInterrupt:
         print("\n⏹️ Monitoring stopped by user.")

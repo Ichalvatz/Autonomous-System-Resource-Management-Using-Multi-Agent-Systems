@@ -2,7 +2,7 @@
 Evidence for decision A2/A3 (thesis_notes/design_decisions.md): why a One-Class SVM and not an Isolation Forest,
 and what each feature transform does. Every number in A2's "re-check 2026-10-10" part comes from this script.
 
-Read-only: it refits models in memory from 5-ml-training/baseline_metrics_healthy.csv with the repo's own
+Read-only: it refits models in memory from 5-ml-training/phase1/baseline_metrics_healthy.csv with the repo's own
 training code and compares them with the saved health_model.pkl; it writes nothing into the repo.
 Isolation Forests use contamination = nu = 0.02 (same share of healthy training readings left outside) and
 200 trees; "x/20" means caught in x of 20 random seeds.
@@ -25,7 +25,7 @@ from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.svm import OneClassSVM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ML = os.path.join(ROOT, "5-ml-training")
+ML = os.path.join(ROOT, "5-ml-training", "phase1")  # phase-1 pipeline and data (moved 2026-10-22)
 sys.path.insert(0, ML)
 import train_health_baseline as tb  # noqa: E402  (main() is not called)
 

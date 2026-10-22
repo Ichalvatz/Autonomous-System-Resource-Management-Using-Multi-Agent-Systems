@@ -1,434 +1,105 @@
 #!/usr/bin/env python3
 """
-Capacity Discovery — Phase 1 of the ML Training Pipeline
-=========================================================
+Capacity discovery, phase 2 (2026-10-22): the capacity of each replica count in terms of the NFRs.
 
-For each replica count (1–3), gradually ramps up concurrent users
-hitting the backend until the system reaches its breaking point.
-Each count's ramp starts at the previous count's safe load (known safe).
+For each replica count (1-4: the 4th only re-checks the host ceiling), fresh pods, then the request mix of the
+experiments (4-load-testing/k6/lib/mix.js) at a fixed arrival rate (open model) for STEP_S seconds per step,
+rising step by step. After each step one reading at the ingress (nfr_metrics.py, 1 m windows: only this step):
+  safe       the highest rate with p95 <= SAFE_P95 (0.25 s: headroom below the 0.35 s objective for the time a
+             scale-up takes) and errors <= SAFE_ERR;
+  slo_limit  the first rate with p95 > SLO_P95 (0.35 s) or errors > SLO_ERR (1%): the objective is broken.
+A breaking reading only counts if a second step at the same rate also breaks (one noisy reading is ignored, as
+in phase 1). The search for a count stops at its slo_limit; the next count starts at this count's safe rate.
+CPU per pod is recorded too, only for the HPA target (the native baseline's knob is CPU).
 
-Breaking point — ANY ONE of these triggers it, and it must show up on two
-consecutive measurements at the same load (a single noisy reading is ignored):
-  • avg_cpu_per_pod  > 0.75  → Only 25% headroom left before the 1-core limit
-  • cpu_throttling   > 0.08  → Kernel CFS scheduler is starving the container
-  • latency_p95      > 1.0s  → 1 in 20 requests takes over a second
+  python 5-ml-training/capacity_discovery.py            (~70-90 min; detector OFF, no other traffic)
 
-Output:
-  • capacity_discovery_log.csv  — full metric trace at every step
-  • capacity_table.json         — max safe VUs per replica count
-                                  (consumed by Phase 2 data collection)
-
-Usage:
-    python capacity_discovery.py
+Writes capacity_discovery_log.csv (every step) and capacity_table.json (per count: max_safe_rps, slo_limit_rps,
+the p95 and CPU per pod at the safe rate, and the users that rate stands for at USER_RPS requests/s per user).
 """
-
 import json
-import random
-import subprocess
-import threading
 import time
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-import requests as http_client
 
-# ─── Configuration ──────────────────────────────────────────────────────────
+from k6_driver import make_token_pool, nfr_metrics, restart_and_wait, run_k6
 
-PROMETHEUS_URL = "http://prometheus.aiops"
-APP_BASE_URL = "http://mwtback.aiops"
-DEPLOYMENT = "aiops-backend-deployment"
-NAMESPACE = "default"
+HERE = Path(__file__).resolve().parent
+LOG_CSV = HERE / "capacity_discovery_log.csv"
+CAPACITY_JSON = HERE / "capacity_table.json"
+RUN_LOG = HERE / "runs" / f"capacity_{datetime.now():%Y%m%d_%H%M}.k6.log"
 
-# Breaking-point thresholds
-# These define "the pod can't take any more" — NOT the health-training boundary.
-# Training filter thresholds (in train_health_baseline.py) are looser; collection
-# already stays below the safe VUs found here, so the filter only drops outliers.
-BP_CPU = 0.75           # 75% of 1 core
-BP_THROTTLE = 0.08      # 8% of CPU periods throttled
-BP_LATENCY = 1.0        # 1 second P95
-
-# Test ladder
-REPLICA_RANGE = [1, 2, 3]  # >3 x 1-core pods saturates the host (see "Pod sizing" in CLAUDE.md)
-INITIAL_VUS = 2         # Start with 2 concurrent users
-VU_STEP = 2             # Add 2 users per step
-MAX_VUS = 80            # Safety cap (stop even if no breaking point)
-
-# Timing
-SCALE_SETTLE_S = 45     # Wait after scaling replicas (pods starting up)
-STEP_SETTLE_S = 60      # Wait after adding VUs so the 1m rate() window only sees this step
-N_READINGS = 3          # Prometheus readings per step
-READING_INTERVAL_S = 10 # Seconds between readings
+REPLICA_RANGE = [1, 2, 3, 4]
+SAFE_P95, SLO_P95 = 0.25, 0.35
+SAFE_ERR, SLO_ERR = 0.001, 0.01
+STEP_S = 90
+IDLE_AFTER_SCALE_S = 60
+# Ladder: set from the endpoint costs (endpoint_costs.py, 2026-10-22): see START_RPS / STEP_RPS below.
+START_RPS = 20.0          # first rate for 1 pod
+STEP_RPS = 5.0            # per pod: the step grows with the replica count
+MAX_RPS_PER_POD = 400.0   # safety stop
+USER_RPS = 0.2            # one active user = one request every 5 s (to state the capacity in users)
 
 
-# Prometheus queries (identical to anomaly_detector.py)
-QUERIES = {
-    "avg_cpu_per_pod": (
-        'sum(rate(container_cpu_usage_seconds_total'
-        '{namespace="default", pod=~"aiops-backend-deployment-.*",'
-        ' container!=""}[1m]))'
-        ' / scalar(kube_deployment_status_replicas_available'
-        '{namespace="default",'
-        ' deployment="aiops-backend-deployment"})'
-    ),
-    "throughput": (
-        'sum(rate(http_requests_total{app="aiops-backend"}[1m]))'
-    ),
-    "latency_p95": (
-        'histogram_quantile(0.95,'
-        ' sum(rate(http_request_duration_seconds_bucket'
-        '{app="aiops-backend"}[1m])) by (le))'
-    ),
-    "active_replicas": (
-        'kube_deployment_status_replicas_available'
-        '{namespace="default",'
-        ' deployment="aiops-backend-deployment"}'
-    ),
-    "cpu_throttling": (
-        'sum(increase(container_cpu_cfs_throttled_periods_total'
-        '{namespace="default", pod=~"aiops-backend-deployment-.*",'
-        ' container!=""}[1m]))'
-        ' / sum(increase(container_cpu_cfs_periods_total'
-        '{namespace="default", pod=~"aiops-backend-deployment-.*",'
-        ' container!=""}[1m]))'
-    ),
-}
-
-OUTPUT_DIR = Path(__file__).resolve().parent
-LOG_CSV = OUTPUT_DIR / "capacity_discovery_log.csv"
-CAPACITY_JSON = OUTPUT_DIR / "capacity_table.json"
+def step(rate, rows, replicas):
+    started = time.time()
+    k6 = run_k6("constant_rate.js", {"RATE": f"{rate:.1f}", "DURATION": f"{STEP_S}s"}, RUN_LOG)
+    reading = nfr_metrics.fetch_reading(at=started + STEP_S - 1) or {}
+    row = {"time": datetime.now().strftime("%H:%M:%S"), "replicas": replicas, "rate": rate, **reading, **k6}
+    rows.append(row)
+    pd.DataFrame(rows).to_csv(LOG_CSV, index=False)
+    p95, err = reading.get("latency_p95", float("inf")), reading.get("error_rate", 1.0)
+    print(f"  {replicas} pod(s) {rate:6.1f} rps -> got {reading.get('throughput', 0):6.1f}, p95 {p95:.3f} s, "
+          f"errors {100 * err:.2f}%, CPU/pod {reading.get('avg_cpu_per_pod') or 0:.2f}, "
+          f"k6 dropped {k6.get('k6_dropped', '?')}", flush=True)
+    return row, p95, err
 
 
-# ─── Traffic Generator ──────────────────────────────────────────────────────
-
-LOGIN_URL = f"{APP_BASE_URL}/auth/login"
-LOGIN_PAYLOAD = json.dumps({"email": "user1@example.com", "password": "password123"})
-LOGIN_HEADERS = {"Content-Type": "application/json"}
-
-
-def _user_loop(stop_event: threading.Event):
-    """Simulate one user continuously hitting the /auth/login endpoint."""
-    # Random start offset so users don't fire in lockstep: k6 ramps VUs in
-    # gradually, so live traffic arrives spread out rather than in bursts.
-    if stop_event.wait(random.uniform(0, 1)):
-        return
-    session = http_client.Session()
-    while not stop_event.is_set():
-        try:
-            session.post(
-                LOGIN_URL,
-                data=LOGIN_PAYLOAD,
-                headers=LOGIN_HEADERS,
-                timeout=10,
-            )
-        except Exception:
-            pass
-        # 1s sleep between requests — matches baseline.js for controlled throughput
-        time.sleep(1)
-
-
-class TrafficGenerator:
-    """
-    Manages a growing pool of virtual users.
-
-    Only supports ramping UP — new threads are added on top of existing
-    ones so traffic never drops between steps, keeping the Prometheus
-    rate() window smooth.
-    """
-
-    def __init__(self):
-        self._threads: list[threading.Thread] = []
-        self._stop = threading.Event()
-
-    def add_users(self, count: int):
-        """Spawn `count` additional virtual users."""
-        for _ in range(count):
-            t = threading.Thread(
-                target=_user_loop, args=(self._stop,), daemon=True,
-            )
-            t.start()
-            self._threads.append(t)
-
-    @property
-    def active_users(self) -> int:
-        return len(self._threads)
-
-    def stop_all(self):
-        """Signal all threads to stop and wait briefly for wind-down."""
-        self._stop.set()
-        time.sleep(2)
-        self._threads.clear()
-        self._stop = threading.Event()
+def discover(replicas, start, rows):
+    print(f"\n=== {replicas} pod(s): fresh pods, ladder from {start:.1f} rps ===", flush=True)
+    restart_and_wait(replicas)
+    time.sleep(IDLE_AFTER_SCALE_S)
+    safe_ok = lambda p95, err: p95 <= SAFE_P95 and err <= SAFE_ERR
+    rate, safe_row, broken, limit = start, None, False, None
+    while rate <= MAX_RPS_PER_POD * replicas:
+        row, p95, err = step(rate, rows, replicas)
+        if not safe_ok(p95, err):
+            row, p95, err = step(rate, rows, replicas)          # a break counts only if a second step confirms it
+        if safe_ok(p95, err):
+            if not broken:
+                safe_row = row                                   # safe = the highest good rate before the first break
+        else:
+            broken = True
+            if p95 > SLO_P95 or err > SLO_ERR:
+                limit = rate
+                break
+        rate = round(rate + STEP_RPS * replicas, 1)
+    safe = safe_row["rate"] if safe_row else None
+    return {
+        "max_safe_rps": safe,
+        "slo_limit_rps": limit,
+        "p95_at_safe": round(safe_row["latency_p95"], 3) if safe_row else None,
+        "cpu_per_pod_at_safe": round(safe_row.get("avg_cpu_per_pod") or 0, 3) if safe_row else None,
+        "users_at_safe": round(safe / USER_RPS) if safe else None,
+    }
 
 
-# ─── Kubernetes Helpers ─────────────────────────────────────────────────────
-
-def scale_deployment(replicas: int):
-    subprocess.run(
-        [
-            "kubectl", "scale", "deployment", DEPLOYMENT,
-            f"--replicas={replicas}", "-n", NAMESPACE,
-        ],
-        check=True,
-        capture_output=True,
-    )
-
-
-def wait_for_replicas(target: int, timeout: int = 120) -> bool:
-    """Poll Prometheus until active_replicas matches target."""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        val = _fetch_one("active_replicas")
-        if val is not None and int(val) == target:
-            return True
-        time.sleep(5)
-    return False
-
-
-# ─── Prometheus Helpers ─────────────────────────────────────────────────────
-
-def _fetch_one(name: str):
-    """Fetch a single metric from Prometheus. Returns float or None."""
-    try:
-        r = http_client.get(
-            f"{PROMETHEUS_URL}/api/v1/query",
-            params={"query": QUERIES[name]},
-            timeout=5,
-        )
-        r.raise_for_status()
-        results = r.json().get("data", {}).get("result", [])
-        if results:
-            val = float(results[0]["value"][1])
-            return None if pd.isna(val) else val
-        return None
-    except Exception:
-        return None
-
-
-def fetch_all() -> dict | None:
-    """Fetch all 5 metrics. Returns None if any metric is unavailable."""
-    metrics = {}
-    for name in QUERIES:
-        val = _fetch_one(name)
-        if val is None:
-            return None
-        metrics[name] = val
-    return metrics
-
-
-def averaged_reading() -> dict | None:
-    """Take N_READINGS spaced by READING_INTERVAL_S and return the mean."""
-    readings = []
-    for i in range(N_READINGS):
-        if i > 0:
-            time.sleep(READING_INTERVAL_S)
-        m = fetch_all()
-        if m is not None:
-            readings.append(m)
-
-    if not readings:
-        return None
-
-    avg = {}
-    for key in readings[0]:
-        avg[key] = sum(r[key] for r in readings) / len(readings)
-    return avg
-
-
-# ─── Breaking Point Detection ───────────────────────────────────────────────
-
-def check_breaking_point(m: dict) -> tuple[bool, str]:
-    """Returns (is_broken, human-readable reason)."""
-    if m["avg_cpu_per_pod"] > BP_CPU:
-        return True, f"CPU {m['avg_cpu_per_pod']:.2f} > {BP_CPU}"
-    if m["cpu_throttling"] > BP_THROTTLE:
-        return True, f"Throttle {m['cpu_throttling'] * 100:.1f}% > {BP_THROTTLE * 100:.0f}%"
-    if m["latency_p95"] > BP_LATENCY:
-        return True, f"Latency {m['latency_p95']:.3f}s > {BP_LATENCY}s"
-    return False, ""
-
-
-# ─── Main Discovery Loop ────────────────────────────────────────────────────
-
-def ramp_start_vus(capacity: dict, replicas: int) -> int:
-    """N replicas can always carry what N-1 carried safely, so start the ramp
-    at the previous count's safe load instead of re-testing the low range."""
-    prev = capacity.get(str(replicas - 1))
-    if prev and prev["max_safe_vus"] >= INITIAL_VUS:
-        return prev["max_safe_vus"]
-    return INITIAL_VUS
-
-
-def discover_capacity() -> dict:
-    capacity = {}
-    log_rows = []
-    traffic = TrafficGenerator()
-
-    print("=" * 70)
-    print("  CAPACITY DISCOVERY — Phase 1")
-    print(f"  Breaking point: CPU > {BP_CPU} | "
-          f"Throttle > {BP_THROTTLE * 100:.0f}% | "
-          f"Latency > {BP_LATENCY}s")
-    print("=" * 70)
-
-    try:
-        for replicas in REPLICA_RANGE:
-            print(f"\n{'─' * 70}")
-            print(f"  🔧 Testing {replicas} replica(s)")
-            print(f"{'─' * 70}")
-
-            # Scale and wait for pods
-            scale_deployment(replicas)
-            print(f"  Waiting for {replicas} pod(s) to be ready ...", end="", flush=True)
-            if not wait_for_replicas(replicas):
-                print(f" ⚠️ timeout! Skipping.")
-                continue
-            print(f" ready.")
-            print(f"  Settling for {SCALE_SETTLE_S}s ...")
-            time.sleep(SCALE_SETTLE_S)
-
-            # Reset traffic for this replica count
-            traffic.stop_all()
-            start_vus = ramp_start_vus(capacity, replicas)
-            safe_vus = 0
-            safe_rps = 0.0
-            breaking_rps = None
-            breaking_reason = ""
-            # Set when a reading crosses a threshold; the same load is then
-            # re-measured, and only a second breaking reading confirms it.
-            unconfirmed_break = False
-
-            vus = 0
-            while vus < MAX_VUS or unconfirmed_break:
-                if unconfirmed_break:
-                    print(f"\n  🔁 {vus:>3} VUs │ re-measuring after {STEP_SETTLE_S}s ",
-                          end="", flush=True)
-                else:
-                    # Ramp: add users on top of existing traffic
-                    add = start_vus if vus == 0 else VU_STEP
-                    traffic.add_users(add)
-                    vus = traffic.active_users
-                    print(f"\n  📊 {vus:>3} VUs │ settling {STEP_SETTLE_S}s ",
-                          end="", flush=True)
-                time.sleep(STEP_SETTLE_S)
-                print("│ measuring ", end="", flush=True)
-
-                # Measure
-                metrics = averaged_reading()
-                if metrics is None:
-                    print("│ ⚠️ metrics unavailable, skipping step")
-                    continue
-
-                # Log this step
-                log_rows.append({
-                    "timestamp": datetime.now().isoformat(),
-                    "replicas": replicas,
-                    "vus": vus,
-                    **{k: round(v, 4) for k, v in metrics.items()},
-                })
-
-                cpu_pct = metrics["avg_cpu_per_pod"]
-                thr_pct = metrics["cpu_throttling"] * 100
-                lat = metrics["latency_p95"]
-                tput = metrics["throughput"]
-
-                broken, reason = check_breaking_point(metrics)
-
-                if broken and not unconfirmed_break:
-                    unconfirmed_break = True
-                    print(f"│ ⚠️ {reason} — re-measuring same load to rule out noise")
-                    continue
-
-                if broken:
-                    print(
-                        f"\n\n  🔥 BREAKING POINT at {vus} VUs (confirmed)!"
-                        f"\n     CPU: {cpu_pct:.2f} cores │ "
-                        f"Throttle: {thr_pct:.1f}% │ "
-                        f"Latency: {lat:.3f}s │ "
-                        f"Throughput: {tput:.1f} rps"
-                        f"\n     Reason: {reason}"
-                    )
-                    breaking_reason = reason
-                    breaking_rps = tput
-                    if safe_vus == 0:
-                        print(
-                            f"     ⚠️ Already broken at the starting load ({vus} VUs); "
-                            "the host may be out of CPU for this many replicas."
-                        )
-                    break
-                else:
-                    if unconfirmed_break:
-                        print("│ previous reading was noise ", end="")
-                    unconfirmed_break = False
-                    safe_vus = vus
-                    safe_rps = tput
-                    print(
-                        f"│ ✅ CPU: {cpu_pct:.2f} │ "
-                        f"Thr: {thr_pct:.1f}% │ "
-                        f"Lat: {lat:.3f}s │ "
-                        f"Tput: {tput:.1f} rps"
-                    )
-            else:
-                print(f"\n  ℹ️ Reached {MAX_VUS} VUs without breaking point.")
-
-            # VUs drive collect_healthy_data.py; rps is what the agent compares
-            # against live throughput (1 VU sends slightly under 1 req/s).
-            capacity[str(replicas)] = {
-                "max_safe_vus": safe_vus,
-                "max_safe_rps": round(safe_rps, 2),
-                "breaking_vus": vus if breaking_reason else None,
-                "breaking_rps": round(breaking_rps, 2) if breaking_rps is not None else None,
-                "breaking_reason": breaking_reason or None,
-            }
-
-            # Cool down before next replica count
-            traffic.stop_all()
-            print(f"\n  Cooling down 15s before next replica count ...")
-            time.sleep(15)
-
-    except KeyboardInterrupt:
-        print("\n\n⏹️ Interrupted by user.")
-    finally:
-        traffic.stop_all()
-        # Reset to 1 replica after discovery
-        try:
-            scale_deployment(1)
-            print("  Reset deployment to 1 replica.")
-        except Exception:
-            pass
-
-    # ─── Save results ────────────────────────────────────────────────────
-    if log_rows:
-        pd.DataFrame(log_rows).to_csv(LOG_CSV, index=False)
-        print(f"\n📄 Full metric trace saved to: {LOG_CSV}")
-
-    if capacity:
-        with open(CAPACITY_JSON, "w") as f:
-            json.dump(capacity, f, indent=2)
-        print(f"📄 Capacity table saved to: {CAPACITY_JSON}")
-
-    # ─── Print summary ──────────────────────────────────────────────────
-    print(f"\n{'=' * 70}")
-    print("  CAPACITY TABLE")
-    print(f"{'=' * 70}")
-    header = (
-        f"  {'Replicas':>8} │ {'Safe VUs':>10} │ "
-        f"{'Break VUs':>10} │ Reason"
-    )
-    print(header)
-    print(f"  {'─' * 8}─┼─{'─' * 10}─┼─{'─' * 10}─┼─{'─' * 25}")
-    for r in REPLICA_RANGE:
-        key = str(r)
-        if key in capacity:
-            c = capacity[key]
-            safe = c["max_safe_vus"]
-            brk = c["breaking_vus"] or "—"
-            reason = c["breaking_reason"] or "not reached"
-            print(f"  {r:>8} │ {str(safe):>10} │ {str(brk):>10} │ {reason}")
-    print()
-
-    return capacity
+def main():
+    RUN_LOG.parent.mkdir(exist_ok=True)
+    make_token_pool()
+    rows, table = [], {}
+    start = START_RPS
+    for replicas in REPLICA_RANGE:
+        table[replicas] = discover(replicas, start, rows)
+        print(f"--> {replicas} pod(s): {table[replicas]}", flush=True)
+        CAPACITY_JSON.write_text(json.dumps({str(k): v for k, v in table.items()}, indent=2))
+        if table[replicas]["max_safe_rps"]:
+            start = table[replicas]["max_safe_rps"]
+    restart_and_wait(1)
+    print("\nCapacity table:", json.dumps(table, indent=2))
 
 
 if __name__ == "__main__":
-    discover_capacity()
+    main()

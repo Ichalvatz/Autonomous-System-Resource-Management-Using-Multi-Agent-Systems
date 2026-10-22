@@ -1,309 +1,216 @@
+#!/usr/bin/env python3
 """
-Phase 3 — train one One-Class SVM per replica count.
+Health model, phase 2 (2026-10-22): ONE One-Class SVM on the NFR metrics with the replica count as an input
+(design_decisions.md A24). Replaces the per-replica models on CPU / throttling of phase 1 (5-ml-training/phase1/).
 
-Why One-Class SVM and not Isolation Forest (see CLAUDE.md, "Model choice"):
-an Isolation Forest only cuts between the min and max of the training data,
-so every point beyond the healthy range gets exactly the score of the range's
-edge. It can tell *that* a point is past the edge, never *how far*. It misses
-one-directional drift: over-provisioning (only CPU and throughput drop) and
-stuck code (only latency rises). A One-Class SVM scores by RBF distance to the
-healthy data, so far from it the score always drops below the threshold.
+Input: baseline_metrics_healthy.csv (collect_healthy_data.py). Kept as healthy: p95 < SLO_P95 (the objective;
+the model must never learn a violation as normal), errors <= MAX_ERR, traffic >= MIN_RPS (the detector's gate),
+and every pod ready (a reading during a pod change mixes two states).
 
-Why one model per replica count: with a single model, "2 pods at 15% CPU and
-5 rps" differs from healthy 1-pod data only in `active_replicas`. A model per
-replica count learns that count's own healthy band; below it means
-over-provisioned (scale down), above it means overloaded (scale up).
+The transform and the score live in 3-ai-agent/health_model.py (shared with the detector, the verification and
+the memory). Its weights are chosen here by a small grid search, judged by
+  1. probes derived from the measured bands (the situations the detector must get right; all must pass),
+  2. held-out false alarms: train on the ramp-up readings, score the ramp-down ones, and back (pessimistic),
+for both forms of the load input: rps per pod (the default) and total throughput (the comparison asked for).
+Also calibrates trend_eps, the score noise between consecutive healthy readings, for the verification.
 
-active_replicas is therefore not a model feature; it selects the model.
-The saved file is a dict:
-    {"model_type": "ocsvm", "features": [...], "models": {1: Pipeline, 2: ..., 3: ...}}
-anomaly_detector.py picks models[active_replicas].
+  python 5-ml-training/train_health_baseline.py            (seconds; read-only except the outputs)
+
+Writes health_model.pkl (bundle, gitignored), baseline_metrics_healthy_filtered.csv and training_report.json.
 """
-import functools
+import itertools
+import json
+import math
+import sys
+from datetime import datetime
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.svm import OneClassSVM
 
-BASE_DIR = Path(__file__).resolve().parent
-INPUT_CSV = BASE_DIR / "baseline_metrics_healthy.csv"
-OUTPUT_CSV = BASE_DIR / "baseline_metrics_healthy_filtered.csv"
-MODEL_FILE = BASE_DIR / "health_model.pkl"
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "3-ai-agent"))
+import health_model as hm  # noqa: E402
 
-FEATURES = [
-    "avg_cpu_per_pod",
-    "latency_p95",
-    "cpu_throttling",
-    "throughput",
-]
+INPUT_CSV = HERE / "baseline_metrics_healthy.csv"
+OUTPUT_CSV = HERE / "baseline_metrics_healthy_filtered.csv"
+MODEL_FILE = HERE / "health_model.pkl"
+REPORT_FILE = HERE / "training_report.json"
 
-# Health SLO thresholds — define the boundary of "normal operation."
-# These should represent comfortable operating conditions, not breaking points.
-MAX_CPU_PER_POD = 0.95       # Reserve headroom below the 1-core limit
-# Seconds. Same as the agent's SLO (agent.py: p95 > 0.35s = scale up), so the
-# model never learns as "healthy" a state the agent treats as an SLO violation.
-# (2026-09-30 run: a 45s host hiccup at 3 replicas / 28-29 VUs read p95 0.5-0.69s.)
-MAX_LATENCY_P95 = 0.35
-MAX_CPU_THROTTLING = 0.10    # Ratio — above 10% indicates resource starvation
-MIN_SAMPLES_PER_MODEL = 20
-
-# One-Class SVM preprocessing (the RBF kernel is distance-based):
-# - cpu, throughput: log, then StandardScaler per replica count. Log because
-#   load bands are ratio-wide (2 pods: 7 -> 22 rps) and waste is a ratio ("load
-#   is 60% of what this pod count is for"); in linear units a 20% shortfall
-#   below the 2-pod band was only ~0.3 std and was missed. Clipped at 0.001 so a
-#   zero reading scores as an anomaly instead of log(0) = -inf.
-# - latency: max(p95, LAT_FLOOR), log, x LAT_WEIGHT, no data-based scaling.
-#   Real p95 sits on histogram-bucket plateaus (~0.075 / ~0.099 / ~0.17 s) and
-#   the plateau drifts over time independent of load. Standardized per replica
-#   count, a healthy 0.075 -> 0.099 switch looked like a big jump: 49.5% held-out
-#   false alarms on the 2026-09-30 data. Under the floor every latency counts the
-#   same, above it the fixed weight makes 0.4 s clearly anomalous and 5 s extreme.
-# - throttling: max(ratio, THR_FLOOR) x THR_WEIGHT, same idea at the agent's 5% SLO.
-LAT_FLOOR = 0.2      # s; healthy data tops out at ~0.19 s, agent SLO is 0.35 s
-LAT_WEIGHT = 4.0     # 0.35 s -> 2.2 units above the floor, 5 s -> 12.9 units
-THR_FLOOR = 0.05     # agent SLO: throttling < 5%
-THR_WEIGHT = 20.0    # +5 percentage points above the floor = 1 unit
-# NU: upper bound on the share of healthy training readings left outside the
-#     boundary (the role contamination had in Isolation Forest).
-# GAMMA: how tight the boundary is. Higher catches smaller shifts but flags more
-#     healthy readings. Tuned on the 2026-09-30 real data (up/down held-out):
-#     0.02 passed all probes with ~11% held-out false alarms (pessimistic) and
-#     kept the demo's steady states (5/20/30/14 VUs) normal.
-OCSVM_NU = 0.02
-OCSVM_GAMMA = 0.02
-
-# How deep below the band the WASTE probe sits. The demo's scale-down steps in
-# baseline.js sit at about 0.6x (5 VUs on 2 pods) and 0.8x (14 VUs on 3 pods).
+SLO_P95 = 0.35
+MAX_ERR = 0.001
+MIN_RPS = 1.0            # = anomaly_detector.MIN_THROUGHPUT_RPS
+NU = 0.02
+P95_FLOOR, P95_WEIGHT = 0.2, 4.0       # as in phase 1
 WASTE_FACTOR = 0.8
-# Consecutive anomalous readings the detector needs to wake the agent.
 STREAK_REQUIRED = 3
+GRID = {"gamma": [0.005, 0.01, 0.02, 0.05, 0.1], "rep_weight": [2.0, 4.0, 8.0, 12.0],
+        "err_weight": [100.0, 300.0, 1000.0]}
 
 
-def _numpy_step(func, *args):
-    return FunctionTransformer(functools.partial(func, *args))
-
-
-def make_ocsvm():
-    # Only numpy functions inside FunctionTransformer, so the pickle loads in
-    # anomaly_detector.py without importing this module.
-    load = make_pipeline(_numpy_step(np.maximum, 1e-3), FunctionTransformer(np.log))
-    latency = make_pipeline(
-        _numpy_step(np.maximum, LAT_FLOOR), FunctionTransformer(np.log), _numpy_step(np.multiply, LAT_WEIGHT)
-    )
-    throttling = make_pipeline(_numpy_step(np.maximum, THR_FLOOR), _numpy_step(np.multiply, THR_WEIGHT))
-    features = ColumnTransformer([
-        ("load", load, ["avg_cpu_per_pod", "throughput"]),   # -> columns 0, 1
-        ("latency", latency, ["latency_p95"]),              # -> column 2
-        ("throttling", throttling, ["cpu_throttling"]),     # -> column 3
-    ])
-    # Standardize only the load columns; latency and throttling keep their fixed scale.
-    scale_load = ColumnTransformer([("scaler", StandardScaler(), [0, 1])], remainder="passthrough")
-    return Pipeline([
-        ("features", features),
-        ("scale_load", scale_load),
-        ("ocsvm", OneClassSVM(kernel="rbf", nu=OCSVM_NU, gamma=OCSVM_GAMMA)),
-    ])
-
-
-def load_data():
-    if not INPUT_CSV.exists():
-        raise FileNotFoundError(f"Input dataset not found: {INPUT_CSV}")
-
+def load_healthy():
     data = pd.read_csv(INPUT_CSV)
-    required_columns = {"timestamp", "active_replicas", *FEATURES}
-    missing_columns = sorted(required_columns - set(data.columns))
-    if missing_columns:
-        raise ValueError(f"Dataset is missing columns: {missing_columns}")
-
-    numeric = [*FEATURES, "active_replicas"]
-    data[numeric] = data[numeric].apply(pd.to_numeric, errors="coerce")
-    return data
-
-
-def build_health_dataset(data):
-    # No replica-transition filter: collect_healthy_data.py waits for the pods
-    # to be ready plus 60s before the first reading of each replica count.
-    numeric = [*FEATURES, "active_replicas"]
-    valid = data[numeric].notna().all(axis=1)
-    non_negative = (data[numeric] >= 0).all(axis=1)
-    within_slo = (
-        (data["avg_cpu_per_pod"] <= MAX_CPU_PER_POD)
-        & (data["latency_p95"] < MAX_LATENCY_P95)
-        & (data["cpu_throttling"] < MAX_CPU_THROTTLING)
-        & (data["active_replicas"] >= 1)
-    )
-
-    health_mask = valid & non_negative & within_slo
-    health_data = data.loc[health_mask].copy()
-    health_data["active_replicas"] = health_data["active_replicas"].round().astype(int)
-    health_data.to_csv(OUTPUT_CSV, index=False)
-
-    rejection_reasons = {
-        "invalid_or_missing": int((~valid).sum()),
-        "negative_metric": int((valid & ~non_negative).sum()),
-        "outside_health_limits": int((valid & non_negative & ~within_slo).sum()),
+    keep = ((data["latency_p95"] < SLO_P95) & (data["error_rate"] <= MAX_ERR) & (data["throughput"] >= MIN_RPS)
+            & (data["ready_replicas"] == data["replicas"]) & (data["replicas"] == data["replicas_set"]))
+    reasons = {
+        "slo_violation": int((data["latency_p95"] >= SLO_P95).sum()),
+        "errors": int((data["error_rate"] > MAX_ERR).sum()),
+        "low_traffic": int((data["throughput"] < MIN_RPS).sum()),
+        "pods_not_ready_or_changing": int(((data["ready_replicas"] != data["replicas"])
+                                           | (data["replicas"] != data["replicas_set"])).sum()),
     }
-    return health_data, rejection_reasons
+    return data, data[keep].reset_index(drop=True), reasons
 
 
-def fit_per_replica(health_data, make_model):
-    models = {}
-    for replicas, group in health_data.groupby("active_replicas"):
-        if len(group) < MIN_SAMPLES_PER_MODEL:
-            raise ValueError(
-                f"Only {len(group)} healthy samples for {replicas} replica(s); "
-                f"at least {MIN_SAMPLES_PER_MODEL} are required."
-            )
-        models[int(replicas)] = make_model().fit(group[FEATURES])
-    return models
+def params_for(health, form, rep_weight, err_weight):
+    load = np.log(np.maximum(health["throughput" if form == "total" else "rps_per_pod"], 0.01))
+    return {"form": form, "load_mean": float(load.mean()), "load_std": float(load.std()) or 1.0,
+            "p95_floor": P95_FLOOR, "p95_weight": P95_WEIGHT, "err_weight": err_weight, "rep_weight": rep_weight}
 
 
-def build_probes(health_data):
-    """Probes derived from the measured bands, so they test the real
-    scale-up / scale-down / stuck-code situations of this cluster."""
-    # CPU cost of one request (core-seconds), measured from the data.
-    cost = float(np.median(
-        health_data["avg_cpu_per_pod"] * health_data["active_replicas"]
-        / health_data["throughput"]
-    ))
-    lat = float(health_data["latency_p95"].median())
-    thr = float(health_data["cpu_throttling"].median())
-    counts = sorted(health_data["active_replicas"].unique())
+def fit(params, rows, gamma):
+    return OneClassSVM(kernel="rbf", nu=NU, gamma=gamma).fit(hm.transform(params, rows))
 
-    def row(label, replicas, rps, expect_anomaly, latency=lat, throttling=thr, cpu=None):
-        return {
-            "label": label, "replicas": int(replicas), "expect_anomaly": expect_anomaly,
-            "avg_cpu_per_pod": cpu if cpu is not None else cost * rps / replicas,
-            "latency_p95": latency, "cpu_throttling": throttling, "throughput": rps,
-        }
 
+def build_probes(health):
+    """The situations the detector must get right, from the measured bands (per pod: rps per pod)."""
+    lat = float(health["latency_p95"].median())
     probes = []
+
+    def probe(label, replicas, rps_per_pod, anomaly, p95=lat, err=0.0):
+        probes.append({"label": label, "replicas": replicas, "rps_per_pod": rps_per_pod,
+                       "throughput": rps_per_pod * replicas, "latency_p95": p95, "error_rate": err,
+                       "expect_anomaly": anomaly})
+
+    counts = sorted(health["replicas"].unique())
     for r in counts:
-        band = health_data.loc[health_data["active_replicas"] == r, "throughput"]
+        band = health.loc[health["replicas"] == r, "rps_per_pod"]
         lo, hi = float(band.min()), float(band.max())
-        probes.append(row(f"{r}p HEALTHY mid-band", r, (lo + hi) / 2, False))
-        # Over-provisioned: clearly below this count's band.
+        mid = (lo + hi) / 2
+        top_p95 = float(health.loc[health["replicas"] == r, "latency_p95"].quantile(0.9))
+        probe(f"{r}p HEALTHY mid-band", r, mid, False)
+        probe(f"{r}p HEALTHY top-band p95 {top_p95:.2f}s", r, hi * 0.95, False, p95=top_p95)
         if r > counts[0]:
-            waste_rps = WASTE_FACTOR * lo
-            probes.append(row(f"{r}p WASTE {waste_rps:.1f}rps", r, waste_rps, True))
-            # Anti-flapping: after scaling down, the smaller count must see that load as normal.
-            probes.append(row(f"{r - 1}p AFTER scale-down {waste_rps:.1f}rps", r - 1, waste_rps, False))
-        # Overloaded: above this count's safe max.
-        probes.append(row(f"{r}p OVERLOAD {1.15 * hi:.1f}rps", r, 1.15 * hi, True,
-                          latency=0.4, throttling=0.08, cpu=0.9))
-        # Stuck code: normal traffic, latency 5s.
-        probes.append(row(f"{r}p STUCK p95=5s", r, (lo + hi) / 2, True, latency=5.0))
-        # Latency alone: 0.19 s is the top of healthy, 0.4 s breaks the agent's 0.35 s SLO.
-        probes.append(row(f"{r}p p95=0.19s (healthy top)", r, (lo + hi) / 2, False, latency=0.19))
-        probes.append(row(f"{r}p SLOW p95=0.4s", r, (lo + hi) / 2, True, latency=0.4))
-
-    low = health_data[(health_data["active_replicas"] == counts[0])
-                      & (health_data["throughput"] < 1.5)]
+            probe(f"{r}p WASTE", r, WASTE_FACTOR * lo, True)
+            probe(f"{r - 1}p AFTER scale-down", r - 1, WASTE_FACTOR * lo * r / (r - 1), False)
+        probe(f"{r}p EARLY OVERLOAD (load only)", r, 1.2 * hi, True)
+        probe(f"{r}p OVERLOAD p95 0.4s", r, 1.15 * hi, True, p95=0.4)
+        probe(f"{r}p SLOW p95 0.4s", r, mid, True, p95=0.4)
+        probe(f"{r}p STUCK p95 3s", r, mid, True, p95=3.0)
+        probe(f"{r}p ERRORS 1%", r, mid, True, err=0.01)
+        probe(f"{r}p OUTAGE 100% 5xx", r, mid, True, p95=0.01, err=1.0)
+    low = health[(health["replicas"] == counts[0]) & (health["throughput"] < 3)]
     if len(low):
-        probes.append(row(f"{counts[0]}p LOW traffic ~1rps", counts[0], float(low["throughput"].median()),
-                          False, latency=float(low["latency_p95"].quantile(0.9)),
-                          cpu=float(low["avg_cpu_per_pod"].median())))
-    return pd.DataFrame(probes)
+        probe(f"{counts[0]}p LOW traffic", counts[0], float(low["rps_per_pod"].median()), False,
+              p95=float(low["latency_p95"].quantile(0.9)))
+    return probes
 
 
-def longest_true_runs(flags):
-    """Number of runs of >= STREAK_REQUIRED consecutive True values."""
+def probe_failures(params, model, probes):
+    scores = model.decision_function(hm.transform(params, probes))
+    return [(p["label"], float(s)) for p, s in zip(probes, scores) if (s < 0) != p["expect_anomaly"]], scores
+
+
+def runs_of(flags, n=STREAK_REQUIRED):
     runs, streak = 0, 0
     for flag in flags:
         streak = streak + 1 if flag else 0
-        if streak == STREAK_REQUIRED:
-            runs += 1
+        runs += streak == n
     return runs
 
 
-def held_out_false_alarms(health_data, make_model):
-    """False-alarm estimate on readings the model hasn't seen: train on the
-    ramp-up readings of each replica count and score the ramp-down readings,
-    then the other way round. Each half-model sees only half the data, so this
-    is pessimistic: in simulation it read ~2x the rate on a fresh dataset.
-    The real check is `anomaly_detector.py --dry-run` on healthy traffic.
-    Needs the `vus` column written by collect_healthy_data.py."""
-    if "vus" not in health_data.columns:
-        return None
-    flagged, total, triggers = 0, 0, 0
-    for _, group in health_data.groupby("active_replicas"):
-        group = group.sort_index()
-        peak = group.index[group["vus"].argmax()]
-        up, down = group.loc[:peak], group.loc[peak:].iloc[1:]
-        for train, test in ((up, down), (down, up)):
-            if len(train) < MIN_SAMPLES_PER_MODEL // 2 or not len(test):
-                continue
-            flags = make_model().fit(train[FEATURES]).predict(test[FEATURES]) == -1
+def held_out(params, health, gamma):
+    flagged = total = wakes = 0
+    up, down = health[health["direction"] == "up"], health[health["direction"] == "down"]
+    for train, test in ((up, down), (down, up)):
+        if len(train) < 20 or not len(test):
+            continue
+        model = fit(params, train, gamma)
+        for _, group in test.groupby("replicas"):
+            flags = model.predict(hm.transform(params, group)) == -1
             flagged += int(flags.sum())
             total += len(flags)
-            triggers += longest_true_runs(flags)
-    return flagged, total, triggers
+            wakes += runs_of(flags)
+    return flagged, total, wakes
 
 
-def validate(models, health_data):
-    print("\n--- Training data (per replica count) ---")
-    for replicas, model in models.items():
-        group = health_data[health_data["active_replicas"] == replicas]
-        scores = model.decision_function(group[FEATURES])
-        n_flagged = int((model.predict(group[FEATURES]) == -1).sum())
-        print(
-            f"  {replicas} replica(s): {n_flagged}/{len(group)} flagged  "
-            f"score min={scores.min():+.4f} median={np.median(scores):+.4f} max={scores.max():+.4f}"
-        )
+def trend_eps(params, model, health):
+    """95th percentile of |score change| between consecutive healthy readings of the same ramp."""
+    deltas = []
+    for _, group in health.groupby(["replicas", "direction"]):
+        scores = model.decision_function(hm.transform(params, group))
+        deltas += list(np.abs(np.diff(scores)))
+    return float(np.percentile(deltas, 95)) if deltas else 0.05
 
-    probes = build_probes(health_data)
-    print("--- Probes (derived from the measured bands) ---")
-    failed = 0
-    for _, p in probes.iterrows():
-        model = models[p["replicas"]]
-        x = p[FEATURES].to_frame().T.astype(float)
-        is_anomaly = model.predict(x)[0] == -1
-        score = model.decision_function(x)[0]
-        ok = is_anomaly == p["expect_anomaly"]
-        failed += not ok
-        verdict = "ANOMALY" if is_anomaly else "normal"
-        print(
-            f"  {'✅' if ok else '❌'} {p['label']:32s} → {verdict:7s} (score: {score:+.4f})  "
-            f"cpu={p['avg_cpu_per_pod']:.2f} p95={p['latency_p95']:.2f}"
-        )
-    print(f"  {'✅ All probes passed.' if not failed else f'⚠️  {failed} probe(s) failed.'}")
-    return failed
+
+def search(health, probes, form):
+    results = []
+    for gamma, rep_weight, err_weight in itertools.product(GRID["gamma"], GRID["rep_weight"], GRID["err_weight"]):
+        params = params_for(health, form, rep_weight, err_weight)
+        model = fit(params, health, gamma)
+        failures, _ = probe_failures(params, model, probes)
+        flagged, total, wakes = held_out(params, health, gamma)
+        results.append({"form": form, "gamma": gamma, "rep_weight": rep_weight, "err_weight": err_weight,
+                        "probe_failures": len(failures), "failed": [f for f, _ in failures],
+                        "held_out_flagged": flagged, "held_out_total": total, "held_out_wakes": wakes})
+    # all probes first, then the fewest held-out wake-ups and false alarms; ties: phase 1's gamma, then lighter weights
+    results.sort(key=lambda r: (r["probe_failures"], r["held_out_wakes"], r["held_out_flagged"],
+                                abs(math.log(r["gamma"] / 0.02)), r["rep_weight"], r["err_weight"]))
+    return results
 
 
 def main():
-    data = load_data()
-    health_data, rejection_reasons = build_health_dataset(data)
+    data, health, reasons = load_healthy()
+    health.to_csv(OUTPUT_CSV, index=False)
+    print(f"{len(data)} readings, {len(health)} healthy; rejected: {reasons}")
+    print(health.groupby("replicas")[["rps_per_pod", "throughput", "latency_p95", "error_rate"]]
+          .agg(["min", "median", "max"]).round(3).to_string())
+    probes = build_probes(health)
 
-    models = fit_per_replica(health_data, make_ocsvm)
-    validate(models, health_data)
-    held_out = held_out_false_alarms(health_data, make_ocsvm)
-    if held_out:
-        flagged, total, triggers = held_out
-        print(
-            f"--- Held-out healthy readings (train on ramp-up, test on ramp-down and back;"
-            f" pessimistic, ~2x the real rate) ---\n"
-            f"  {flagged}/{total} flagged ({flagged / total * 100:.1f}%), "
-            f"{triggers} run(s) of {STREAK_REQUIRED}+ in a row (= would wake the agent)"
-        )
+    report = {}
+    for form in ("per_pod", "total"):
+        results = search(health, probes, form)
+        report[form] = results[:5]
+        print(f"\n--- form {form}: best of {len(results)} configurations ---")
+        for r in results[:5]:
+            print(f"  gamma {r['gamma']:<6} rep_w {r['rep_weight']:<5} err_w {r['err_weight']:<7} "
+                  f"probe failures {r['probe_failures']} {r['failed'][:3]}  held-out "
+                  f"{r['held_out_flagged']}/{r['held_out_total']} flagged, {r['held_out_wakes']} wake-up(s)")
+    best_pp, best_tot = report["per_pod"][0], report["total"][0]
+    key = lambda r: (r["probe_failures"], r["held_out_wakes"], r["held_out_flagged"])
+    best = best_tot if key(best_tot) < key(best_pp) else best_pp   # per pod unless the total form is strictly better
+    print(f"\nChosen: form {best['form']} (per pod {key(best_pp)} vs total {key(best_tot)}: "
+          f"probe failures, held-out wake-ups, held-out flagged)")
 
-    joblib.dump({"model_type": "ocsvm", "features": FEATURES, "models": models}, MODEL_FILE)
-
-    print(f"\n--- Health Filter Summary ---")
-    print(f"  Input samples:           {len(data)}")
-    print(f"  Healthy samples:         {len(health_data)}")
-    print(f"  Rejected samples:        {len(data) - len(health_data)}")
-    print(f"  Rejection reasons:       {rejection_reasons}")
-    print(f"  Healthy band per replica count:")
-    bands = health_data.groupby("active_replicas")[FEATURES].agg(["min", "max"])
-    print("  " + bands.round(3).to_string().replace("\n", "\n  "))
-    print(f"\n  Healthy dataset saved to: {OUTPUT_CSV}")
-    print(f"  Models saved to: {MODEL_FILE}")
+    params = params_for(health, best["form"], best["rep_weight"], best["err_weight"])
+    model = fit(params, health, best["gamma"])
+    failures, scores = probe_failures(params, model, probes)
+    print("--- Probes ---")
+    for p, s in zip(probes, scores):
+        ok = (s < 0) == p["expect_anomaly"]
+        print(f"  {'✅' if ok else '❌'} {p['label']:38s} {'ANOMALY' if s < 0 else 'normal':7s} ({s:+.3f})  "
+              f"rps/pod {p['rps_per_pod']:.1f}  p95 {p['latency_p95']:.2f}  err {100 * p['error_rate']:.0f}%")
+    train_scores = model.decision_function(hm.transform(params, health))
+    eps = trend_eps(params, model, health)
+    ranges = {int(r): {"rps_per_pod": [float(g["rps_per_pod"].min()), float(g["rps_per_pod"].max())],
+                       "latency_p95": float(g["latency_p95"].max()),
+                       "error_rate": max(float(g["error_rate"].max()), MAX_ERR)}
+              for r, g in health.groupby("replicas")}
+    bundle = {"model_type": "OneClassSVM-NFR", "features": hm.FEATURES, "params": params, "model": model,
+              "nu": NU, "gamma": best["gamma"], "healthy_ranges": ranges, "trend_eps": eps,
+              "trained_at": datetime.now().isoformat(timespec="seconds"), "n_train": len(health)}
+    joblib.dump(bundle, MODEL_FILE)
+    report.update({"chosen": best, "trend_eps": eps, "healthy_ranges": ranges,
+                   "train_flagged": int((train_scores < 0).sum()), "n_train": len(health), "rejected": reasons,
+                   "probes": [{"label": p["label"], "score": round(float(s), 4), "expect_anomaly": p["expect_anomaly"]}
+                              for p, s in zip(probes, scores)]})
+    REPORT_FILE.write_text(json.dumps(report, indent=2))
+    print(f"\nTraining data flagged: {(train_scores < 0).sum()}/{len(health)}; trend eps (95th pct of |Δscore|): "
+          f"{eps:.4f}\nHealthy ranges: {json.dumps(ranges)}\nModel -> {MODEL_FILE}; report -> {REPORT_FILE}")
+    if failures:
+        print(f"⚠️  {len(failures)} probe(s) failed: {failures}")
 
 
 if __name__ == "__main__":

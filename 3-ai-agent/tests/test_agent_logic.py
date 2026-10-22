@@ -1,7 +1,9 @@
 """
-Unit tests for the deterministic parts of the AIOps runtime: safety guards,
-verification verdicts, incident-memory retrieval, rollback and the rule-based
-baseline. Kubernetes, Prometheus and ChromaDB are mocked: nothing touches the cluster.
+Unit tests for the deterministic parts of the AIOps runtime (agent v9, phase 2): safety guards, the verification
+by the health score's trajectory, incident memory in the model's space, the scale-down rollback, the re-wake
+signal, the computed facts, the LLM retry wrapper and the observation tools. Kubernetes, Prometheus and
+ChromaDB are mocked: nothing touches the cluster. (The rule baseline, pod restart and rollback tools and their
+tests were removed on 2026-10-22; git tag v8.1-campaign.)
 
 Run from the repo root:  .venv/bin/python3 -m pytest 3-ai-agent/tests -q
 """
@@ -16,12 +18,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("GEMINI_API_KEY", "dummy-for-tests")
 
 import agent_tools  # noqa: E402
-import rule_scaler  # noqa: E402
+import health_model  # noqa: E402
+
+PARAMS = {"form": "per_pod", "load_mean": 3.5, "load_std": 0.8, "p95_floor": 0.2, "p95_weight": 4.0,
+          "err_weight": 300.0, "rep_weight": 8.0}
+BUNDLE = {"params": PARAMS, "trend_eps": 0.05,
+          "healthy_ranges": {n: {"rps_per_pod": [20.0, 80.0], "latency_p95": 0.25, "error_rate": 0.001} for n in (1, 2, 3)}}
 
 
-def metrics(reps, rps, cpu=0.5, thr=0.02, p95=0.12):
-    return {"active_replicas": float(reps), "throughput": rps, "avg_cpu_per_pod": cpu,
-            "cpu_throttling": thr, "latency_p95": p95}
+def metrics(reps, rps, p95=0.12, err=0.0, score=None, ready=None):
+    m = {"replicas": float(reps), "ready_replicas": float(reps if ready is None else ready), "throughput": rps,
+         "rps_per_pod": rps / reps, "latency_p95": p95, "error_rate": err, "avg_cpu_per_pod": 0.4}
+    if score is not None:
+        m["score"] = score
+    return m
 
 
 # ---------------------------------------------------------------- scale guards
@@ -101,131 +111,170 @@ def test_rollout_wait_does_not_pass_while_old_pod_still_serves():
     assert api.read_namespaced_deployment.call_count == 3
 
 
-# ---------------------------------------------------------------- verification
+# ---------------------------------------------------------------- verification (score trajectory)
 
-def verify_with(pre, post):
-    """Run the verification with Prometheus returning `post` values."""
-    names = {"http_requests_total": "throughput", "histogram_quantile": "latency_p95",
-             "cfs_throttled": "cpu_throttling", "container_cpu_usage": "avg_cpu_per_pod",
-             "kube_deployment_status_replicas_available": "active_replicas"}
+class FakeClock:
+    def __init__(self):
+        self.t = 0.0
 
-    def fake_get(url, params, timeout):
-        q = params["query"]
-        key = next(v for k, v in names.items() if k in q)
-        resp = mock.MagicMock()
-        resp.json.return_value = {"data": {"result": [{"value": [0, str(post[key])]}]}}
-        return resp
+    def monotonic(self):
+        return self.t
 
-    with mock.patch.object(agent_tools, "_wait_for_rollout", return_value=5.0), \
-         mock.patch.object(agent_tools.time, "sleep"), \
-         mock.patch.object(agent_tools.requests, "get", side_effect=fake_get):
-        text = agent_tools.verify_metrics_stabilization(json.dumps(pre))
+    def sleep(self, seconds):
+        self.t += seconds
+
+
+def verify_scores(pre_score, scores, rps=40.0):
+    """Run the verification on readings whose health scores are `scores`, one per 10 s after the rollout."""
+    readings = [metrics(1, rps, score=s) for s in scores]
+    it = iter(readings)
+    clock = FakeClock()
+    with mock.patch.object(agent_tools, "_wait_for_rollout", return_value=12.0), \
+         mock.patch.object(agent_tools, "_health_bundle", return_value=BUNDLE), \
+         mock.patch.object(agent_tools.nfr_metrics, "fetch_reading", side_effect=lambda: next(it, readings[-1])), \
+         mock.patch.object(agent_tools.health_model, "score", side_effect=lambda _b, r: r["score"]), \
+         mock.patch.object(agent_tools.health_model, "explain", return_value=["p95 latency 3.00 s is above ..."]), \
+         mock.patch.object(agent_tools.time, "monotonic", side_effect=clock.monotonic), \
+         mock.patch.object(agent_tools.time, "sleep", side_effect=clock.sleep):
+        text = agent_tools.verify_metrics_stabilization(json.dumps(metrics(1, rps, p95=3.0, score=pre_score)))
     return agent_tools.run_outcome["verification"], text
 
 
-def test_verify_scale_up_that_relieves_pressure_is_stable():
-    pre = metrics(1, 12.5, cpu=0.83, thr=0.096, p95=0.15)
-    post = metrics(2, 14.0, cpu=0.45, thr=0.02, p95=0.12)
-    assert verify_with(pre, post)[0] == "STABLE"
+def test_verify_a_restart_that_fixes_the_app_waits_through_the_old_window_then_is_stable():
+    """Stuck app restarted: the first minute of 1 m windows still holds the 3 s requests (flat, very low score);
+    no UNSTABLE before the window is post-action only, then the score climbs and is normal twice."""
+    verdict, text = verify_scores(-1.05, [-1.05, -1.05, -1.04, -1.0, -0.8, -0.5, -0.2, 0.05, 0.08])
+    assert verdict == "STABLE"
+    assert agent_tools.run_outcome["recovery_s"] == 12 + 80 and agent_tools.run_outcome["score_after"] == 0.08
+    assert "before the action -1.05" in text
 
 
-def test_verify_scale_up_still_ramping_but_improving_is_stable():
-    pre = metrics(2, 24, cpu=0.85, thr=0.11, p95=0.3)
-    post = metrics(3, 27, cpu=0.76, thr=0.06, p95=0.25)  # CPU above 0.75, but clearly better
-    assert verify_with(pre, post)[0] == "STABLE"
+def test_verify_a_scale_up_that_only_dilutes_a_fault_is_unstable_not_improving():
+    verdict, text = verify_scores(-1.05, [-1.02] * 12)
+    assert verdict == "UNSTABLE" and "not improving" in text.splitlines()[0]
+    assert "Still outside the healthy range" in text
 
 
-def test_verify_scale_up_that_only_dilutes_a_fault_is_unstable():
-    """Users still above the SLO: a lower but still broken p95 is not a fix."""
-    pre = metrics(1, 4.0, cpu=0.19, thr=0.023, p95=4.46)
-    post = metrics(2, 5.5, cpu=0.15, thr=0.02, p95=3.0)
-    assert verify_with(pre, post)[0] == "UNSTABLE"
+def test_verify_a_scale_down_that_overloads_is_unstable_worse():
+    verdict, text = verify_scores(-0.10, [-0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8])
+    assert verdict == "UNSTABLE" and "worse than before the action" in text.splitlines()[0]
 
 
-def test_verify_scale_down_that_overloads_is_unstable():
-    pre = metrics(3, 13, cpu=0.32, thr=0.01, p95=0.12)
-    post = metrics(1, 13, cpu=0.9, thr=0.12, p95=0.6)
-    assert verify_with(pre, post)[0] == "UNSTABLE"
+def test_verify_waits_while_the_score_keeps_improving():
+    verdict, _ = verify_scores(-0.9, [-0.9 + 0.1 * i for i in range(12)])
+    assert verdict == "STABLE"
 
 
-def test_verify_restart_after_stuck_fault_is_stable():
-    """Live case 2026-10-01 09:38: restart fixed the app; the fresh pod read throttling 6.7%
-    at CPU 0.52 (8 VUs released at once). That is inside the learned healthy band."""
-    pre = metrics(1, 4.0, cpu=0.19, thr=0.023, p95=4.46)
-    post = metrics(1, 7.1, cpu=0.52, thr=0.067, p95=0.146)
-    assert verify_with(pre, post)[0] == "STABLE"
+def test_verify_still_anomalous_after_the_time_limit_is_unstable():
+    # +0.06 every 10 s (> eps): always "improving", never normal within 240 s
+    verdict, text = verify_scores(-2.0, [-2.0 + 0.06 * i for i in range(40)])
+    assert verdict == "UNSTABLE" and "still anomalous after 4 min" in text
 
 
-def test_verify_restart_that_did_not_help_is_unstable():
-    pre = metrics(1, 4.0, cpu=0.19, thr=0.023, p95=4.46)
-    post = metrics(1, 4.1, cpu=0.2, thr=0.02, p95=4.4)
-    assert verify_with(pre, post)[0] == "UNSTABLE"
+def test_verify_without_any_usable_reading_is_unverifiable():
+    clock = FakeClock()
+    with mock.patch.object(agent_tools, "_wait_for_rollout", return_value=5.0), \
+         mock.patch.object(agent_tools, "_health_bundle", return_value=BUNDLE), \
+         mock.patch.object(agent_tools.nfr_metrics, "fetch_reading", return_value=None), \
+         mock.patch.object(agent_tools.time, "monotonic", side_effect=clock.monotonic), \
+         mock.patch.object(agent_tools.time, "sleep", side_effect=clock.sleep):
+        text = agent_tools.verify_metrics_stabilization(json.dumps(metrics(1, 40, score=-0.5)))
+    assert text.startswith("UNVERIFIABLE") and agent_tools.run_outcome["verification"] == "UNVERIFIABLE"
 
 
-def test_verify_missing_metric_is_unverifiable():
-    assert verify_with({"throughput": 1}, {})[0] == "UNVERIFIABLE"
+@pytest.mark.parametrize("scores,pre,full_at,expected", [
+    ([0.1], -0.5, 0, "WAIT"),                         # one normal reading is not enough
+    ([-0.5, 0.1, 0.2], -0.5, 0, "STABLE"),
+    ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 5, "WAIT"),    # window not yet post-action only
+    ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 0, "UNSTABLE: not improving"),
+    ([-0.2, -0.4], -0.2, 0, "UNSTABLE: worse"),
+    ([-0.9, -0.7, -0.5, -0.3], -0.9, 0, "WAIT"),
+])
+def test_judge_trajectory(scores, pre, full_at, expected):
+    assert health_model.judge_trajectory(scores, pre, 0.05, full_at).startswith(expected)
 
 
-# ---------------------------------------------------------------- incident memory
+# ---------------------------------------------------------------- incident memory (the model's space)
 
 class FakeCollection:
-    def __init__(self, docs, metas):
-        self.docs, self.metas = docs, metas
+    """The ChromaDB calls the memory uses; distances are squared L2 like ChromaDB's default."""
+    def __init__(self, items=()):
+        self.items = list(items)   # (id, embedding, document, metadata)
+
+    def count(self):
+        return len(self.items)
 
     def get(self, where, include):
-        return {"documents": self.docs, "metadatas": self.metas}
+        return {"ids": [i for i, _, _, m in self.items if m["status"] == where["status"]]}
+
+    def query(self, query_embeddings, n_results, where, include):
+        q = query_embeddings[0]
+        hits = sorted(((sum((a - b) ** 2 for a, b in zip(q, e)), d, m) for _, e, d, m in self.items
+                       if m["status"] == where["status"]), key=lambda h: h[0])[:n_results]
+        return {"distances": [[h[0] for h in hits]], "documents": [[h[1] for h in hits]],
+                "metadatas": [[h[2] for h in hits]]}
+
+    def add(self, ids, embeddings, documents, metadatas):
+        self.items += list(zip(ids, embeddings, documents, metadatas))
 
 
-STORED = FakeCollection(
-    ["State -> CPU:0.6cores | Throttle:4.5% | Tput:17.0rps | Reps:2 | P95:0.15s",
-     "State -> CPU:0.2cores | Throttle:0.3% | Tput:6.0rps | Reps:2 | P95:0.13s",
-     "State -> CPU:0.83cores | Throttle:9.6% | Tput:13.0rps | Reps:1 | P95:0.2s",
-     "State -> CPU:0.5cores | Throttle:2.0% | Tput:10.0rps | Reps:2 | P95:0.1s"],
-    [{"action_taken": "scale 2->3", "root_cause": "overload", "status": "resolved",
-      "replicas": 2, "cpu": 0.6, "throttling": 0.045, "rps": 17.0, "p95": 0.15},
-     {"action_taken": "scale 2->1", "root_cause": "waste", "status": "resolved",
-      "replicas": 2, "cpu": 0.2, "throttling": 0.003, "rps": 6.0, "p95": 0.13},
-     {"action_taken": "scale 1->2", "root_cause": "overload", "status": "resolved",
-      "replicas": 1, "cpu": 0.83, "throttling": 0.096, "rps": 13.0, "p95": 0.2},
-     {"action_taken": "restart", "root_cause": "no metrics stored", "status": "resolved"}],  # ignored
-)
+def _stored(state, action, status="resolved"):
+    return (f"id-{action}", health_model.embedding({"params": PARAMS}, state), f"state for {action}",
+            {"status": status, "actions": action, "recovery_s": 70, "diagnosis": f"why {action}", "time": "t"})
 
 
-def test_memory_returns_waste_incident_for_waste_state():
-    with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base(metrics(2, 5.5, cpu=0.2, thr=0.004, p95=0.13))
-    first = text.splitlines()[1]
-    assert "scale 2->1" in text.split("Action taken:")[1].splitlines()[0]
-    assert "Tput:6.0rps" in first
+STORED = [
+    _stored(metrics(2, 170, p95=0.45), "scale 2->3"),           # overload at 2 pods
+    _stored(metrics(2, 30), "scale 2->1"),                      # waste at 2 pods
+    _stored(metrics(1, 40, p95=3.0, err=0.6), "restart"),       # stuck at 1 pod
+    _stored(metrics(2, 30), "scale 2->1 FAILED", "failed"),     # failures are never returned
+]
 
 
-def test_memory_returns_overload_incident_for_overload_state():
-    with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base(metrics(2, 23, cpu=0.8, thr=0.05, p95=0.2))
-    assert "scale 2->3" in text.split("Action taken:")[1].splitlines()[0]
+def memory_for(state, items=STORED):
+    with mock.patch.object(agent_tools, "_get_collection", return_value=FakeCollection(items)), \
+         mock.patch.object(agent_tools, "_health_bundle", return_value={"params": PARAMS}):
+        return agent_tools.query_knowledge_base(state)
 
 
-def test_memory_says_no_similar_incident_for_a_stuck_app():
-    """A stuck app (p95 4.5 s, low CPU) must not be presented old overload/waste incidents as similar."""
-    with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base(metrics(2, 3.0, cpu=0.12, thr=0.007, p95=4.7))
+def test_memory_returns_the_waste_incident_for_a_waste_state():
+    text = memory_for(metrics(2, 32))
+    assert "scale 2->1 -> verified STABLE" in text.split("\n")[1] + text.split("\n")[2]
+    assert "FAILED" not in text
+
+
+def test_memory_returns_the_overload_incident_for_an_overload_state():
+    text = memory_for(metrics(2, 165, p95=0.5))
+    assert text.splitlines()[0].startswith("3 verified") and "scale 2->3" in text.splitlines()[2]
+
+
+def test_memory_says_no_similar_incident_for_a_different_situation():
+    """A stuck app at 3 pods must not be shown 2-pod capacity incidents as similar (the pod count is far apart)."""
+    text = memory_for(metrics(3, 120, p95=3.0, err=0.3))
     assert text.startswith("NO similar past incident")
 
 
-def test_memory_only_matches_same_replica_count():
-    with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base(metrics(3, 13, cpu=0.3))
-    assert text.startswith("No past incidents at 3 replica(s)")
-
-
-def test_memory_unreachable_is_reported_not_raised():
+def test_memory_without_verified_incidents_and_unreachable():
+    assert memory_for(metrics(1, 40), items=[STORED[3]]).startswith("No verified past incidents yet (1 stored")
     with mock.patch.object(agent_tools, "_get_collection", return_value=None):
         assert "unavailable" in agent_tools.query_knowledge_base(metrics(1, 5))
 
 
-def test_save_refuses_without_stable_verification():
+def test_save_incident_stores_status_embedding_and_trajectory():
+    collection = FakeCollection()
     agent_tools.reset_run_outcome()
-    assert agent_tools.save_resolution_to_chroma("sig", "cause", "scale 1->2").startswith("Refused")
+    agent_tools.run_outcome.update(detail="STABLE\nHealth score: ...", recovery_s=85, score_after=0.07)
+    state = {**metrics(1, 40, p95=3.0, err=0.5, score=-1.1), "explanation": ["p95 latency 3.00 s is above ..."]}
+    with mock.patch.object(agent_tools, "_get_collection", return_value=collection), \
+         mock.patch.object(agent_tools, "_health_bundle", return_value={"params": PARAMS}):
+        assert agent_tools.save_incident(state, ["restart"], "STABLE", "Root cause: pool leak", "v9").startswith(
+            "Success: incident saved as resolved")
+        agent_tools.save_incident(state, ["scale 1->2"], "UNSTABLE", "", "v9")
+    (_, emb, doc, meta), (_, _, _, meta2) = collection.items
+    assert emb == health_model.embedding({"params": PARAMS}, state)
+    assert meta["status"] == "resolved" and meta["recovery_s"] == 85 and meta["score_before"] == -1.1
+    assert meta["actions"] == "restart" and meta["agent_version"] == "v9" and "p95 latency 3.00 s" in doc
+    assert meta2["status"] == "failed"
 
 
 # ---------------------------------------------------------------- rollback
@@ -240,19 +289,19 @@ def test_rollback_only_for_scale_down():
         scale.assert_called_once_with(replicas=3)
 
 
-def test_incident_log_keeps_unstable_verdict_after_rollback():
-    """The rollback goes through the scale tool, which resets run_outcome["verification"];
-    the logged verdict must still be the agent action's (UNSTABLE), not empty."""
+def _trigger(actions, verdict, detail=None):
+    """Run trigger_ai_agent with a fake LLM that applies `actions` and a fake verification returning `verdict`."""
     import agent
     logged = []
 
     def fake_run(_prompt):
-        agent_tools._record_action("scale 3->1")
-        return "Root cause: over-provisioned."
+        for a in actions:
+            agent_tools._record_action(a)
+        return "Root cause: ..."
 
     def fake_verify(_metrics_json):
-        agent_tools.run_outcome["verification"] = "UNSTABLE"
-        return "UNSTABLE"
+        agent_tools.run_outcome.update(verification=verdict, detail=detail or verdict)
+        return detail or verdict
 
     def fake_scale(replicas):
         agent_tools._record_action(f"scale 1->{replicas}")
@@ -262,12 +311,36 @@ def test_incident_log_keeps_unstable_verdict_after_rollback():
          mock.patch.object(agent, "verify_metrics_stabilization", side_effect=fake_verify), \
          mock.patch.object(agent, "scale_kubernetes_deployment", side_effect=fake_scale), \
          mock.patch.object(agent, "query_knowledge_base", return_value="none"), \
-         mock.patch.object(agent, "save_resolution_to_chroma") as save, \
+         mock.patch.object(agent, "save_incident", return_value="Success: saved") as save, \
          mock.patch.object(agent, "_log_incident", side_effect=logged.append):
-        assert agent.trigger_ai_agent(json.dumps(metrics(3, 5))) is False
+        result = agent.trigger_ai_agent(json.dumps(metrics(3, 30, score=-0.2)))
+    return result, logged[0], save
+
+
+def test_failed_scale_down_is_rolled_back_logged_saved_as_failed_and_not_rewoken():
+    """The rollback goes through the scale tool, which resets run_outcome; the logged verdict must still be the
+    agent action's (UNSTABLE). Code already undid it, so no re-wake."""
+    result, row, save = _trigger(["scale 3->1"], "UNSTABLE", "UNSTABLE: worse than before the action")
+    assert result == {"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse than before the action"}
+    assert row["verification"] == "UNSTABLE" and row["actions"] == "scale 3->1; rollback to 3"
+    assert save.call_args.args[2] == "UNSTABLE"
+
+
+def test_failed_restart_asks_for_a_rewake():
+    result, row, _ = _trigger(["restart"], "UNSTABLE", "UNSTABLE: not improving (...)")
+    assert result["rewake"] is True and row["rewake"] is True
+
+
+def test_stable_action_is_resolved_and_saved():
+    result, row, save = _trigger(["restart"], "STABLE")
+    assert result["resolved"] is True and result["rewake"] is False and row["saved_to_memory"] is True
+    save.assert_called_once()
+
+
+def test_no_action_is_not_verified_or_saved():
+    result, row, save = _trigger([], "")
+    assert result["resolved"] is True and row["actions"] == "" and row["verification"] == ""
     save.assert_not_called()
-    assert logged[0]["verification"] == "UNSTABLE"
-    assert logged[0]["actions"] == "scale 3->1; rollback to 3"
 
 
 # ---------------------------------------------------------------- LLM retry wrapper
@@ -351,25 +424,6 @@ def test_non_transient_error_is_not_retried():
     assert agent.model.stats["calls"] == 1
 
 
-# ---------------------------------------------------------------- rule-based baseline
-
-@pytest.mark.parametrize("state,expected", [
-    (metrics(1, 4.5), 1),
-    (metrics(1, 13, cpu=0.83, thr=0.096), 2),
-    (metrics(1, 25, cpu=0.99, thr=0.3, p95=0.8), 3),
-    (metrics(2, 18), 2),
-    (metrics(2, 24, cpu=0.83), 3),
-    (metrics(2, 17, p95=0.4), 3),
-    (metrics(3, 27), 3),
-    (metrics(3, 12.6, cpu=0.3), 2),
-    (metrics(2, 12.6, cpu=0.45), 2),
-    (metrics(2, 5.5, cpu=0.2), 1),
-    (metrics(3, 5, cpu=0.1), 1),
-])
-def test_rule_scaler_decisions(state, expected):
-    assert rule_scaler.decide(state) == expected
-
-
 # ---------------------------------------------------------------- v6 tools (2026-10-03)
 import datetime as _dt  # noqa: E402
 from types import SimpleNamespace as NS  # noqa: E402
@@ -400,8 +454,6 @@ def _pod(name, pod_hash, ready=True, minutes_ago=5):
 @pytest.fixture
 def fake_cluster():
     """Two pods of revision 7 (hash h7); revisions 6 (restart only) and 7 (env added)."""
-    for name in ["_last_pod_restart_at", "_last_rollback_at"]:
-        setattr(agent_tools, name, 0.0)
     agent_tools.reset_run_outcome()
     apps, core = mock.MagicMock(), mock.MagicMock()
     apps.list_namespaced_replica_set.return_value.items = [
@@ -460,44 +512,6 @@ def test_logs_select_backend_pods_by_label(fake_cluster):
     assert text.count("[ERROR] DB connection pool exhausted") == 2
 
 
-def test_pod_restart_guards(fake_cluster):
-    apps, core, dep = fake_cluster
-    assert "Safety violation" in agent_tools.restart_kubernetes_pod(pod_name="chromadb-deployment-x")
-    assert "not found" in agent_tools.restart_kubernetes_pod(pod_name=f"{DEP}-nope")
-    dep.status.available_replicas = 1
-    assert agent_tools.restart_kubernetes_pod(pod_name=f"{DEP}-h7-aaaaa").startswith("Refused")
-    core.delete_namespaced_pod.assert_not_called()
-    assert agent_tools.run_outcome["actions"] == []
-
-
-def test_pod_restart_deletes_records_and_cools_down(fake_cluster):
-    apps, core, dep = fake_cluster
-    assert agent_tools.restart_kubernetes_pod(pod_name=f"{DEP}-h7-aaaaa").startswith("✅")
-    core.delete_namespaced_pod.assert_called_once_with(name=f"{DEP}-h7-aaaaa", namespace="default")
-    assert agent_tools.run_outcome["actions"] == [f"restart pod {DEP}-h7-aaaaa"]
-    assert "cooldown" in agent_tools.restart_kubernetes_pod(pod_name=f"{DEP}-h7-bbbbb")
-
-
-def test_rollback_to_previous_revision_replaces_the_template(fake_cluster):
-    apps, core, dep = fake_cluster
-    assert agent_tools.rollback_kubernetes_deployment().startswith("✅")
-    body = apps.patch_namespaced_deployment.call_args.kwargs["body"]
-    assert isinstance(body, list) and body[0]["op"] == "replace" and body[0]["path"] == "/spec/template"
-    template = body[0]["value"]
-    assert "pod-template-hash" not in template["metadata"]["labels"]
-    assert template["spec"]["containers"][0]["env"] == []          # FEATURE_X gone (revision 6)
-    assert agent_tools.run_outcome["actions"] == ["rollback to revision 6"]
-    assert "cooldown" in agent_tools.rollback_kubernetes_deployment()
-
-
-def test_rollback_guards(fake_cluster):
-    apps, core, dep = fake_cluster
-    assert agent_tools.rollback_kubernetes_deployment(revision=7).startswith("No-op")
-    assert "not found" in agent_tools.rollback_kubernetes_deployment(revision=42)
-    assert "Safety violation" in agent_tools.rollback_kubernetes_deployment(revision=-1)
-    apps.patch_namespaced_deployment.assert_not_called()
-
-
 def test_recent_actions_show_failed_action_and_expire():
     import agent
     agent.RECENT_ACTIONS.clear()
@@ -512,18 +526,6 @@ def test_recent_actions_show_failed_action_and_expire():
     assert "09:42" not in text
     agent.RECENT_ACTIONS.clear()
     assert agent._recent_actions_text(now).startswith("None")
-
-
-@pytest.mark.parametrize("state,expected", [
-    (metrics(1, 4.0, cpu=0.19, thr=0.02, p95=4.4), "R1"),     # stuck fault
-    (metrics(1, 4.2, cpu=0.91, thr=0.18, p95=0.48), "R2"),    # cpuhog fault (0.217 core-s/request)
-    (metrics(1, 12.5, cpu=0.83, thr=0.096, p95=0.15), None),  # real overload (0.066): scale, not restart
-    (metrics(2, 18, cpu=0.6, thr=0.03, p95=0.12), None),      # healthy
-    (metrics(1, 7, cpu=0.61, thr=0.04, p95=0.37), None),      # fresh-pod p95 blip at normal CPU
-])
-def test_rules_v2_restart_signatures(state, expected):
-    reason = rule_scaler.restart_reason(state)
-    assert (reason or "").startswith(expected) if expected else reason is None
 
 
 def test_deployment_history_after_a_rollback(fake_cluster):
@@ -547,46 +549,16 @@ def test_deployment_history_after_a_rollback(fake_cluster):
     assert "revision 6" in lines[3] and "later re-applied as revision 8" in lines[3]
 
 
-def test_verify_retries_an_empty_prometheus_answer():
-    """2026-10-03: a 40 s window right after a rollback returned no CPU value once; one retry later it had data."""
-    pre = metrics(1, 2.0, cpu=0.92, thr=0.107, p95=1.4)
-    post = metrics(1, 7.2, cpu=0.34, thr=0.05, p95=0.148)
-    empty_once = {"done": False}
-    real_verify_get = None
+# ---------------------------------------------------------------- computed facts (v9)
 
-    def flaky_get(url, params, timeout):
-        resp = mock.MagicMock()
-        if "container_cpu_usage" in params["query"] and not empty_once["done"]:
-            empty_once["done"] = True
-            resp.json.return_value = {"data": {"result": []}}
-            return resp
-        return real_verify_get(url, params, timeout)
-
-    names = {"http_requests_total": "throughput", "histogram_quantile": "latency_p95",
-             "cfs_throttled": "cpu_throttling", "container_cpu_usage": "avg_cpu_per_pod",
-             "kube_deployment_status_replicas_available": "active_replicas"}
-
-    def real_verify_get(url, params, timeout):  # noqa: F811
-        key = next(v for k, v in names.items() if k in params["query"])
-        resp = mock.MagicMock()
-        resp.json.return_value = {"data": {"result": [{"value": [0, str(post[key])]}]}}
-        return resp
-
-    with mock.patch.object(agent_tools, "_wait_for_rollout", return_value=3.0), \
-         mock.patch.object(agent_tools.time, "sleep"), \
-         mock.patch.object(agent_tools.requests, "get", side_effect=flaky_get):
-        agent_tools.verify_metrics_stabilization(json.dumps(pre))
-    assert agent_tools.run_outcome["verification"] == "STABLE"
-
-
-def test_verify_gives_up_after_repeated_empty_answers():
-    def always_empty(url, params, timeout):
-        resp = mock.MagicMock()
-        resp.json.return_value = {"data": {"result": []}}
-        return resp
-    with mock.patch.object(agent_tools, "_wait_for_rollout", return_value=3.0), \
-         mock.patch.object(agent_tools.time, "sleep") as sleep, \
-         mock.patch.object(agent_tools.requests, "get", side_effect=always_empty):
-        text = agent_tools.verify_metrics_stabilization(json.dumps(metrics(1, 2.0)))
-    assert text.startswith("UNVERIFIABLE: Prometheus returned no value")
-    assert sleep.call_count == 1 + agent_tools.VERIFY_QUERY_ATTEMPTS - 1   # settle + retries
+def test_facts_say_whether_the_load_explains_the_state():
+    import agent
+    with mock.patch.object(agent, "SAFE_RPS", {1: 80.0, 2: 155.0, 3: 220.0}):
+        over = agent._computed_facts(metrics(1, 120, score=-0.3, p95=0.5))
+        stuck = agent._computed_facts({**metrics(1, 40, p95=3.0, score=-1.1, ready=0),
+                                       "explanation": ["p95 latency 3.00 s is above the healthy maximum 0.25 s"]})
+        waste = agent._computed_facts(metrics(3, 60, score=-0.1))
+    assert "Minimum pod count whose measured capacity covers this load: 2" in over and "ABOVE that capacity" in over
+    assert "WITHIN that capacity" in stuck and "Only 0 of 1 pod(s) are ready" in stuck
+    assert "Health score -1.10" in stuck and "p95 latency 3.00 s" in stuck
+    assert "covers this load: 1" in waste

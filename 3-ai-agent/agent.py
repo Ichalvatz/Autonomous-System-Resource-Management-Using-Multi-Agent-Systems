@@ -10,17 +10,13 @@ from agent_tools import (
     query_knowledge_base,
     get_kubernetes_logs,
     scale_kubernetes_deployment,
-    save_resolution_to_chroma,
+    save_incident,
     verify_metrics_stabilization,
     restart_kubernetes_deployment,
     run_outcome,
     reset_run_outcome,
     get_pod_breakdown,
     get_deployment_history,
-    restart_kubernetes_pod,
-    rollback_kubernetes_deployment,
-    HEALTHY_CPU_PER_REQUEST,
-    HEALTHY_CPU_PER_REQUEST_MAX,
     guard_start,
     guard_stop,
     guard_step_done,
@@ -121,62 +117,46 @@ class RetryingLiteLLMModel(LiteLLMModel):
 model = RetryingLiteLLMModel(model_id=PRIMARY_MODEL)
 
 # ---------------------------------------------------------------------------
-# Load the capacity table once at startup and format it as human-readable
-# context.  This is REFERENCE DATA for the agent's reasoning, not logic.
+# The capacity table (5-ml-training/capacity_discovery.py, phase 2): per pod count, the load of the normal
+# request mix it serves within the objectives. REFERENCE DATA for the agent's reasoning, not logic.
 # ---------------------------------------------------------------------------
 _CAPACITY_TABLE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "5-ml-training", "capacity_table.json"
 )
 
-def _load_capacity_context() -> str:
-    """Read capacity_table.json and return a human-readable summary."""
-    try:
-        with open(_CAPACITY_TABLE_PATH, "r") as f:
-            table = json.load(f)
-    except Exception as e:
-        return f"(Capacity data unavailable: {e})"
 
-    lines = []
-    for replicas_str in sorted(table.keys(), key=int):
-        entry = table[replicas_str]
-        # Older tables only stored VU counts, which are not comparable to the
-        # live throughput metric (rps). Refuse them rather than mislead the agent.
-        if "max_safe_rps" not in entry:
-            return (
-                "(Capacity data unavailable: capacity_table.json has no rps "
-                "measurements. Re-run 5-ml-training/capacity_discovery.py.)"
-            )
-        max_safe = entry["max_safe_rps"]
-        breaking = entry.get("breaking_rps")
-        breaking_str = f"breaks at ~{breaking} rps" if breaking is not None else "no breaking point reached"
-        reason = entry.get("breaking_reason", "")
-        reason_str = f" [Breaking trigger: {reason}]" if reason else ""
-        lines.append(
-            f"  - {replicas_str} replica(s): safe up to ~{max_safe} rps, "
-            f"{breaking_str}{reason_str}"
-        )
-    return "\n".join(lines)
-
-CAPACITY_CONTEXT = _load_capacity_context()
-
-
-def _load_safe_rps():
-    """{replicas: max safe rps} from capacity_table.json (the computed facts use it for the minimum replica count)."""
+def _load_capacity():
     try:
         with open(_CAPACITY_TABLE_PATH) as f:
-            return {int(k): float(v["max_safe_rps"]) for k, v in json.load(f).items()}
+            return {int(k): v for k, v in json.load(f).items() if v.get("max_safe_rps")}
     except Exception:
         return {}
 
 
-SAFE_RPS = _load_safe_rps()
+CAPACITY = {n: v for n, v in _load_capacity().items() if n <= 3}   # the 4th count only re-checked the ceiling
+SAFE_RPS = {n: float(v["max_safe_rps"]) for n, v in CAPACITY.items()}
 
-# The agent: prompt v8, the final version (2026-10-04 00:45: every scenario solved at the first wake-up).
-# v8.1 (2026-10-11): the same prompt, with corrected tool descriptions (the docstrings of the 7 tools, which
-# the LLM reads); the measured v8 runs used the earlier descriptions (thesis_notes/design_decisions.md A20).
-# Earlier versions (v4-v7) were removed on 2026-10-10: thesis_notes/removed_and_archived.md.
-AGENT_VERSION = "v8.1"
+
+def _capacity_context():
+    if not CAPACITY:
+        return "(Capacity data unavailable: re-run 5-ml-training/capacity_discovery.py.)"
+    lines = []
+    for n, v in sorted(CAPACITY.items()):
+        limit = v.get("slo_limit_rps")
+        lines.append(f"  - {n} pod(s): serves up to ~{v['max_safe_rps']:g} rps with p95 <= ~{v.get('p95_at_safe', 0.25)} s"
+                     + (f"; the 0.35 s objective breaks at ~{limit:g} rps" if limit else ""))
+    return "\n".join(lines)
+
+
+CAPACITY_CONTEXT = _capacity_context()
+
+# The agent: v9 (thesis phase 2, 2026-10-22; design_decisions.md A24): the anomaly comes from one One-Class SVM on
+# the NFR metrics (latency, errors, load per pod, pod count) measured at the ingress; the LLM decides how many
+# pods (it is given the minimum that the measured capacity covers) or restarts the whole app; the result is judged
+# by the trajectory of the model's score. Prompt and tools as of v8.1, minus pod restart and rollback, with the
+# objectives stated as NFRs instead of CPU targets. v8.1 and earlier: git tag v8.1-campaign.
+AGENT_VERSION = "v9"
 
 # The LLM decides and acts; code does everything around it (memory lookup before
 # the run, verification and memory save after it). add_base_tools=False: the
@@ -190,8 +170,6 @@ sre_agent = CodeAgent(
         get_kubernetes_logs,
         scale_kubernetes_deployment,
         restart_kubernetes_deployment,
-        restart_kubernetes_pod,
-        rollback_kubernetes_deployment,
     ],
     model=model,
     add_base_tools=False,
@@ -200,12 +178,13 @@ sre_agent = CodeAgent(
     final_answer_checks=[guard_final_answer_check, claim_final_answer_check],
 )
 
+# Phase 2 has its own incident log (the NFR columns); phase 1's is incident_log_phase1.csv.
 INCIDENT_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "incident_log.csv")
 INCIDENT_LOG_FIELDS = [
-    "woke_at", "signature", "avg_cpu_per_pod", "throughput", "latency_p95",
-    "active_replicas", "cpu_throttling", "memory_hit", "actions", "verification",
-    "saved_to_memory", "agent_error", "llm_calls", "llm_retries", "llm_fallback_calls",
-    "agent_seconds", "total_seconds", "final_answer",
+    "woke_at", "agent_version", "signature", "throughput", "rps_per_pod", "latency_p95", "error_rate", "replicas",
+    "ready_replicas", "avg_cpu_per_pod", "score", "explanation", "memory_hit", "actions", "verification",
+    "verification_detail", "recovery_s", "score_after", "rewake", "saved_to_memory", "agent_error", "llm_calls",
+    "llm_retries", "llm_fallback_calls", "agent_seconds", "total_seconds", "final_answer",
 ]
 
 
@@ -235,33 +214,25 @@ def _log_incident(row):
             writer.writeheader()
         writer.writerow(row)
 
+
 def generate_deterministic_signature(metrics_json):
-    metrics = json.loads(metrics_json)
+    m = json.loads(metrics_json)
+    return (f"State -> Pods:{int(round(m.get('replicas', 0)))} | Load:{round(m.get('throughput', 0))}rps "
+            f"({m.get('rps_per_pod', 0):.0f}/pod) | P95:{m.get('latency_p95', 0):.2f}s | "
+            f"Errors:{100 * (m.get('error_rate') or 0):.1f}%")
 
-    cpu = round(metrics.get("avg_cpu_per_pod", 0), 2)
-    tput = round(metrics.get("throughput", 0), 0)
-    reps = int(metrics.get("active_replicas", 0))
-
-    # Use the same five-metric feature contract as the anomaly detector.
-    throttle = round(metrics.get("cpu_throttling", 0) * 100, 1)
-    # p95 added 2026-10-01: without it a stuck app (p95 3 s, low CPU) and a mild
-    # overload had nearly the same signature.
-    p95 = round(metrics.get("latency_p95", 0), 2)
-
-    return f"State -> CPU:{cpu}cores | Throttle:{throttle}% | Tput:{tput}rps | Reps:{reps} | P95:{p95}s"
 
 # Short-term memory of this detector process (YOUR RECENT ACTIONS in the prompt): what the agent did in the last
-# minutes and how verification judged it. Long-term memory (ChromaDB) stores only verified
-# successes, so on 2026-10-01 the agent repeated the same failed 3->1 three times in six
-# minutes: each wake-up had no trace of the previous failure. Kept in-process on purpose:
-# it expires by itself and cannot teach a stale lesson to a later, different incident.
+# minutes and how verification judged it. On 2026-10-01 the agent repeated the same failed 3->1 three times in six
+# minutes: each wake-up had no trace of the previous failure. Kept in-process on purpose: it expires by itself
+# and cannot teach a stale lesson to a later, different incident (ChromaDB keeps failures only for the record).
 RECENT_ACTIONS = []
 RECENT_WINDOW_SECONDS = 15 * 60
 
 
-def _remember_run(woke_at, actions, verdict, agent_error, response):
-    RECENT_ACTIONS.append({"t": time.time(), "woke_at": woke_at, "actions": list(actions),
-                           "verdict": verdict, "error": agent_error, "answer": response})
+def _remember_run(woke_at, actions, verdict, detail, agent_error, response):
+    RECENT_ACTIONS.append({"t": time.time(), "woke_at": woke_at, "actions": list(actions), "verdict": verdict,
+                           "detail": detail, "error": agent_error, "answer": response})
 
 
 def _recent_actions_text(now=None):
@@ -274,7 +245,7 @@ def _recent_actions_text(now=None):
         ago = int((now - r["t"]) // 60)
         if r["actions"]:
             what = "; ".join(r["actions"])
-            verdict = r["verdict"] or "not verified"
+            verdict = (r.get("detail") or "").split("\n", 1)[0] or r["verdict"] or "not verified"
             lines.append(f"- {r['woke_at'][11:]} ({ago} min ago): {what} -> verification {verdict}")
         elif r["error"]:
             lines.append(f"- {r['woke_at'][11:]} ({ago} min ago): no action (agent error: {r['error'][:80]})")
@@ -284,47 +255,58 @@ def _recent_actions_text(now=None):
 
 
 def _computed_facts(metrics):
-    """Arithmetic the LLM should not do itself (LLMs are poor at it), as plain facts: the minimum
-    replica count from the capacity table, and CPU per request vs the healthy reference. No rule says
-    what a high value means: the prompt only uses it to tell 'explained by the traffic' from
-    'something else', and the agent investigates the latter with its tools."""
+    """Arithmetic and model output the LLM should not redo itself, as plain facts: the health score and which
+    metrics are outside their healthy range (health_model.explain), the minimum pod count whose measured capacity
+    covers the load, and whether the current pods can serve this load within the objectives. No rule says what
+    to do: the prompt only uses them to tell "explained by the load" from "something else"."""
     rps = float(metrics.get("throughput") or 0.0)
-    reps = int(round(float(metrics.get("active_replicas") or 0)))
+    reps = int(round(float(metrics.get("replicas") or 0)))
+    ready = metrics.get("ready_replicas")
     lines = []
+    if metrics.get("score") is not None:
+        why = metrics.get("explanation") or []
+        lines.append(f"- Health score {float(metrics['score']):+.2f} (>= 0 = healthy; the further below 0, the further "
+                     "from every healthy state seen in training)." + (" Outside the healthy range: " + "; ".join(why)
+                                                                       if why else ""))
+    if ready is not None and int(round(ready)) < reps:
+        lines.append(f"- Only {int(round(ready))} of {reps} pod(s) are ready (the readiness probe of the others fails).")
     if SAFE_RPS:
         covering = [n for n in sorted(SAFE_RPS) if SAFE_RPS[n] >= rps]
         need = covering[0] if covering else max(SAFE_RPS)
         beyond = "" if covering else " (the maximum allowed: the load exceeds every measured safe limit)"
-        lines.append(f"- Load: {rps:.1f} rps on {reps} replica(s). Minimum replica count whose safe limit "
-                     f"covers this load: {need}{beyond}.")
+        lines.append(f"- Load: {rps:.1f} rps on {reps} pod(s) ({rps / max(reps, 1):.1f} per pod). Minimum pod count "
+                     f"whose measured capacity covers this load: {need}{beyond}.")
+        if reps in SAFE_RPS:
+            within = rps <= SAFE_RPS[reps]
+            lines.append(f"- {reps} pod(s) serve up to ~{SAFE_RPS[reps]:g} rps within the objectives: the load is "
+                         + ("WITHIN that capacity, so the load alone does not explain bad latency or errors."
+                            if within else "ABOVE that capacity."))
     else:
         lines.append("- Capacity reference unavailable.")
-    if rps >= 1 and reps:
-        cost = float(metrics["avg_cpu_per_pod"]) * reps / rps
-        lines.append(f"- CPU per request: {cost:.3f} core-s = {cost / HEALTHY_CPU_PER_REQUEST:.1f}x the healthy "
-                     f"reference ({HEALTHY_CPU_PER_REQUEST} core-s on healthy traffic; healthy readings stayed below "
-                     f"{HEALTHY_CPU_PER_REQUEST_MAX}). Below ~3 rps per pod the process's idle CPU inflates it.")
-    else:
-        lines.append("- CPU per request: not meaningful below 1 rps.")
     return "\n".join(lines)
 
 
-# The prompt (v8, frozen 2026-10-03 21:45; byte-identical to the measured runs). Step 1 classifies:
-# capacity (scale to the minimum that fits, no investigation) or something else (investigate with all
-# three observation tools, then act on the cause: what changed first, restart only with evidence).
+# The prompt v9 (2026-10-22). Same structure as v8: Step 1 classifies capacity (scale to the minimum that fits,
+# no investigation) or something else (investigate with all three observation tools, then act on the cause,
+# restart only with evidence); the objectives are the NFRs, the actions scale and restart.
 AGENT_PROMPT = """
 [ALERT - AIOPS TRIGGER]
-You are an Autonomous SRE Agent responsible for the backend deployment. An anomaly was detected by the Machine Learning monitor.
+You are an Autonomous SRE Agent responsible for the backend deployment. The health monitor (a One-Class SVM trained on healthy traffic) flagged the current state as abnormal.
 This IS your active task.
 
-Current Metrics (whole deployment, 1-minute windows): {metrics_json}
+Current reading (whole deployment, measured at the ingress as users see it, 1-minute windows): {metrics_json}
 Assigned Signature: "{signature}"
 
+=== SERVICE OBJECTIVES (non-functional requirements) ===
+- Latency: p95 < 0.35 s, as users see it.
+- Errors: fewer than 1% of requests fail (5xx).
+- Cost: at most 3 pods (the ceiling of this cluster), and no more pods than the load needs.
+
 === SYSTEM CAPACITY REFERENCE ===
-Measured via load testing on the normal workload. Use it to reason about whether the current replica count matches the traffic level.
+Measured by load testing with the normal request mix: the load each pod count serves within the objectives.
 {capacity}
 
-=== COMPUTED FACTS (by the monitoring code from the metrics above; use them, do not recompute) ===
+=== COMPUTED FACTS (by the monitoring code from the reading above; use them, do not recompute) ===
 {facts}
 
 === YOUR RECENT ACTIONS (last 15 minutes; verdicts from the automatic verification) ===
@@ -344,36 +326,37 @@ Measured via load testing on the normal workload. Use it to reason about whether
 First decide which kind of problem this is, then act on it.
 
 Step 1 - CLASSIFY, using the computed facts.
-  (A) CAPACITY: the symptoms are explained by the traffic: CPU per request is close to the healthy reference and nothing else is abnormal (latency is not high while CPU is idle, the metrics show no errors). Go to Step 2A; no investigation is needed.
-  (B) SOMETHING ELSE: CPU per request is far from the healthy reference, OR latency is high while CPU per pod is well below 0.75, OR you are not sure. Go to Step 2B.
+  (A) CAPACITY: the load explains the state: the load is above what the current pods serve within the objectives (under-provisioned), or well below what fewer pods would serve (over-provisioned), and latency and errors are no worse than that load causes. Go to Step 2A; no investigation is needed.
+  (B) SOMETHING ELSE: latency or errors are bad while the load is within what the current pods serve, or pods are not ready, OR you are not sure. Go to Step 2B.
 
-Step 2A - CAPACITY (SLO: latency p95 < 0.35 s | CPU throttling < 5% | CPU per pod < 0.75 cores):
-  - SLO violated by CPU pressure (CPU per pod near/above 0.75 or throttling > 5%), OR throughput approaching/exceeding the safe limit of the current replicas: scale UP with `scale_kubernetes_deployment(replicas=N)` to the minimum replica count in the facts, and at least one more than now.
-  - SLO met and throughput significantly lower than the capacity of the current replicas: you MUST scale DOWN to save resources, to the minimum replica count in the facts.
-  - SLO met and the current replica count already equals that minimum: no action.
+Step 2A - CAPACITY:
+  - Under-provisioned: scale UP with `scale_kubernetes_deployment(replicas=N)` to the minimum pod count in the facts, and at least one more than now.
+  - Over-provisioned (objectives met and the load is well below what the current pods serve): you MUST scale DOWN to save resources, to the minimum pod count in the facts.
+  - The current pod count already equals that minimum and the objectives are met: no action.
 
-Step 2B - INVESTIGATE, then act on the cause. Look at ALL THREE observation tools, one per step (the system refuses a restart or a rollback until you have):
-  - `get_pod_breakdown()`: per pod: CPU, throttling, request rate, CPU cost per request, p95, 5xx rate, event-loop lag, memory, restarts, age, revision.
+Step 2B - INVESTIGATE, then act on the cause. Look at ALL THREE observation tools, one per step (the system refuses a restart until you have):
+  - `get_pod_breakdown()`: per pod: CPU, throttling, request rate, CPU cost per request, p95, 5xx rate, event-loop lag, memory, restarts, age, revision, ready or not.
   - `get_deployment_history()`: recent revisions of the deployment and what changed in each.
   - `get_kubernetes_logs()`: warnings, errors and 5xx lines of every pod.
-  Then choose the action that addresses the cause, in this order:
-  - A change to the deployment shortly before the problem started (deployment history): `rollback_kubernetes_deployment()` (previous revision) or `rollback_kubernetes_deployment(revision=N)`. A restart would recreate the same bad configuration.
-  - One pod clearly misbehaving while the others are healthy (errors, or event-loop lag or CPU per request several times the other pods'): `restart_kubernetes_pod(pod_name=...)`. Uneven CPU between pods under load is normal load imbalance, not a fault.
-  - EVIDENCE of a bad state in the running processes: ERROR lines or a stuck / runaway job in the logs, or event-loop lag or CPU per request several times the healthy reference: `restart_kubernetes_deployment()` (rolling, no downtime). Warnings that only repeat the symptom (e.g. "High latency detected") are not evidence of a cause.
+  Then choose the action that addresses the cause:
+  - EVIDENCE of a bad state in the running processes: ERROR lines or a stuck / runaway job in the logs, pods that are not ready, or event-loop lag or CPU per request several times the healthy reference: `restart_kubernetes_deployment()` (rolling restart of the whole app; it keeps serving while the pods are replaced). Warnings that only repeat the symptom (e.g. "High latency detected") are not evidence of a cause.
   - It is capacity after all: scale as in Step 2A.
-  - No evidence of a cause and the SLO breach is small or short (e.g. right after a restart or a scale, when new pods warm up): it may be a transient. Answer "No action taken: <reason>"; the monitor wakes you again if it persists.
-  More pods only help when CPU is the bottleneck. A restart only helps when the bad state lives in the running processes. A rollback only helps when a change caused it. If one of your recent actions failed verification, do not repeat it without new evidence: the cause is probably something else.
+  - A recent change to the deployment caused it (deployment history): you have no tool to undo a change, and a restart would recreate it. Answer "No action taken: <the change>, needs a human decision".
+  - No evidence of a cause and the breach is small or short (e.g. right after a restart or a scale, while new pods warm up): it may be a transient. Answer "No action taken: <reason>"; the monitor wakes you again if it persists.
+  More pods only help when the load is more than the current pods serve. A restart only helps when the bad state lives in the running processes. If one of your recent actions failed verification, do not repeat it without new evidence: the cause is probably something else.
 
-Step 3 - EXECUTE exactly one remediation action, or none. The system verifies it automatically afterwards and wakes you again if the problem persists.
+Step 3 - EXECUTE exactly one remediation action, or none. The system then follows the health score: it waits while the state improves, and wakes you again at once if it gets worse or stops improving.
 
 Step 4 - REPORT in a later step than the action: `final_answer("Root cause: <one sentence, with the evidence>. Action: <what you did and why>.")`, or `final_answer("No action taken: <reason>")`, WRAPPED IN A ```python ... ``` BLOCK.
-  Do NOT verify or save anything yourself: the system verifies the metrics and stores verified incidents in memory automatically after you finish.
+  Do NOT verify or save anything yourself: the system verifies the result and stores the incident in memory automatically after you finish.
 """
 
 
 def trigger_ai_agent(metrics_json):
     """
-    Function called from anomaly_detector.py when an anomaly is detected.
+    Called from anomaly_detector.py when an anomaly is confirmed. Returns {"resolved", "rewake", "verdict"}:
+    rewake asks the detector to wake the agent again at once (the verification saw the state get worse or stop
+    improving), except after a failed scale-down, which code has already undone.
     """
     started = time.monotonic()
     woke_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -385,7 +368,7 @@ def trigger_ai_agent(metrics_json):
     prompt = AGENT_PROMPT.format(metrics_json=metrics_json, signature=strict_signature, capacity=CAPACITY_CONTEXT,
                                  facts=_computed_facts(metrics), recent=_recent_actions_text(), memory=memory)
 
-    print(f"\n🤖 [AIOps Agent] Agent woke up (prompt {AGENT_VERSION})! Assigned Signature: {strict_signature}")
+    print(f"\n🤖 [AIOps Agent] Agent woke up ({AGENT_VERSION})! Assigned Signature: {strict_signature}")
     print(f"🧠 [Memory] {memory}\n")
 
     reset_run_outcome()
@@ -404,8 +387,7 @@ def trigger_ai_agent(metrics_json):
 
     # Judge success from what the tools recorded, not from the LLM's text.
     actions = list(run_outcome["actions"])
-    verdict = ""
-    saved = ""
+    verdict, detail, saved, rewake = "", "", "", False
     if not actions:
         resolved = not agent_error
         print(f"\n [AIOps Agent] No action applied to the cluster.\nAgent Final Output: {response}")
@@ -413,13 +395,14 @@ def trigger_ai_agent(metrics_json):
         print(f"\n [AIOps Agent] Actions {actions} applied. Verifying...")
         print(verify_metrics_stabilization(metrics_json))
         # Kept here: a rollback goes through the scale tool, which resets run_outcome.
-        verdict = run_outcome["verification"] or ""
+        verdict, detail = run_outcome["verification"] or "", run_outcome["detail"]
+        recovery_s, score_after = run_outcome["recovery_s"], run_outcome["score_after"]
         resolved = verdict == "STABLE"
+        diagnosis = response or f"(no LLM summary: {agent_error[:150]})"
+        saved = (save_incident(metrics, actions, verdict, diagnosis, AGENT_VERSION)
+                 if memory_on else "Not saved: memory disabled (AIOPS_MEMORY=off).")
+        print(f"💾 [Memory] {saved}")
         if resolved:
-            root_cause = response or f"(no LLM summary: {agent_error[:150]})"
-            saved = (save_resolution_to_chroma(strict_signature, root_cause[:500], "; ".join(actions), metrics)
-                     if memory_on else "Not saved: memory disabled (AIOPS_MEMORY=off).")
-            print(f"💾 [Memory] {saved}")
             print(f"\n [AIOps Agent] Actions {actions} verified STABLE.\nSummary: {response}")
         else:
             print(f"\n [AIOps Agent] Actions {actions} not confirmed (verification: {verdict}).")
@@ -427,15 +410,24 @@ def trigger_ai_agent(metrics_json):
             rollback = _rollback_failed_scale_down(actions)
             if rollback:
                 actions.append(rollback)
+            rewake = verdict == "UNSTABLE" and not rollback
+        run_outcome.update(recovery_s=recovery_s, score_after=score_after)
 
-    _remember_run(woke_at, actions, verdict, agent_error, response)
+    _remember_run(woke_at, actions, verdict, detail, agent_error, response)
     _log_incident({
         "woke_at": woke_at,
+        "agent_version": AGENT_VERSION,
         "signature": strict_signature,
-        **{k: metrics.get(k) for k in ["avg_cpu_per_pod", "throughput", "latency_p95", "active_replicas", "cpu_throttling"]},
-        "memory_hit": "past incident(s) at" in memory,
+        **{k: metrics.get(k) for k in ["throughput", "rps_per_pod", "latency_p95", "error_rate", "replicas",
+                                       "ready_replicas", "avg_cpu_per_pod", "score"]},
+        "explanation": "; ".join(metrics.get("explanation") or []),
+        "memory_hit": "verified past incident(s)" in memory and not memory.startswith("NO similar"),
         "actions": "; ".join(actions),
         "verification": verdict,
+        "verification_detail": detail.split("\n", 1)[0][:200],
+        "recovery_s": run_outcome["recovery_s"] if actions else "",
+        "score_after": run_outcome["score_after"] if actions else "",
+        "rewake": rewake,
         "saved_to_memory": saved.startswith("Success"),
         "agent_error": agent_error[:300],
         "llm_calls": model.stats["calls"],
@@ -445,4 +437,4 @@ def trigger_ai_agent(metrics_json):
         "total_seconds": round(time.monotonic() - started, 1),
         "final_answer": response[:500],
     })
-    return resolved
+    return {"resolved": resolved, "rewake": rewake, "verdict": detail.split("\n", 1)[0] if detail else verdict}

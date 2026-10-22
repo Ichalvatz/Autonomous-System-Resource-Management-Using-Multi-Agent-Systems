@@ -1,7 +1,7 @@
 """
 Figure for the thesis: one One-Class SVM per replica count, and the load band each one accepts.
 
-The deployed models (5-ml-training/health_model.pkl) scored while the load changes, with CPU per pod
+The deployed models (5-ml-training/phase1/health_model.pkl) scored while the load changes, with CPU per pod
 following it at the healthy cost per request (0.073 core-s) and healthy latency / throttling (0.10 s, 3%).
 Each curve stops where CPU per pod would pass the 1-core limit. Where a curve is above 0 that pod count is
 "normal" for that load; the bands of neighbouring counts overlap, which is the anti-flapping deadband:
@@ -25,7 +25,7 @@ CPU_PER_REQUEST = 0.073
 HEALTHY_P95, HEALTHY_THR = 0.10, 0.03
 MIN_THROUGHPUT_RPS = 0.8  # the detector's low-traffic gate
 
-bundle = joblib.load(os.path.join(ROOT, "5-ml-training", "health_model.pkl"))
+bundle = joblib.load(os.path.join(ROOT, "5-ml-training", "phase1", "health_model.pkl"))
 features = bundle["features"]
 
 
