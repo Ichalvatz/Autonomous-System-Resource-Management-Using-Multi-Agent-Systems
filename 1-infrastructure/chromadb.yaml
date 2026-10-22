@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: chromadb
-        image: chromadb/chroma:latest
+        # Pinned 2026-10-22 to the image every measured run used (server 1.0.0); it was :latest.
+        image: chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
         ports:
         - containerPort: 8000
         resources:
@@ -28,7 +29,9 @@ spec:
             memory: "2Gi"
         volumeMounts:
         - name: chroma-storage
-          mountPath: /chroma/chroma
+          # The image persists to /data (persist_path in /config.yaml). Until 2026-10-22 the volume was
+          # mounted at /chroma/chroma, so the memory was lost on every ChromaDB restart.
+          mountPath: /data
       volumes:
       - name: chroma-storage
         persistentVolumeClaim:

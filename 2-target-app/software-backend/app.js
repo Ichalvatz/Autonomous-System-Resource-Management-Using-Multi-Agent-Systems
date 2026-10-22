@@ -88,6 +88,9 @@ app.use(setupAsyncOperationLogger); // Async operation logging capabilities
  * connection pool. It uses no CPU, so the pod looks idle while users wait.
  * Only a process restart clears it; new pods start healthy, so adding replicas
  * dilutes the problem but does not fix it.
+ * Since 2026-10-22 the wait ends like a real pool's acquire timeout: 503 DB_POOL_EXHAUSTED
+ * (until then the request went on and succeeded after the 3 s), and /ready reports the pod
+ * as not ready, so Kubernetes stops routing to it (readiness probe, phase 2).
  */
 const STUCK_DELAY_MS = 3000;
 let stuckSince = null;
@@ -100,7 +103,7 @@ app.post('/chaos/stuck', (_, res) => {
   res.status(200).json({ stuck: true, since: stuckSince, delayMs: STUCK_DELAY_MS });
 });
 app.use((req, res, next) => {
-  if (!stuckSince || req.path === '/metrics' || req.path === '/health' || req.path.startsWith('/chaos')) {
+  if (!stuckSince || req.path === '/metrics' || req.path === '/health' || req.path === '/ready' || req.path.startsWith('/chaos')) {
     return next();
   }
   setTimeout(() => {
@@ -108,7 +111,8 @@ app.use((req, res, next) => {
       `[${new Date().toISOString()}] [ERROR] [${req.id || '-'}] ${req.method} ${req.path} - ` +
       `DB connection pool exhausted: waited ${STUCK_DELAY_MS}ms for a free connection (0/10 idle since ${stuckSince})`
     );
-    next();
+    res.status(503).json({ success: false, error: 'DB_POOL_EXHAUSTED',
+      message: `Timed out after ${STUCK_DELAY_MS}ms waiting for a database connection` });
   }, STUCK_DELAY_MS);
 });
 
@@ -218,6 +222,18 @@ app.get('/health', (_, res) => {
     database: dbStatus,
     version: API_VERSION
   });
+});
+
+// Readiness (added 2026-10-22): can this process serve requests now? 503 while its database
+// connection pool is exhausted (the stuck fault), so the readiness probe takes the pod out of the
+// Service. /health stays a shallow liveness check (process up and event loop responsive), as
+// Kubernetes recommends: a liveness probe that depends on the database restarts pods whenever
+// the database is slow.
+app.get('/ready', (_, res) => {
+  if (stuckSince) {
+    return res.status(503).json({ status: 'not-ready', reason: 'DB_POOL_EXHAUSTED', since: stuckSince });
+  }
+  res.json({ status: 'ready' });
 });
 
 // Deliberately delays requests for chaos-engineering experiments.

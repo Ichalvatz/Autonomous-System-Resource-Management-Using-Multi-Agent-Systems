@@ -4,7 +4,6 @@
  */
 
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import {
@@ -16,27 +15,6 @@ import {
   sanitizeUser
 } from '../utils/index.js';
 import { JWT_EXPIRES_IN } from '../config/constants.js';
-
-// =============================================================================
-// Feature flag FEATURE_LOGIN_AUDIT (off by default). Added 2026-10-03 for the thesis
-// "bad configuration change" experiment: enabling it is the change that breaks the app.
-// It derives a session fingerprint for an audit trail with PBKDF2 at 1,500,000 iterations,
-// synchronously on the request path: a key-derivation setting meant for offline use, applied
-// by mistake to every login. Every login then costs ~0.35 s of CPU (5x) and blocks the event
-// loop, so even an idle pod misses the 0.35 s p95 objective and more pods cannot fix it.
-// (Calibrated 2026-10-03 before any agent run: at 600k / 1M iterations, 3 pods still met the
-// objective, so scaling alone would have "fixed" it at 3x the cost.)
-// The bad state lives in the deployment's configuration, not in the process: restarting
-// or adding pods does not remove it; only rolling the configuration back does.
-// =============================================================================
-const LOGIN_AUDIT_ENABLED = process.env.FEATURE_LOGIN_AUDIT === 'true';
-const LOGIN_AUDIT_ITERATIONS = parseInt(process.env.LOGIN_AUDIT_ITERATIONS || '1500000', 10);
-if (LOGIN_AUDIT_ENABLED) {
-  console.log(`[${new Date().toISOString()}] [INFO] [config] - feature login-audit enabled (pbkdf2-sha256, ${LOGIN_AUDIT_ITERATIONS} iterations)`);
-}
-
-const auditFingerprint = (userId) =>
-  crypto.pbkdf2Sync(`${userId}:${Date.now()}`, 'audit-trail', LOGIN_AUDIT_ITERATIONS, 32, 'sha256').toString('hex');
 
 // =============================================================================
 // Validation Helpers - Reduce complexity by extracting validation logic
@@ -111,10 +89,6 @@ export const loginUser = async (email, password) => {
   if (!isValidPassword) {
     throw new AuthenticationError('Invalid email or password');
   }
-  if (LOGIN_AUDIT_ENABLED) {
-    auditFingerprint(user.id);
-  }
-
   return { token: generateToken(user), user: sanitizeUser(user) };
 };
 

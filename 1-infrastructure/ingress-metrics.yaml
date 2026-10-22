@@ -1,0 +1,36 @@
+# Prometheus metrics of the ingress-nginx controller (added 2026-10-22, thesis phase 2).
+# The detector, the verification and the evaluation measure latency, throughput and errors here,
+# as the user sees them: the backend's own histogram does not time requests that wait behind a
+# blocked event loop (the cpuhog blind spot, design_decisions.md A13/A24). The controller needs
+# --enable-metrics=true and --time-buckets equal to the backend's buckets (deploy.sh patches both).
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-controller-metrics
+  namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx-metrics
+spec:
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+  ports:
+    - name: metrics
+      port: 10254
+      targetPort: 10254
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ingress-nginx-monitor
+  namespace: ingress-nginx
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx-metrics
+  endpoints:
+  - port: metrics
+    interval: 10s

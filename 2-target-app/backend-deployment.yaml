@@ -27,6 +27,31 @@ spec:
         # auth limiter (middleware/rateLimiter.js). Off here, on by default elsewhere.
         - name: AUTH_RATE_LIMIT_ENABLED
           value: "false"
+        # Generated catalogue for the load tests: ~5k places, ~50k reviews, 1k users
+        # (config/seedData/generated.js). Added 2026-10-22, thesis phase 2.
+        - name: SEED_DATASET
+          value: "load"
+        # Probes (added 2026-10-22, the same for every strategy, so the comparison is
+        # "Kubernetes alone" vs "Kubernetes + agent"). Readiness: /ready answers 503 while the
+        # process cannot reach its database pool (the stuck fault), and the pod leaves the Service.
+        # Liveness: /health only, shallow as Kubernetes recommends (a liveness check on a
+        # dependency restarts pods whenever the dependency is slow); timeout 5 s x 3 failures so
+        # a busy but working pod is never killed, only one that stopped answering for ~30 s.
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3001
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         # CPU is deliberately exactly 1 core (see "Pod sizing" in CLAUDE.md):
         # Node.js runs requests on one thread, so it cannot use more than 1 core,
         # and a login (bcrypt) costs ~70ms CPU. With 1 core that fits inside a

@@ -1,0 +1,184 @@
+[
+ {
+  "id": "incident_1792634946",
+  "document": "State -> CPU:0.7cores | Throttle:5.0% | Tput:13.0rps | Reps:1 | P95:0.23s",
+  "metadata": {
+   "action_taken": "scale 1->2",
+   "status": "resolved",
+   "replicas": 1,
+   "throttling": 0.0503,
+   "cpu": 0.7018,
+   "rps": 12.859,
+   "p95": 0.2292,
+   "root_cause": "Root cause: The system was under-provisioned for the current traffic load of 12.86 rps, which exceeds the safe threshold of 11.13 rps for 1 replica, causing CPU throttling. Action: Scaled the deployment to 2 replicas to increase capacity and restore performance."
+  }
+ },
+ {
+  "id": "incident_1792635421",
+  "document": "State -> CPU:0.8cores | Throttle:3.5% | Tput:24.0rps | Reps:2 | P95:0.07s",
+  "metadata": {
+   "rps": 23.66,
+   "action_taken": "scale 2->3",
+   "status": "resolved",
+   "replicas": 2,
+   "throttling": 0.035,
+   "cpu": 0.7974,
+   "p95": 0.0743,
+   "root_cause": "Root cause: Traffic load (23.7 rps) exceeded the capacity limit of the 2 active replicas, leading to CPU pressure and throttling. Action: Scaled up to 3 replicas to accommodate the current throughput."
+  }
+ },
+ {
+  "id": "incident_1792635954",
+  "document": "State -> CPU:0.31cores | Throttle:1.2% | Tput:14.0rps | Reps:3 | P95:0.13s",
+  "metadata": {
+   "cpu": 0.3131,
+   "replicas": 3,
+   "rps": 13.5,
+   "status": "resolved",
+   "p95": 0.1331,
+   "action_taken": "scale 3->2",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current traffic load of 13.5 rps, as the CPU utilization and latency metrics were well within the healthy range. Action: Scaled down the deployment from 3 to 2 replicas, which is the minimum count required to handle this traffic level according to the capacity reference.",
+   "throttling": 0.0118
+  }
+ },
+ {
+  "id": "incident_1792636407",
+  "document": "State -> CPU:0.24cores | Throttle:0.7% | Tput:7.0rps | Reps:2 | P95:0.13s",
+  "metadata": {
+   "root_cause": "Root cause: Capacity surplus, as the current load of 6.8 rps was well within the capacity of a single replica and all SLOs were met. Action: Scaled down from 2 to 1 replicas to optimize resource usage.",
+   "cpu": 0.2378,
+   "throttling": 0.0074,
+   "action_taken": "scale 2->1",
+   "p95": 0.1348,
+   "replicas": 2,
+   "status": "resolved",
+   "rps": 6.76
+  }
+ },
+ {
+  "id": "incident_1792642276",
+  "document": "State -> CPU:0.77cores | Throttle:8.7% | Tput:14.0rps | Reps:1 | P95:0.22s",
+  "metadata": {
+   "replicas": 1,
+   "throttling": 0.0865,
+   "cpu": 0.7682,
+   "action_taken": "scale 1->2",
+   "status": "resolved",
+   "root_cause": "Root cause: The system was under-provisioned for the current traffic load of 14.2 rps, which exceeds the safe threshold of 11.13 rps for 1 replica, causing CPU pressure and throttling. Action: Scaled the deployment to 2 replicas to increase capacity and restore performance.",
+   "p95": 0.2207,
+   "rps": 14.22
+  }
+ },
+ {
+  "id": "incident_1792642706",
+  "document": "State -> CPU:0.75cores | Throttle:6.0% | Tput:24.0rps | Reps:2 | P95:0.15s",
+  "metadata": {
+   "root_cause": "Root cause: Traffic load (23.7 rps) exceeded the capacity limit of the 2 active replicas (breaking limit 22.89 rps), leading to CPU pressure (0.75 cores) and throttling (5.95%). Action: Scaled up to 3 replicas to accommodate the current throughput and restore SLO compliance.",
+   "action_taken": "scale 2->3",
+   "cpu": 0.7547,
+   "p95": 0.1457,
+   "throttling": 0.0595,
+   "replicas": 2,
+   "rps": 23.74,
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1792643274",
+  "document": "State -> CPU:0.34cores | Throttle:0.9% | Tput:14.0rps | Reps:3 | P95:0.1s",
+  "metadata": {
+   "action_taken": "scale 3->2",
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current traffic load of 13.6 rps, as the CPU utilization and latency metrics were well within the healthy range. Action: Scaled down the deployment from 3 to 2 replicas to optimize resource usage, matching the capacity requirement for the current traffic level.",
+   "p95": 0.0986,
+   "rps": 13.64,
+   "cpu": 0.3373,
+   "status": "resolved",
+   "throttling": 0.0094,
+   "replicas": 3
+  }
+ },
+ {
+  "id": "incident_1792643720",
+  "document": "State -> CPU:0.21cores | Throttle:1.1% | Tput:6.0rps | Reps:2 | P95:0.1s",
+  "metadata": {
+   "status": "resolved",
+   "rps": 5.92,
+   "throttling": 0.0112,
+   "cpu": 0.2051,
+   "action_taken": "scale 2->1",
+   "p95": 0.0981,
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas, as the current throughput of 5.9 rps was well within the capacity of a single replica. Action: Scaled down from 2 to 1 replicas to optimize resource utilization.",
+   "replicas": 2
+  }
+ },
+ {
+  "id": "incident_1792648838",
+  "document": "State -> CPU:0.94cores | Throttle:12.7% | Tput:14.0rps | Reps:1 | P95:0.2s",
+  "metadata": {
+   "cpu": 0.9369,
+   "throttling": 0.127,
+   "replicas": 1,
+   "root_cause": "Root cause: The system was under-provisioned for the current traffic load of 13.9 rps, which exceeds the safe threshold of 11.13 rps for 1 replica, causing CPU pressure and throttling. Action: Scaled the deployment to 2 replicas to increase capacity and restore performance.",
+   "status": "resolved",
+   "action_taken": "scale 1->2",
+   "rps": 13.86,
+   "p95": 0.1976
+  }
+ },
+ {
+  "id": "incident_1792649297",
+  "document": "State -> CPU:0.76cores | Throttle:4.1% | Tput:24.0rps | Reps:2 | P95:0.13s",
+  "metadata": {
+   "rps": 24.0,
+   "p95": 0.1313,
+   "throttling": 0.0409,
+   "replicas": 2,
+   "root_cause": "Root cause: The current traffic load of 24.0 rps exceeds the safe capacity of 2 replicas (22.89 rps), causing CPU pressure and throttling. Action: Scaled up to 3 replicas to accommodate the increased traffic and restore SLO compliance.",
+   "cpu": 0.7586,
+   "action_taken": "scale 2->3",
+   "status": "resolved"
+  }
+ },
+ {
+  "id": "incident_1792649954",
+  "document": "State -> CPU:0.31cores | Throttle:1.3% | Tput:14.0rps | Reps:3 | P95:0.13s",
+  "metadata": {
+   "root_cause": "Root cause: The system was over-provisioned with 3 replicas for the current traffic load of ~13.9 rps, as all metrics were well within healthy limits. Action: Scaled down the deployment from 3 to 2 replicas to optimize resource usage, which is the minimum count required to safely handle this traffic level.",
+   "cpu": 0.3144,
+   "throttling": 0.013,
+   "rps": 13.86,
+   "action_taken": "scale 3->2",
+   "p95": 0.1321,
+   "status": "resolved",
+   "replicas": 3
+  }
+ },
+ {
+  "id": "incident_1792650383",
+  "document": "State -> CPU:0.22cores | Throttle:0.8% | Tput:6.0rps | Reps:2 | P95:0.1s",
+  "metadata": {
+   "p95": 0.0974,
+   "throttling": 0.008,
+   "action_taken": "scale 2->1",
+   "rps": 6.44,
+   "status": "resolved",
+   "cpu": 0.2231,
+   "replicas": 2,
+   "root_cause": "Root cause: The system was over-provisioned with 2 replicas, as the current throughput of 6.4 rps was well within the capacity of a single replica. Action: Scaled down from 2 to 1 replicas to optimize resource utilization."
+  }
+ },
+ {
+  "id": "incident_1792674713",
+  "document": "State -> CPU:0.68cores | Throttle:4.6% | Tput:13.0rps | Reps:1 | P95:0.22s",
+  "metadata": {
+   "throttling": 0.0464,
+   "status": "resolved",
+   "replicas": 1,
+   "p95": 0.2185,
+   "rps": 12.901,
+   "action_taken": "scale 1->2",
+   "cpu": 0.6832,
+   "root_cause": "Root cause: The system was under-provisioned for the current traffic load of 12.9 rps, which exceeds the safe threshold of 11.13 rps for 1 replica, causing CPU pressure. Action: Scaled the deployment to 2 replicas to increase capacity and restore performance."
+  }
+ }
+]

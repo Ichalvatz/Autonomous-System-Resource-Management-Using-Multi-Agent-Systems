@@ -40,7 +40,8 @@ export const httpRequestDurationSeconds = new Histogram({
   // Fine buckets around the ~70-100ms login time: histogram_quantile interpolates
   // linearly inside a bucket, so a coarse 0.1-0.3 bucket made p95 jump from ~0.1s
   // to ~0.2s when only a few requests crossed 100ms (false ML anomalies).
-  buckets: [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1, 1.5, 2, 5],
+  // 0.35 (the SLO), 3 and 10 added 2026-10-22; the ingress histogram uses the same buckets (deploy.sh).
+  buckets: [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.75, 1, 1.5, 2, 3, 5, 10],
   registers: [register]
 });
 

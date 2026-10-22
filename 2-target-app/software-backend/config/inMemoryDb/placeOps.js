@@ -8,6 +8,10 @@
  */
 
 import data from '../seedData.js';
+import { indexBy, appended, invalidate } from './indexes.js';
+
+const placeById = (placeId) => indexBy(data.places, 'placeId').get(placeId) || null;
+const reviewsOf = (placeId) => (indexBy(data.reviews, 'placeId', true).get(placeId) || []).slice();
 
 /**
  * Finds a place by its ID.
@@ -16,11 +20,11 @@ import data from '../seedData.js';
  */
 // Place read operations
 export async function findPlaceById(placeId) {
-    return data.places.find(p => p.placeId === placeId) || null;
+    return placeById(placeId);
 }
 
 export async function getReviewsForPlace(placeId) {
-    return data.reviews.filter(r => r.placeId === placeId);
+    return reviewsOf(placeId);
 }
 
 export async function searchPlaces(searchTerms) {
@@ -50,6 +54,7 @@ export async function createPlace(placeData) {
         createdAt: new Date().toISOString()
     };
     data.places.push(newPlace);
+    appended(data.places, newPlace);
     return newPlace;
 }
 
@@ -57,6 +62,7 @@ export async function updatePlace(placeId, updateData) {
     const idx = data.places.findIndex(p => p.placeId === placeId);
     if (idx === -1) return null;
     data.places[idx] = { ...data.places[idx], ...updateData };
+    invalidate(data.places);
     return data.places[idx];
 }
 
@@ -75,6 +81,7 @@ export async function addReview(review) {
         createdAt: new Date().toISOString()
     };
     data.reviews.push(newReview);
+    appended(data.reviews, newReview);
     return newReview;
 }
 
@@ -98,9 +105,9 @@ export async function getReportsForPlace(placeId) {
 export async function getFavouritePlaces(userId) {
     const favourites = data.favouritePlaces.filter(f => f.userId === userId);
     return favourites.map(fav => {
-        const place = data.places.find(p => p.placeId === fav.placeId);
+        const place = placeById(fav.placeId);
         if (!place) return null;
-        const reviews = data.reviews.filter(r => r.placeId === place.placeId);
+        const reviews = reviewsOf(place.placeId);
         return { ...fav, place, reviews };
     }).filter(Boolean);
 }
@@ -129,7 +136,7 @@ export async function removeFavouritePlace(userId, favouriteId) {
 export async function getDislikedPlaces(userId) {
     const disliked = data.dislikedPlaces.filter(d => d.userId === userId);
     return disliked.map(dis => {
-        const place = data.places.find(p => p.placeId === dis.placeId);
+        const place = placeById(dis.placeId);
         return { ...dis, place: place || null };
     });
 }

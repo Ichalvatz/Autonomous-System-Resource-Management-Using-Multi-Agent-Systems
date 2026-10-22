@@ -10,6 +10,9 @@ import R from '../utils/responseBuilder.js';
 import { requirePlace } from '../utils/controllerValidators.js';
 import placeWrite from './placeWrite.js';
 
+const SEARCH_PAGE_SIZE = 20;
+const SEARCH_MAX_PAGE_SIZE = 50;
+
 // --- Helper Functions (Private) ---
 
 /** Check if search terms contain injection characters */
@@ -72,9 +75,13 @@ const performSearch = async (req, res, next) => {
     }
 
     const results = await db.searchPlaces(searchTerms);
-    const resultsWithDetails = await enrichPlacesWithDetails(results);
+    // Paginated (2026-10-22): with the load dataset a common keyword matches hundreds of places, and
+    // returning all of them with their reviews made one search cost megabytes. totalResults stays the full count.
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || SEARCH_PAGE_SIZE, 1), SEARCH_MAX_PAGE_SIZE);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const resultsWithDetails = await enrichPlacesWithDetails(results.slice((page - 1) * limit, page * limit));
 
-    return R.success(res, { results: resultsWithDetails, searchTerms, totalResults: resultsWithDetails.length, links: buildHateoasLinks.search() }, 'Search completed successfully');
+    return R.success(res, { results: resultsWithDetails, searchTerms, totalResults: results.length, page, limit, links: buildHateoasLinks.search() }, 'Search completed successfully');
   } catch (error) { next(error); }
 };
 

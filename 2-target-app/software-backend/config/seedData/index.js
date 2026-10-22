@@ -3,6 +3,7 @@
  */
 import { createRequire } from 'module';
 import bcrypt from 'bcryptjs';
+import { generateLoadDataset } from './generated.js';
 
 const require = createRequire(import.meta.url);
 
@@ -47,6 +48,22 @@ let users = hashUserPasswords(usersData.users);
 let { preferenceProfiles, settings } = usersData;
 const allPlaces = [...places, ...placesExtended];
 let counters = createCounters();
+
+// SEED_DATASET=load: add the generated catalogue for the load tests (see generated.js).
+// The unit tests never set it, so they keep the small hand-written data above.
+if (process.env.SEED_DATASET === 'load') {
+    const generated = generateLoadDataset({
+        places: parseInt(process.env.SEED_PLACES || '5000', 10),
+        reviewsPerPlace: parseInt(process.env.SEED_REVIEWS_PER_PLACE || '10', 10),
+        users: parseInt(process.env.SEED_USERS || '1000', 10)
+    });
+    users.push(...generated.users);
+    preferenceProfiles.push(...generated.preferenceProfiles);
+    settings.push(...generated.settings);
+    allPlaces.push(...generated.places);
+    reviews.push(...generated.reviews);
+    favouritePlaces.push(...generated.favouritePlaces);
+}
 
 export { places, placesExtended, reviews, reports, favouritePlaces, dislikedPlaces, users, preferenceProfiles, settings };
 
