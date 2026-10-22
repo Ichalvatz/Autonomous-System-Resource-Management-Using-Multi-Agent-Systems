@@ -67,6 +67,12 @@ const startServer = async () => {
       console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       console.log('\n✨ Ready to accept requests!\n');
     });
+    // Behind a reverse proxy (the ingress-nginx keeps upstream connections open for 60 s) Node's default
+    // keep-alive timeout (5 s) closes idle connections the proxy is about to reuse: the proxy then answers 502,
+    // and it does not retry a POST. Found 2026-10-23 in the capacity run (0.02-0.07% 502s on POST, none from the
+    // app itself). The keep-alive must outlast the proxy's, and the header timeout must exceed the keep-alive.
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('\n✗ Failed to start server:', msg);
