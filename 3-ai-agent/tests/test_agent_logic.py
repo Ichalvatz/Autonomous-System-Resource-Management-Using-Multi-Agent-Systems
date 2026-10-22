@@ -143,9 +143,9 @@ def verify_scores(pre_score, scores, rps=40.0):
 def test_verify_a_restart_that_fixes_the_app_waits_through_the_old_window_then_is_stable():
     """Stuck app restarted: the first minute of 1 m windows still holds the 3 s requests (flat, very low score);
     no UNSTABLE before the window is post-action only, then the score climbs and is normal twice."""
-    verdict, text = verify_scores(-1.05, [-1.05, -1.05, -1.04, -1.0, -0.8, -0.5, -0.2, 0.05, 0.08])
-    assert verdict == "STABLE"
-    assert agent_tools.run_outcome["recovery_s"] == 12 + 80 and agent_tools.run_outcome["score_after"] == 0.08
+    verdict, text = verify_scores(-1.05, [-1.05, -1.05, -1.04, -1.0, -0.8, -0.5, -0.2, 0.05, 0.08, 0.09])
+    assert verdict == "STABLE"      # judged on the 30 s average: (0.05 + 0.08 + 0.09) / 3 >= 0, 3 of 3 normal
+    assert agent_tools.run_outcome["recovery_s"] == 12 + 90 and agent_tools.run_outcome["score_after"] == 0.09
     assert "before the action -1.05" in text
 
 
@@ -184,7 +184,10 @@ def test_verify_without_any_usable_reading_is_unverifiable():
 
 @pytest.mark.parametrize("scores,pre,full_at,expected", [
     ([0.1], -0.5, 0, "WAIT"),                         # one normal reading is not enough
-    ([-0.5, 0.1, 0.2], -0.5, 0, "STABLE"),
+    ([-0.5, 0.1, 0.2], -0.5, 0, "WAIT"),              # 30 s average still below 0
+    ([-0.5, 0.1, 0.2, 0.2], -0.5, 0, "STABLE"),
+    ([0.1, -0.01, 0.1], -0.5, 0, "STABLE"),           # one noisy dip below 0 does not undo a healthy state
+    ([-0.03, -0.04, -0.03, -0.04, -0.03], -0.5, 0, "WAIT"),   # within the noise of 0: neither stable nor failed
     ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 5, "WAIT"),    # window not yet post-action only
     ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 0, "UNSTABLE: not improving"),
     ([-0.2, -0.4], -0.2, 0, "UNSTABLE: worse"),

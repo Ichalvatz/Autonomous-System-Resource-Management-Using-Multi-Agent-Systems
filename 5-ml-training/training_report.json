@@ -1,0 +1,316 @@
+{
+  "per_pod": [
+    {
+      "form": "per_pod",
+      "gamma": 0.2,
+      "rep_weight": 12.0,
+      "err_weight": 100.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 25,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 0.94
+    },
+    {
+      "form": "per_pod",
+      "gamma": 0.2,
+      "rep_weight": 12.0,
+      "err_weight": 300.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 25,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 0.94
+    },
+    {
+      "form": "per_pod",
+      "gamma": 0.2,
+      "rep_weight": 12.0,
+      "err_weight": 1000.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 25,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 0.94
+    },
+    {
+      "form": "per_pod",
+      "gamma": 0.2,
+      "rep_weight": 8.0,
+      "err_weight": 100.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 25,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 0.9
+    },
+    {
+      "form": "per_pod",
+      "gamma": 0.2,
+      "rep_weight": 8.0,
+      "err_weight": 300.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 25,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 0.9
+    }
+  ],
+  "total": [
+    {
+      "form": "total",
+      "gamma": 1.0,
+      "rep_weight": 12.0,
+      "err_weight": 100.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 29,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 1.04
+    },
+    {
+      "form": "total",
+      "gamma": 1.0,
+      "rep_weight": 12.0,
+      "err_weight": 300.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 29,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 1.04
+    },
+    {
+      "form": "total",
+      "gamma": 1.0,
+      "rep_weight": 12.0,
+      "err_weight": 1000.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 29,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 1.04
+    },
+    {
+      "form": "total",
+      "gamma": 1.0,
+      "rep_weight": 4.0,
+      "err_weight": 100.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 27,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 1.03
+    },
+    {
+      "form": "total",
+      "gamma": 1.0,
+      "rep_weight": 4.0,
+      "err_weight": 300.0,
+      "probe_failures": 0,
+      "failed": [],
+      "held_out_flagged": 27,
+      "held_out_total": 187,
+      "held_out_wakes": 2,
+      "margin_over_noise": 1.03
+    }
+  ],
+  "chosen": {
+    "form": "total",
+    "gamma": 1.0,
+    "rep_weight": 12.0,
+    "err_weight": 100.0,
+    "probe_failures": 0,
+    "failed": [],
+    "held_out_flagged": 29,
+    "held_out_total": 187,
+    "held_out_wakes": 2,
+    "margin_over_noise": 1.04
+  },
+  "trend_eps": 0.014666558787649296,
+  "noise_eps_single": 0.026283116473984958,
+  "healthy_ranges": {
+    "1": {
+      "rps_per_pod": [
+        3.939763614183149,
+        92.48
+      ],
+      "latency_p95": 0.3460283687943262,
+      "error_rate": 0.001
+    },
+    "2": {
+      "rps_per_pod": [
+        36.58926821463571,
+        81.06
+      ],
+      "latency_p95": 0.1852064220183487,
+      "error_rate": 0.001
+    },
+    "3": {
+      "rps_per_pod": [
+        41.12584414978367,
+        83.7
+      ],
+      "latency_p95": 0.2559680851063828,
+      "error_rate": 0.001
+    }
+  },
+  "train_flagged": 8,
+  "n_train": 187,
+  "rejected": {
+    "slo_violation": 1,
+    "errors": 0,
+    "low_traffic": 0,
+    "pods_not_ready_or_changing": 0
+  },
+  "probes": [
+    {
+      "label": "1.0p HEALTHY mid-band",
+      "score": 0.0196,
+      "expect_anomaly": false
+    },
+    {
+      "label": "1.0p HEALTHY top-band p95 0.23s",
+      "score": 0.018,
+      "expect_anomaly": false
+    },
+    {
+      "label": "1.0p EARLY OVERLOAD (load only)",
+      "score": -0.0867,
+      "expect_anomaly": true
+    },
+    {
+      "label": "1.0p OVERLOAD p95 0.4s",
+      "score": -0.2021,
+      "expect_anomaly": true
+    },
+    {
+      "label": "1.0p SLOW p95 0.4s",
+      "score": -0.3203,
+      "expect_anomaly": true
+    },
+    {
+      "label": "1.0p STUCK p95 3s",
+      "score": -0.5366,
+      "expect_anomaly": true
+    },
+    {
+      "label": "1.0p ERRORS 1%",
+      "score": -0.332,
+      "expect_anomaly": true
+    },
+    {
+      "label": "1.0p OUTAGE 100% 5xx",
+      "score": -0.5366,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p HEALTHY mid-band",
+      "score": 0.0626,
+      "expect_anomaly": false
+    },
+    {
+      "label": "2.0p HEALTHY top-band p95 0.18s",
+      "score": 0.0153,
+      "expect_anomaly": false
+    },
+    {
+      "label": "2.0p WASTE",
+      "score": -0.083,
+      "expect_anomaly": true
+    },
+    {
+      "label": "1.0p AFTER scale-down",
+      "score": 0.0256,
+      "expect_anomaly": false
+    },
+    {
+      "label": "2.0p EARLY OVERLOAD (load only)",
+      "score": -0.0659,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p OVERLOAD p95 0.4s",
+      "score": -0.5364,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p SLOW p95 0.4s",
+      "score": -0.5363,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p STUCK p95 3s",
+      "score": -0.5366,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p ERRORS 1%",
+      "score": -0.3162,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p OUTAGE 100% 5xx",
+      "score": -0.5366,
+      "expect_anomaly": true
+    },
+    {
+      "label": "3.0p HEALTHY mid-band",
+      "score": 0.0521,
+      "expect_anomaly": false
+    },
+    {
+      "label": "3.0p HEALTHY top-band p95 0.23s",
+      "score": 0.0771,
+      "expect_anomaly": false
+    },
+    {
+      "label": "3.0p WASTE",
+      "score": -0.0828,
+      "expect_anomaly": true
+    },
+    {
+      "label": "2.0p AFTER scale-down",
+      "score": 0.0609,
+      "expect_anomaly": false
+    },
+    {
+      "label": "3.0p EARLY OVERLOAD (load only)",
+      "score": -0.0733,
+      "expect_anomaly": true
+    },
+    {
+      "label": "3.0p OVERLOAD p95 0.4s",
+      "score": -0.5208,
+      "expect_anomaly": true
+    },
+    {
+      "label": "3.0p SLOW p95 0.4s",
+      "score": -0.5216,
+      "expect_anomaly": true
+    },
+    {
+      "label": "3.0p STUCK p95 3s",
+      "score": -0.5366,
+      "expect_anomaly": true
+    },
+    {
+      "label": "3.0p ERRORS 1%",
+      "score": -0.32,
+      "expect_anomaly": true
+    },
+    {
+      "label": "3.0p OUTAGE 100% 5xx",
+      "score": -0.5366,
+      "expect_anomaly": true
+    }
+  ]
+}

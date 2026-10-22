@@ -52,13 +52,14 @@ RESTART_COOLDOWN_SECONDS = 60
 
 
 # Healthy reference for the per-pod view (diagnosis only, not used by the detector), for the phase-2 request
-# mix: CPU cost per request (core-seconds) and the per-pod p95 / throttling of healthy traffic. Provisional from
-# the endpoint costs of 2026-10-22 (k6/endpoint_costs.js: the mix at 40 rps on 1 pod, 0.0103 core-s per request);
-# replaced by the median / max of the healthy training data once collected (collect_healthy_data.py).
-HEALTHY_CPU_PER_REQUEST = 0.010
-HEALTHY_CPU_PER_REQUEST_MAX = 0.013
-HEALTHY_POD_P95 = 0.15
-HEALTHY_POD_THROTTLING = 0.06
+# mix, from the healthy training data (baseline_metrics_healthy_filtered.csv, 2026-10-23, readings with >= 5 rps
+# per pod): CPU cost per request median 0.0084 core-s, max 0.016; per-pod p95 within the NFR-safe 0.25 s.
+# Throttling is no longer a clean overload signal with the mix (up to ~25% per pod at the top of a healthy band:
+# several requests share each 100 ms CFS period), so it is shown but not stressed.
+HEALTHY_CPU_PER_REQUEST = 0.0084
+HEALTHY_CPU_PER_REQUEST_MAX = 0.016
+HEALTHY_POD_P95 = 0.25
+HEALTHY_POD_THROTTLING = 0.25
 
 
 REVISION_ANNOTATION = "deployment.kubernetes.io/revision"
@@ -78,7 +79,8 @@ _last_restart_action_at = 0.0
 #   detail:       the verification's reason and score trajectory (for the logs, recent actions and memory)
 #   recovery_s:   seconds from the end of the rollout to the STABLE verdict
 #   score_after:  the last score the verification saw
-run_outcome = {"actions": [], "verification": None, "detail": "", "recovery_s": None, "score_after": None}
+run_outcome = {"actions": [], "verification": None, "detail": "", "recovery_s": None, "score_after": None,
+               "rollout": ""}
 
 
 def reset_run_outcome():
@@ -579,7 +581,9 @@ def claim_final_answer_check(final_answer, memory, agent=None):
 # Until phase 2: fixed thresholds on CPU / throttling / p95 over one 40 s window, 50 s after the rollout.
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(REPO_ROOT, "5-ml-training", "health_model.pkl")
-VERIFY_ROLLOUT_TIMEOUT = 180
+# A new pod is ready in ~10 s; a pod that never becomes ready again (e.g. the stuck one after a scale-up, whose
+# readiness probe keeps failing) would hold a longer wait for nothing, so the trajectory starts after 90 s at most.
+VERIFY_ROLLOUT_TIMEOUT = 90
 VERIFY_INTERVAL_SECONDS = 10
 VERIFY_WINDOW_FULL_SECONDS = 60      # the 1 m rate windows: after this, only post-action data
 VERIFY_MAX_SECONDS = 240
@@ -609,8 +613,10 @@ def verify_metrics_stabilization(pre_action_metrics_json: str) -> str:
 
 
 def _wait_for_rollout(timeout_seconds):
-    """Block until available replicas == desired replicas (or timeout); return seconds waited."""
+    """Block until available replicas == desired replicas (or timeout); return seconds waited.
+    The ready / desired counts at the end are kept in run_outcome["rollout"] for the report."""
     started = time.monotonic()
+    run_outcome["rollout"] = ""
     try:
         get_kube_config()
         apps_v1 = client.AppsV1Api()
@@ -620,12 +626,15 @@ def _wait_for_rollout(timeout_seconds):
             status = dep.status
             # updated_replicas + observed_generation matter for a restart: the old pod
             # stays "available" until the new one replaces it, so counts alone pass too early.
+            run_outcome["rollout"] = f"{status.available_replicas or 0}/{desired} pods ready"
             if ((status.observed_generation or 0) >= (dep.metadata.generation or 0)
                     and (status.updated_replicas or 0) == desired
                     and (status.available_replicas or 0) == desired
                     and (status.replicas or 0) == desired):
                 break
             time.sleep(3)
+        else:
+            run_outcome["rollout"] += f", not converged after {timeout_seconds} s"
     except Exception as e:
         print(f"⚠️ Could not read rollout status: {e}")
     return time.monotonic() - started
@@ -680,7 +689,8 @@ def _check_stabilization(pre_action_metrics_json):
     first, last = readings[0], readings[-1]
     why = "" if scores[-1] >= 0 else "\nStill outside the healthy range: " + "; ".join(health_model.explain(bundle, last))
     return (f"{verdict}\n"
-            f"Health score: before the action {pre_score:+.2f}; after the rollout ({ready_seconds:.0f} s) "
+            f"Health score: before the action {pre_score:+.2f}; after the rollout ({ready_seconds:.0f} s, "
+            f"{run_outcome.get('rollout') or '?'}) "
             f"{trajectory} over {len(scores) * VERIFY_INTERVAL_SECONDS} s (>= 0 = healthy)\n"
             f"First reading: {_describe(first)}\nLast reading:  {_describe(last)}{why}")
 

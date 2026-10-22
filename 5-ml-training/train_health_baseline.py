@@ -46,8 +46,9 @@ NU = 0.02
 P95_FLOOR, P95_WEIGHT = 0.2, 4.0       # as in phase 1
 WASTE_FACTOR = 0.8
 STREAK_REQUIRED = 3
-GRID = {"gamma": [0.005, 0.01, 0.02, 0.05, 0.1], "rep_weight": [2.0, 4.0, 8.0, 12.0],
+GRID = {"gamma": [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0], "rep_weight": [2.0, 4.0, 8.0, 12.0],
         "err_weight": [100.0, 300.0, 1000.0]}
+SMOOTH = 3               # the verification judges a 30 s moving average of the score (health_model.judge_trajectory)
 
 
 def load_healthy():
@@ -136,12 +137,13 @@ def held_out(params, health, gamma):
     return flagged, total, wakes
 
 
-def trend_eps(params, model, health):
-    """95th percentile of |score change| between consecutive healthy readings of the same ramp."""
+def trend_eps(params, model, health, smooth=SMOOTH):
+    """95th percentile of |change| between consecutive healthy readings of the same ramp: of the score's moving
+    average over `smooth` readings (what the verification judges), or of single readings (smooth=1)."""
     deltas = []
     for _, group in health.groupby(["replicas", "direction"]):
-        scores = model.decision_function(hm.transform(params, group))
-        deltas += list(np.abs(np.diff(scores)))
+        scores = list(model.decision_function(hm.transform(params, group)))
+        deltas += list(np.abs(np.diff(hm.moving_average(scores, smooth))))
     return float(np.percentile(deltas, 95)) if deltas else 0.05
 
 
@@ -150,14 +152,22 @@ def search(health, probes, form):
     for gamma, rep_weight, err_weight in itertools.product(GRID["gamma"], GRID["rep_weight"], GRID["err_weight"]):
         params = params_for(health, form, rep_weight, err_weight)
         model = fit(params, health, gamma)
-        failures, _ = probe_failures(params, model, probes)
+        failures, scores = probe_failures(params, model, probes)
         flagged, total, wakes = held_out(params, health, gamma)
+        normal = [s for p, s in zip(probes, scores) if not p["expect_anomaly"]]
+        anomalous = [s for p, s in zip(probes, scores) if p["expect_anomaly"]]
+        margin = min(min(normal), -max(anomalous))
         results.append({"form": form, "gamma": gamma, "rep_weight": rep_weight, "err_weight": err_weight,
                         "probe_failures": len(failures), "failed": [f for f, _ in failures],
-                        "held_out_flagged": flagged, "held_out_total": total, "held_out_wakes": wakes})
-    # all probes first, then the fewest held-out wake-ups and false alarms; ties: phase 1's gamma, then lighter weights
-    results.sort(key=lambda r: (r["probe_failures"], r["held_out_wakes"], r["held_out_flagged"],
-                                abs(math.log(r["gamma"] / 0.02)), r["rep_weight"], r["err_weight"]))
+                        "held_out_flagged": flagged, "held_out_total": total, "held_out_wakes": wakes,
+                        "margin_over_noise": round(margin / trend_eps(params, model, health), 2)})
+    # Pre-declared order (2026-10-23, before choosing; design_decisions.md A26): every probe passes; the fewest
+    # held-out wake-ups (false wake-ups are what costs); the largest probe margin over the noise of the score's
+    # 30 s average (the verification judges the score's trajectory, so it must stand out of its noise); the fewest
+    # held-out flagged readings; ties: phase 1's gamma, then lighter weights.
+    results.sort(key=lambda r: (r["probe_failures"], r["held_out_wakes"], -r["margin_over_noise"],
+                                r["held_out_flagged"], abs(math.log(r["gamma"] / 0.02)), r["rep_weight"],
+                                r["err_weight"]))
     return results
 
 
@@ -177,12 +187,13 @@ def main():
         for r in results[:5]:
             print(f"  gamma {r['gamma']:<6} rep_w {r['rep_weight']:<5} err_w {r['err_weight']:<7} "
                   f"probe failures {r['probe_failures']} {r['failed'][:3]}  held-out "
-                  f"{r['held_out_flagged']}/{r['held_out_total']} flagged, {r['held_out_wakes']} wake-up(s)")
+                  f"{r['held_out_flagged']}/{r['held_out_total']} flagged, {r['held_out_wakes']} wake-up(s), "
+                  f"margin/noise {r['margin_over_noise']}")
     best_pp, best_tot = report["per_pod"][0], report["total"][0]
-    key = lambda r: (r["probe_failures"], r["held_out_wakes"], r["held_out_flagged"])
+    key = lambda r: (r["probe_failures"], r["held_out_wakes"], -r["margin_over_noise"], r["held_out_flagged"])
     best = best_tot if key(best_tot) < key(best_pp) else best_pp   # per pod unless the total form is strictly better
     print(f"\nChosen: form {best['form']} (per pod {key(best_pp)} vs total {key(best_tot)}: "
-          f"probe failures, held-out wake-ups, held-out flagged)")
+          f"probe failures, held-out wake-ups, -margin/noise, held-out flagged)")
 
     params = params_for(health, best["form"], best["rep_weight"], best["err_weight"])
     model = fit(params, health, best["gamma"])
@@ -194,21 +205,24 @@ def main():
               f"rps/pod {p['rps_per_pod']:.1f}  p95 {p['latency_p95']:.2f}  err {100 * p['error_rate']:.0f}%")
     train_scores = model.decision_function(hm.transform(params, health))
     eps = trend_eps(params, model, health)
+    eps_single = trend_eps(params, model, health, smooth=1)
     ranges = {int(r): {"rps_per_pod": [float(g["rps_per_pod"].min()), float(g["rps_per_pod"].max())],
                        "latency_p95": float(g["latency_p95"].max()),
                        "error_rate": max(float(g["error_rate"].max()), MAX_ERR)}
               for r, g in health.groupby("replicas")}
     bundle = {"model_type": "OneClassSVM-NFR", "features": hm.FEATURES, "params": params, "model": model,
               "nu": NU, "gamma": best["gamma"], "healthy_ranges": ranges, "trend_eps": eps,
+              "noise_eps_single": eps_single, "smooth": SMOOTH,
               "trained_at": datetime.now().isoformat(timespec="seconds"), "n_train": len(health)}
     joblib.dump(bundle, MODEL_FILE)
-    report.update({"chosen": best, "trend_eps": eps, "healthy_ranges": ranges,
+    report.update({"chosen": best, "trend_eps": eps, "noise_eps_single": eps_single, "healthy_ranges": ranges,
                    "train_flagged": int((train_scores < 0).sum()), "n_train": len(health), "rejected": reasons,
                    "probes": [{"label": p["label"], "score": round(float(s), 4), "expect_anomaly": p["expect_anomaly"]}
                               for p, s in zip(probes, scores)]})
     REPORT_FILE.write_text(json.dumps(report, indent=2))
-    print(f"\nTraining data flagged: {(train_scores < 0).sum()}/{len(health)}; trend eps (95th pct of |Δscore|): "
-          f"{eps:.4f}\nHealthy ranges: {json.dumps(ranges)}\nModel -> {MODEL_FILE}; report -> {REPORT_FILE}")
+    print(f"\nTraining data flagged: {(train_scores < 0).sum()}/{len(health)}; trend eps (95th pct of |Δ| of the "
+          f"{SMOOTH}-reading average): {eps:.4f} (single readings: {eps_single:.4f})\n"
+          f"Healthy ranges: {json.dumps(ranges)}\nModel -> {MODEL_FILE}; report -> {REPORT_FILE}")
     if failures:
         print(f"⚠️  {len(failures)} probe(s) failed: {failures}")
 
