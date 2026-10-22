@@ -1,0 +1,26 @@
+             label: rules
+             start: 2026-10-21 23:19:31
+               end: 2026-10-21 23:35:32
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 230
+          p95_mean: 0.426
+           p95_p99: 1.473
+   replica_minutes: 37.8
+      under_prov_s: 0
+       over_prov_s: 770
+  correct_prov_pct: 18.9
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_rules_20261021_2317
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 3
+     agent_actions: 
+      rule_actions: 23:20:38 scale->2 | 23:22:38 scale->1 | 23:24:38 scale->2 | 23:26:39 scale->3

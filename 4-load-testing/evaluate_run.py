@@ -103,6 +103,11 @@ def main():
         table = {int(k): v["max_safe_rps"] for k, v in json.load(f).items()}
 
     series = {name: fetch(q, start, end) for name, q in QUERIES.items()}
+    if args.run_dir:
+        # Keep the raw series next to the run (added 2026-10-21): Prometheus keeps only 10 days, and by
+        # then the history of every run before 2026-10-11 was gone; compare_results.py draws from this file.
+        with open(os.path.join(args.run_dir, "series.json"), "w") as f:
+            json.dump({name: {str(t): v for t, v in s.items()} for name, s in series.items()}, f)
     stamps = sorted(series["desired_replicas"])
 
     slo = pressure = under = over = correct = 0
@@ -154,6 +159,7 @@ def main():
         "scale_actions": actions,
         "incidents": "", "stable": "", "llm_calls": "", "agent_s_mean": "",
         "notes": args.notes,
+        "run_dir": os.path.relpath(args.run_dir, ROOT) if args.run_dir else "",
     }
 
     if args.fault_at:

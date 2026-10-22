@@ -44,12 +44,22 @@ def frame(rps, p95):
                          "cpu_throttling": HEALTHY_THR, "throughput": rps})[features]
 
 
+# The rps sweep stops where CPU per pod reaches the 1-core limit (2 pods x 1 core / 0.073 core-s = 27.4 rps):
+# beyond it the swept state cannot exist. (Until 2026-10-21 it ran to 40 rps and the flat part was labelled
+# "all overload", which it is not: latency and throttling stay healthy in this sweep.)
+RPS_MAX = REPLICAS * 1.0 / CPU_PER_REQUEST
 sweeps = {
-    "rps": (np.linspace(3, 40, 300), lambda x: frame(x, HEALTHY_P95)),
+    "rps": (np.linspace(3, RPS_MAX, 300), lambda x: frame(x, HEALTHY_P95)),
     "p95": (np.geomspace(0.05, 5, 300), lambda x: frame(mid_rps, x)),
 }
 scores = {(m, s): model.decision_function(make(x))
           for m, model in [("IF", iforest), ("OCSVM", ocsvm)] for s, (x, make) in sweeps.items()}
+# Real overload moves every metric at once (CPU, latency, throttling and load): the Isolation Forest catches
+# it (20/20 seeds), because clamped to the edges it lands in the rare "everything at its maximum" corner.
+REAL_OVERLOAD = pd.DataFrame([{"avg_cpu_per_pod": 0.90, "latency_p95": 0.50, "cpu_throttling": 0.08,
+                               "throughput": 24.0}])[features]
+overload_score = {m: float(model.decision_function(REAL_OVERLOAD)[0])
+                  for m, model in [("IF", iforest), ("OCSVM", ocsvm)]}
 
 # --- style: reference palette slots 1-2 (validated), neutral ink for text
 INK, INK2, GRID, BAND = "#0b0b0b", "#52514e", "#e4e3df", "#efeeea"
@@ -75,29 +85,38 @@ for row, m in enumerate(["IF", "OCSVM"]):
         for side in ["top", "right"]:
             ax.spines[side].set_visible(False)
         pad = 0.15 * (y.max() - y.min())
-        ax.set_ylim(min(y.min(), 0) - pad, max(y.max(), 0) + pad)
+        low = min(y.min(), 0, overload_score[m] if s == "rps" else 0)
+        ax.set_ylim(low - (2 if (m, s) == ("IF", "rps") else 1) * pad, max(y.max(), 0) + pad)
+        if s == "rps":
+            ax.plot([24], [overload_score[m]], marker="D", ms=6, color=INK, zorder=4, ls="none")
         ax.set_ylabel(f"{NAME[m]}\nscore", color=INK)
-        ax.text(0.99, 0.04, "anomaly below the dashed line", transform=ax.transAxes, ha="right",
-                fontsize=8, color=INK2)
+        left = (m, s) == ("IF", "rps")  # the right corner of that panel holds the real-overload marker
+        ax.text(0.01 if left else 0.99, 0.04, "anomaly below the dashed line", transform=ax.transAxes,
+                ha="left" if left else "right", fontsize=8, color=INK2)
 
 # annotations: the flat edges of the Isolation Forest
 arrow = dict(arrowstyle="-", color=INK2, lw=0.8)
 ax = axes[0][0]
 x, _ = sweeps["rps"]
 y = scores[("IF", "rps")]
-flat = y[np.argmin(abs(x - 33))]
-ax.text(3, 0.45 * flat, "all waste:\none score", fontsize=8, color=INK, va="center")
-ax.text(24, 0.45 * flat, "all overload: one fixed score,\nabove 0 = \"normal\"", fontsize=8, color=INK, va="center")
+flat = y[np.argmin(abs(x - 25))]
+ax.text(3, 0.45 * flat, "waste: one fixed score,\nabove 0 = \"normal\" (missed)", fontsize=8, color=INK, va="center")
+ax.annotate("more load, latency and\nthrottling still healthy:\none fixed score (normal)", xy=(25.5, flat),
+            xytext=(21.9, 0.62 * y.max()), fontsize=8, color=INK, arrowprops=arrow)
+ax.annotate("real overload (all metrics\nhigh): below 0, caught", xy=(24, overload_score["IF"]),
+            xytext=(11.5, 0.45 * overload_score["IF"]), fontsize=8, color=INK, va="center", arrowprops=arrow)
 ax.text(lo + 0.4, ax.get_ylim()[1], "healthy training range", fontsize=8, color=INK2, va="top")
+axes[1][0].annotate("real overload", xy=(24, overload_score["OCSVM"]), xytext=(15.5, overload_score["OCSVM"] - 0.05),
+                    fontsize=8, color=INK, va="center", arrowprops=arrow)
 ax = axes[0][1]
 x, _ = sweeps["p95"]
 y = scores[("IF", "p95")]
 ax.annotate("p95 0.2 s ... 5 s: one fixed score,\nstill above 0 = \"normal\"", xy=(2, y[np.argmin(abs(x - 2))]),
             xytext=(0.35, 0.55 * y.max()), fontsize=8, color=INK, arrowprops=arrow)
 
-axes[1][0].set_xlabel("throughput (rps), 2 replicas: CPU per pod follows the load")
+axes[1][0].set_xlabel("throughput (rps), 2 replicas: CPU per pod follows the load, up to its 1-core limit")
 axes[1][1].set_xlabel("p95 latency (s, log scale), at mid-band load")
-fig.suptitle("Scores while one metric moves out of the healthy range (2-replica model)",
+fig.suptitle("Scores while one metric moves out of the healthy range (2-replica model; ◆ = real overload, every metric high)",
              x=0.01, ha="left", fontsize=12, color=INK)
 fig.tight_layout(rect=(0, 0, 1, 0.96))
 fig.savefig(OUT, dpi=200)

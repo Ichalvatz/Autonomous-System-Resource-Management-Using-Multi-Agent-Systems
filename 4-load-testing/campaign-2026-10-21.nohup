@@ -1,0 +1,64 @@
+[2026-10-21 20:37:18] campaign campaign-2026-10-21: LLM_RUNS=3 MAX_WAIT_H=8
+[2026-10-21 20:37:18] git HEAD a1fd3d5, uncommitted files: 86
+[2026-10-21 20:37:21] on battery: waiting for AC power
+[2026-10-21 20:43:21] AC power back
+[2026-10-21 20:43:21] start badconfig rules-v2
+[2026-10-21 21:02:00] end   badconfig rules-v2 (exit 0)
+[2026-10-21 21:05:02] start stuck hpa
+[2026-10-21 21:23:40] end   stuck hpa (exit 0)
+[2026-10-21 21:26:46] start cpuhog rules
+[2026-10-21 21:45:24] end   cpuhog rules (exit 0)
+[2026-10-21 21:48:54] start baseline hpa
+[2026-10-21 22:29:30] end   baseline hpa (exit 0)
+[2026-10-21 22:33:26] start stuck rules-v2
+[2026-10-21 22:52:03] end   stuck rules-v2 (exit 0)
+[2026-10-21 22:55:06] start cpuhog hpa
+[2026-10-21 23:13:44] end   cpuhog hpa (exit 0)
+[2026-10-21 23:17:16] start badconfig rules
+[2026-10-21 23:35:53] end   badconfig rules (exit 0)
+[2026-10-21 23:38:59] start baseline rules
+[2026-10-22 00:19:36] end   baseline rules (exit 0)
+[2026-10-22 00:22:39] start cpuhog rules-v2
+[2026-10-22 00:41:16] end   cpuhog rules-v2 (exit 0)
+[2026-10-22 00:44:20] start badconfig hpa
+[2026-10-22 01:02:56] end   badconfig hpa (exit 0)
+[2026-10-22 01:06:34] start stuck rules
+[2026-10-22 01:25:10] end   stuck rules (exit 0)
+[2026-10-22 01:28:31] start baseline rules-v2
+[2026-10-22 02:09:08] end   baseline rules-v2 (exit 0)
+[2026-10-22 02:12:13] start baseline static-1
+[2026-10-22 02:52:50] end   baseline static-1 (exit 0)
+[2026-10-22 02:56:19] start stuck llm (memory off)
+[2026-10-22 03:14:55] end   stuck llm (exit 0)
+[2026-10-22 03:17:55] start baseline static-3
+[2026-10-22 03:58:32] end   baseline static-3 (exit 0)
+[2026-10-22 04:03:28] start cpuhog llm (memory off)
+[2026-10-22 04:22:05] end   cpuhog llm (exit 0)
+[2026-10-22 04:25:41] start badconfig llm (memory off)
+[2026-10-22 04:44:18] end   badconfig llm (exit 0)
+[2026-10-22 04:47:20] only agent runs left and the primary model is unavailable: checking again in 5 min
+[2026-10-22 04:52:39] only agent runs left and the primary model is unavailable: checking again in 5 min
+[2026-10-22 04:58:08] start baseline llm (memory on)
+[2026-10-22 05:38:45] end   baseline llm (exit 0)
+[2026-10-22 05:42:13] start stuck llm (memory off)
+[2026-10-22 06:00:50] end   stuck llm (exit 0)
+[2026-10-22 06:04:23] only agent runs left and the primary model is unavailable: checking again in 5 min
+[2026-10-22 06:09:45] only agent runs left and the primary model is unavailable: checking again in 5 min
+[2026-10-22 06:15:10] start cpuhog llm (memory off)
+[2026-10-22 06:33:47] end   cpuhog llm (exit 0)
+[2026-10-22 06:37:29] start badconfig llm (memory off)
+[2026-10-22 06:56:06] end   badconfig llm (exit 0)
+[2026-10-22 06:59:30] start baseline llm (memory on)
+[2026-10-22 07:40:07] end   baseline llm (exit 0)
+[2026-10-22 07:43:32] start stuck llm (memory off)
+[2026-10-22 08:02:08] end   stuck llm (exit 0)
+[2026-10-22 08:05:28] start cpuhog llm (memory off)
+[2026-10-22 08:24:05] end   cpuhog llm (exit 0)
+[2026-10-22 08:27:26] start badconfig llm (memory off)
+[2026-10-22 08:46:03] end   badconfig llm (exit 0)
+[2026-10-22 08:49:33] start baseline llm (memory on)
+[2026-10-22 09:30:10] end   baseline llm (exit 0)
+[2026-10-22 09:33:10] all runs done: 12/12 agent, 14/14 baseline
+[2026-10-22 09:33:14] comparison.md and timelines regenerated
+[2026-10-22 09:33:14] report: 4-load-testing/campaign-2026-10-21.md
+[2026-10-22 09:33:14] campaign done

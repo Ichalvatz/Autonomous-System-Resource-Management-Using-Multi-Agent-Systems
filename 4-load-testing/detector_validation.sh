@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Detector validation (~34 min): k6 drives the load, this script sets the
-# replica count at each phase boundary (see detector_validation.js), and
+# replica count at each phase boundary (see k6/detector_validation.js), and
 # anomaly_detector.py --dry-run logs every reading. No LLM, no agent.
 # Run from the repo root. Outputs:
 #   5-ml-training/dry_run_readings.csv          (detector, one row per reading)
@@ -20,7 +20,7 @@ echo "time,phase,replicas,expected" > "$PHASES"
 
 .venv/bin/python -u 3-ai-agent/anomaly_detector.py --dry-run > 4-load-testing/detector_validation_detector.log 2>&1 &
 DETECTOR=$!
-k6 run --quiet 4-load-testing/detector_validation.js > 4-load-testing/detector_validation_k6.log 2>&1 &
+k6 run --quiet 4-load-testing/k6/detector_validation.js > 4-load-testing/detector_validation_k6.log 2>&1 &
 K6=$!
 trap 'kill $DETECTOR $K6 2>/dev/null || true; scale 1' EXIT
 

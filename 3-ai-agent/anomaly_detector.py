@@ -11,13 +11,19 @@ from datetime import datetime
 
 PROMETHEUS_URL = "http://prometheus.aiops"
 INTERVAL_SECONDS = 10
-MODEL_FILENAME = "./5-ml-training/health_model.pkl"
-DRY_RUN_CSV = "./5-ml-training/dry_run_readings.csv"
+# Paths relative to this file (until 2026-10-11 relative to the working directory, so the detector
+# only worked when started from the repo root).
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_FILENAME = os.path.join(REPO_ROOT, "5-ml-training", "health_model.pkl")
+DRY_RUN_CSV = os.path.join(REPO_ROOT, "5-ml-training", "dry_run_readings.csv")
 # Below this there isn't enough traffic for a meaningful evaluation.
 # Must stay below the 1-VU training data (~0.9 rps) collected by collect_healthy_data.py.
+# Known blind spot: requests that never finish are never counted (http_requests_total and the latency
+# histogram are written when a response ends), so a fully hung or crashed backend also reads as
+# "low traffic" or "missing metrics" and is skipped (thesis_notes/design_decisions.md A21).
 MIN_THROUGHPUT_RPS = 0.8
 # Consecutive anomalous readings required before waking the agent (3 x 10s = 30s).
-# The model flags some healthy readings (~7% in simulation), so single readings are noise.
+# The model flags ~7% of healthy readings on their own (new-day data), almost never 3 in a row.
 ANOMALY_STREAK_REQUIRED = 3
 # The PromQL rate() windows are 1m, so after a replica change the metrics mix old
 # and new pod counts. The training data has no such readings (the collector waits
@@ -25,7 +31,9 @@ ANOMALY_STREAK_REQUIRED = 3
 REPLICA_SETTLE_SECONDS = 90
 # Minimum time between two agent runs. Monitoring continues meanwhile.
 AGENT_COOLDOWN_SECONDS = 60
-ML_FEATURES = ["avg_cpu_per_pod", "latency_p95", "cpu_throttling", "throughput", "active_replicas"]
+# The five metrics, in the column order of the dry-run CSV. (Named ML_FEATURES until 2026-10-11, but the
+# model does not use all five: its features are listed in the model bundle.)
+LOGGED_METRICS = ["avg_cpu_per_pod", "latency_p95", "cpu_throttling", "throughput", "active_replicas"]
 # All five metrics go to the agent. The model uses four of them: there is one
 # One-Class SVM per replica count (trained by train_health_baseline.py), and
 # active_replicas selects which one scores the reading.
@@ -76,6 +84,8 @@ def print_summary(stats, started_at, dry_run):
         f"low_traffic={stats['skipped_low_traffic']} "
         f"missing_metrics={stats['skipped_missing']}"
     )
+    if stats["agent_errors"]:
+        print(f"  Agent runs that raised:      {stats['agent_errors']} (see the log above)")
     if dry_run:
         print(f"  Per-reading log:             {DRY_RUN_CSV}")
 
@@ -121,13 +131,14 @@ def run_monitor(dry_run=False):
         # Never overwrite an earlier run's evidence: move it aside with its timestamp.
         if os.path.exists(DRY_RUN_CSV):
             stamp = datetime.fromtimestamp(os.path.getmtime(DRY_RUN_CSV)).strftime("%Y%m%d_%H%M%S")
-            kept = DRY_RUN_CSV.replace(".csv", f"_{stamp}.csv")
+            base, ext = os.path.splitext(DRY_RUN_CSV)
+            kept = f"{base}_{stamp}{ext}"
             os.replace(DRY_RUN_CSV, kept)
             print(f"Previous dry-run log kept as {kept}")
         csv_file = open(DRY_RUN_CSV, "w", newline="")
         csv_writer = csv.DictWriter(
             csv_file,
-            fieldnames=["timestamp", *ML_FEATURES, "prediction", "score", "streak", "would_trigger"],
+            fieldnames=["timestamp", *LOGGED_METRICS, "prediction", "score", "streak", "would_trigger"],
         )
         csv_writer.writeheader()
     else:
@@ -137,7 +148,7 @@ def run_monitor(dry_run=False):
 
     stats = {
         "evaluated": 0, "anomalous": 0, "triggers": 0,
-        "skipped_settling": 0, "skipped_low_traffic": 0, "skipped_missing": 0,
+        "skipped_settling": 0, "skipped_low_traffic": 0, "skipped_missing": 0, "agent_errors": 0,
     }
     started_at = time.monotonic()
     anomaly_streak = 0
@@ -221,7 +232,7 @@ def run_monitor(dry_run=False):
             if dry_run:
                 csv_writer.writerow({
                     "timestamp": timestamp,
-                    **{feature: current_metrics[feature] for feature in ML_FEATURES},
+                    **{name: current_metrics[name] for name in LOGGED_METRICS},
                     "prediction": prediction,
                     "score": round(score, 4) if score is not None else "",
                     "streak": anomaly_streak,
@@ -258,7 +269,16 @@ def run_monitor(dry_run=False):
                 metrics_json = json.dumps(current_metrics)
 
                 print("Αναμονή ολοκλήρωσης ενεργειών από τον Agent...")
-                is_resolved = trigger_ai_agent(metrics_json)
+                try:
+                    is_resolved = trigger_ai_agent(metrics_json)
+                except Exception as e:
+                    # trigger_ai_agent already survives LLM errors; this catches anything else around it
+                    # (e.g. a failed write of incident_log.csv). Without it one such error would end
+                    # monitoring in the middle of an experiment, and run_experiment.sh would go on scoring a
+                    # run with no controller. (Added 2026-10-11; no measured run ever hit it.)
+                    stats["agent_errors"] += 1
+                    print(f"⚠️ Agent run failed outside the agent: {type(e).__name__}: {e}. Monitoring continues.")
+                    is_resolved = False
 
                 if is_resolved:
                     print(f"\n[{datetime.now().strftime('%H:%M:%S')}]  Το πρόβλημα επιλύθηκε από τον Agent. Επανεκκίνηση παρακολούθησης.")

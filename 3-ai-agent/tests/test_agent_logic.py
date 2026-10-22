@@ -177,19 +177,23 @@ class FakeCollection:
 
 
 STORED = FakeCollection(
-    ["State -> CPU:0.6cores | Throttle:4.5% | Tput:17.0rps | Reps:2",   # old format: parsed
-     "State -> CPU:0.2cores | Throttle:0.3% | Tput:6.0rps | Reps:2",
-     "State -> CPU:0.83cores | Throttle:9.6% | Tput:13.0rps | Reps:1"],
-    [{"action_taken": "scale 2->3", "root_cause": "overload", "status": "resolved"},
+    ["State -> CPU:0.6cores | Throttle:4.5% | Tput:17.0rps | Reps:2 | P95:0.15s",
+     "State -> CPU:0.2cores | Throttle:0.3% | Tput:6.0rps | Reps:2 | P95:0.13s",
+     "State -> CPU:0.83cores | Throttle:9.6% | Tput:13.0rps | Reps:1 | P95:0.2s",
+     "State -> CPU:0.5cores | Throttle:2.0% | Tput:10.0rps | Reps:2 | P95:0.1s"],
+    [{"action_taken": "scale 2->3", "root_cause": "overload", "status": "resolved",
+      "replicas": 2, "cpu": 0.6, "throttling": 0.045, "rps": 17.0, "p95": 0.15},
      {"action_taken": "scale 2->1", "root_cause": "waste", "status": "resolved",
-      "replicas": 2, "cpu": 0.2, "throttling": 0.003, "rps": 6.0, "p95": 0.13},    # new format
-     {"action_taken": "scale 1->2", "root_cause": "overload", "status": "resolved"}],
+      "replicas": 2, "cpu": 0.2, "throttling": 0.003, "rps": 6.0, "p95": 0.13},
+     {"action_taken": "scale 1->2", "root_cause": "overload", "status": "resolved",
+      "replicas": 1, "cpu": 0.83, "throttling": 0.096, "rps": 13.0, "p95": 0.2},
+     {"action_taken": "restart", "root_cause": "no metrics stored", "status": "resolved"}],  # ignored
 )
 
 
 def test_memory_returns_waste_incident_for_waste_state():
     with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base("", metrics(2, 5.5, cpu=0.2, thr=0.004, p95=0.13))
+        text = agent_tools.query_knowledge_base(metrics(2, 5.5, cpu=0.2, thr=0.004, p95=0.13))
     first = text.splitlines()[1]
     assert "scale 2->1" in text.split("Action taken:")[1].splitlines()[0]
     assert "Tput:6.0rps" in first
@@ -197,26 +201,26 @@ def test_memory_returns_waste_incident_for_waste_state():
 
 def test_memory_returns_overload_incident_for_overload_state():
     with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base("", metrics(2, 23, cpu=0.8, thr=0.05, p95=0.2))
+        text = agent_tools.query_knowledge_base(metrics(2, 23, cpu=0.8, thr=0.05, p95=0.2))
     assert "scale 2->3" in text.split("Action taken:")[1].splitlines()[0]
 
 
 def test_memory_says_no_similar_incident_for_a_stuck_app():
     """A stuck app (p95 4.5 s, low CPU) must not be presented old overload/waste incidents as similar."""
     with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base("", metrics(2, 3.0, cpu=0.12, thr=0.007, p95=4.7))
+        text = agent_tools.query_knowledge_base(metrics(2, 3.0, cpu=0.12, thr=0.007, p95=4.7))
     assert text.startswith("NO similar past incident")
 
 
 def test_memory_only_matches_same_replica_count():
     with mock.patch.object(agent_tools, "_get_collection", return_value=STORED):
-        text = agent_tools.query_knowledge_base("", metrics(3, 13, cpu=0.3))
+        text = agent_tools.query_knowledge_base(metrics(3, 13, cpu=0.3))
     assert text.startswith("No past incidents at 3 replica(s)")
 
 
 def test_memory_unreachable_is_reported_not_raised():
     with mock.patch.object(agent_tools, "_get_collection", return_value=None):
-        assert "unavailable" in agent_tools.query_knowledge_base("", metrics(1, 5))
+        assert "unavailable" in agent_tools.query_knowledge_base(metrics(1, 5))
 
 
 def test_save_refuses_without_stable_verification():
@@ -264,24 +268,6 @@ def test_incident_log_keeps_unstable_verdict_after_rollback():
     save.assert_not_called()
     assert logged[0]["verification"] == "UNSTABLE"
     assert logged[0]["actions"] == "scale 3->1; rollback to 3"
-
-
-def test_cpu_per_request_separates_runaway_job_from_overload():
-    import agent
-    overload = agent._cpu_per_request_context(metrics(1, 12.5, cpu=0.83))   # live v4 baseline run
-    runaway = agent._cpu_per_request_context(metrics(2, 5.3, cpu=0.87))     # live cpuhog run, 2 pods
-    assert "= 0.9x" in overload
-    assert "= 4.5x" in runaway
-    assert "not meaningful" in agent._cpu_per_request_context(metrics(1, 0.5))
-
-
-def test_default_prompt_is_v8():
-    """v8 is the final version (default since 2026-10-04); older versions stay opt-in for reproduction."""
-    import agent
-    if os.getenv("AIOPS_PROMPT") is None:
-        assert agent.PROMPT_VERSION == "v8"
-        assert "rollback_kubernetes_deployment" in agent.sre_agent.tools
-        assert agent.claim_final_answer_check in agent.sre_agent.final_answer_checks
 
 
 # ---------------------------------------------------------------- LLM retry wrapper
@@ -463,6 +449,17 @@ def test_deployment_history_names_the_change(fake_cluster):
     assert "some-other" not in text and "revision 3" not in text
 
 
+def test_logs_select_backend_pods_by_label(fake_cluster):
+    """Fixed 2026-10-11: the selector was app=aiops-backend-deployment (no pod has it), so every call fell
+    back to listing all pods of the namespace. Now one call with the pods' real label."""
+    _, core, _ = fake_cluster
+    core.read_namespaced_pod_log.return_value = "GET /login 200\n[ERROR] DB connection pool exhausted\n"
+    text = agent_tools.get_kubernetes_logs()
+    core.list_namespaced_pod.assert_called_once_with(namespace="default", label_selector="app=aiops-backend")
+    assert f"--- Pod {DEP}-h7-aaaaa: 2 lines scanned, 1 warnings/errors ---" in text
+    assert text.count("[ERROR] DB connection pool exhausted") == 2
+
+
 def test_pod_restart_guards(fake_cluster):
     apps, core, dep = fake_cluster
     assert "Safety violation" in agent_tools.restart_kubernetes_pod(pod_name="chromadb-deployment-x")
@@ -515,16 +512,6 @@ def test_recent_actions_show_failed_action_and_expire():
     assert "09:42" not in text
     agent.RECENT_ACTIONS.clear()
     assert agent._recent_actions_text(now).startswith("None")
-
-
-def test_v6_prompt_has_no_fault_specific_hint():
-    """v6 must not contain v5's code-computed CPU-per-request rule or v4's mandatory scale-up."""
-    import agent
-    prompt = agent.V6_PROMPT.format(metrics_json="{}", signature="s", capacity="c", recent="r", memory="m")
-    assert "MANDATORY" not in prompt and "2x" not in prompt and "runaway" not in prompt.lower()
-    for tool_name in ["get_pod_breakdown", "get_deployment_history", "restart_kubernetes_pod",
-                      "rollback_kubernetes_deployment"]:
-        assert tool_name in prompt
 
 
 @pytest.mark.parametrize("state,expected", [

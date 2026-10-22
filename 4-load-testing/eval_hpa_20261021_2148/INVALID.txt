@@ -1,0 +1,6 @@
+INVALID (relabelled hpa-INVALID on 2026-10-22 00:55; kept for the record, excluded from every table).
+The cpuhog pod of the run before (eval_cpuhog_rules_20261021_2126: aiops-backend-deployment-7bd64cb5cc-qlx97,
+hogged at 21:33, never restarted by the rule baseline) survived the reset: run_experiment.sh restarted pods only
+for fault runs. Prometheus per-pod CPU of qlx97: 0.7-1.0 core for the whole run, 0.71 with no load at 22:30.
+HPA then measured a hogged pod plus a healthy one, stayed at 2 replicas under 30 VUs: 1050 s SLO violation.
+Fixed in run_experiment.sh (every run now starts with a rolling restart); re-run by campaign_rerun.sh.

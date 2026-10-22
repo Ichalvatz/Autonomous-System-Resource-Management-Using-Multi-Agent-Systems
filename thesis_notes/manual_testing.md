@@ -3,8 +3,10 @@
 Πώς τρέχεις και ελέγχεις μόνος σου κάθε σενάριο, βήμα-βήμα. Όλες οι εντολές από τη ρίζα του repo
 (`~/Documents/LLM_AGENT`), σε macOS / zsh. Χρειάζεσαι **3 τερματικά**: (1) agent, (2) φορτίο k6, (3) εντολές/παρατήρηση.
 
-> **Σημαντικό:** όσο τρέχουν οι αυτόματες ουρές πειραμάτων (`pgrep -fl "queue|run_experiment"`), **μην** κάνεις
-> χειροκίνητες δοκιμές: δύο controllers στο ίδιο deployment «μάχονται» και χαλάνε και τα δύο.
+> **Σημαντικό:** όσο τρέχουν αυτόματα πειράματα (`pgrep -fl "full_campaign|campaign_rerun|queue|run_experiment"`),
+> **μην** κάνεις χειροκίνητες δοκιμές: δύο controllers στο ίδιο deployment «μάχονται» και χαλάνε και τα δύο.
+>
+> Θες ολόκληρη τη σύγκριση (agent + όλα τα baselines, όλα τα σενάρια) με μία εντολή; Πήγαινε στην **ενότητα 9**.
 
 ---
 
@@ -19,7 +21,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://prometheus.aiops/-/ready     # 2
 
 source .venv/bin/activate
 export GEMINI_API_KEY=...        # το κλειδί σου (το .env ΔΕΝ φορτώνεται αυτόματα)
-.venv/bin/python3 -m pytest 3-ai-agent/tests -q        # 68 passed
+.venv/bin/python3 -m pytest 3-ai-agent/tests -q        # 83 passed
 ```
 
 ### Επαναφορά σε καθαρή κατάσταση (πριν από κάθε σενάριο)
@@ -45,7 +47,7 @@ kubectl rollout status $D
 ## 1. Ξεκίνα τον agent (τερματικό 1)
 
 ```bash
-python 3-ai-agent/anomaly_detector.py        # η τελική έκδοση (v8, default)
+python 3-ai-agent/anomaly_detector.py        # η τελική έκδοση (v8.1, η μόνη στον κώδικα)
 # χωρίς LLM, μόνο ο ανιχνευτής (δεν αγγίζει το cluster):
 python 3-ai-agent/anomaly_detector.py --dry-run
 ```
@@ -55,18 +57,20 @@ python 3-ai-agent/anomaly_detector.py --dry-run
 
 **Εφεδρικό μοντέλο:** από 4/10 είναι default το `gemini/gemini-2.5-flash` (ίδιο κλειδί): αν το κύριο μοντέλο αποτύχει
 4 φορές (503 «high demand», κενές απαντήσεις), ο agent συνεχίζει με αυτό. `AIOPS_FALLBACK_MODEL=off` για να το κλείσεις
-(έτσι έτρεξαν όλα τα μετρημένα runs).
+(έτσι έτρεξαν τα μετρημένα runs του v8, 3–4/10· στην καμπάνια της 21–22/10 ήταν ανοιχτό και χρησιμοποιήθηκε σε 2 από τα
+12 runs, σημειωμένα στην αναφορά). Αν το κύριο μοντέλο απαντά τώρα: `python 4-load-testing/llm_ready.py` (3 κλήσεις, το
+κλειδί δεν τυπώνεται).
 (Ελέγχθηκε 2026-10-03: απαντά σε ~0.6 s. Το `gemini-2.5-flash-lite` έχει αποσυρθεί, το pro δίνει 429 στο δωρεάν tier.)
 
 Επιλογές: `AIOPS_MEMORY=off` (χωρίς μνήμη), `AIOPS_ACT_GUARD=off` (χωρίς τους φραγμούς: και τους τρεις στο v8),
-`AIOPS_PROMPT=v4|v5|v6|v7` (παλιές εκδόσεις, για σύγκριση).
+Οι παλιές εκδόσεις (v4–v7) δεν είναι πια στον κώδικα· πώς ξανατρέχουν: `thesis_notes/removed_and_archived.md`.
 
 **Τι να παρακολουθείς (τερματικό 3):**
 ```bash
 kubectl get pods -l app=aiops-backend -w                       # pods που έρχονται/φεύγουν
 kubectl get deploy aiops-backend-deployment -w                 # replicas
 tail -f 3-ai-agent/incident_log.csv                            # κάθε περιστατικό: ενέργειες, ετυμηγορία, χρόνοι
-python 4-load-testing/analyze_agent_steps.py llm v8            # (μετά) βήμα-βήμα ανάλυση των περιστατικών των runs
+python 4-load-testing/analyze_agent_steps.py llm-v8.1 v8.1      # (μετά) βήμα-βήμα ανάλυση των περιστατικών των runs
 ```
 Και στο browser: `http://grafana.aiops` ή `http://prometheus.aiops/graph` με π.χ.
 `histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app="aiops-backend"}[1m])) by (le))`.
@@ -76,10 +80,10 @@ python 4-load-testing/analyze_agent_steps.py llm v8            # (μετά) βή
 ## 2. Σενάριο: κανονικό φορτίο (κλιμάκωση πάνω και κάτω)
 
 ```bash
-k6 run 4-load-testing/baseline_eval.js     # 38 λεπτά, το μετρημένο σενάριο
-k6 run 4-load-testing/baseline.js          # 22 λεπτά, η δική σου πιο γρήγορη εκδοχή
+k6 run 4-load-testing/k6/baseline.js      # 38 λεπτά, το μετρημένο σενάριο
+k6 run 4-load-testing/k6/demo.js          # 22 λεπτά, η δική σου πιο γρήγορη εκδοχή
 ```
-**Τι πρέπει να δεις (baseline_eval.js):**
+**Τι πρέπει να δεις (k6/baseline.js):**
 | Λεπτό | Φορτίο | Αναμενόμενο |
 |---|---|---|
 | 0–5 | 5 χρήστες | καμία ενέργεια (1 pod) |
@@ -87,7 +91,7 @@ k6 run 4-load-testing/baseline.js          # 22 λεπτά, η δική σου �
 | ~14–17 | 30 χρήστες | `scale 2->3` → STABLE |
 | ~22–26 | 14 χρήστες | σπατάλη → `scale 3->2` |
 | ~30–34 | 5 χρήστες | `scale 2->1` |
-Ο agent (v8) σε αυτά συνήθως **δεν** χρειάζεται tools παρατήρησης (τα υπολογισμένα γεγονότα λένε «CPU ανά αίτημα ≈ 1×»).
+Ο agent (v8.1) σε αυτά συνήθως **δεν** χρειάζεται tools παρατήρησης (τα υπολογισμένα γεγονότα λένε «CPU ανά αίτημα ≈ 1×»).
 Χρήστες: p95 < 0.35 s σχεδόν όλη την ώρα.
 
 ---
@@ -96,7 +100,7 @@ k6 run 4-load-testing/baseline.js          # 22 λεπτά, η δική σου �
 
 ```bash
 # τερματικό 2: σταθερό φορτίο 8 χρηστών
-k6 run 4-load-testing/fault_load.js
+k6 run 4-load-testing/k6/stuck.js
 # τερματικό 3, μετά από ~3 λεπτά: «σπάσε» κάθε pod
 for p in $(kubectl get pods -l app=aiops-backend -o name); do
   kubectl exec $p -- wget -qO- --post-data='' http://127.0.0.1:3001/chaos/stuck; echo; done
@@ -111,7 +115,7 @@ for p in $(kubectl get pods -l app=aiops-backend -o name); do
 ## 4. Σενάριο: runaway background job (cpuhog)
 
 ```bash
-k6 run 4-load-testing/fault_load.js        # τερματικό 2
+k6 run 4-load-testing/k6/cpuhog.js        # τερματικό 2
 for p in $(kubectl get pods -l app=aiops-backend -o name); do      # τερματικό 3, μετά από ~3'
   kubectl exec $p -- wget -qO- --post-data='' http://127.0.0.1:3001/chaos/cpuhog; echo; done
 ```
@@ -128,7 +132,7 @@ running`) → `restart_kubernetes_deployment()` → STABLE.
 ## 5. Σενάριο: κακή αλλαγή ρύθμισης (badconfig)
 
 ```bash
-k6 run 4-load-testing/fault_load.js        # τερματικό 2
+k6 run 4-load-testing/k6/badconfig.js     # τερματικό 2
 kubectl set env deploy/aiops-backend-deployment FEATURE_LOGIN_AUDIT=true    # τερματικό 3, μετά από ~3'
 ```
 **Τι πρέπει να δεις:** κάθε login ~0.35 s, CPU ανά αίτημα ~5× σε **όλα** τα pods, logs χωρίς σφάλματα. Αφύπνιση →
@@ -181,3 +185,120 @@ RULES_RESTART=on python 3-ai-agent/rule_scaler.py       # rules v2 (με καν�
 **Μνήμη:** για να ξεκινήσεις από άδεια μνήμη, κράτα πρώτα αντίγραφο:
 `python 3-ai-agent/memory_snapshot.py save my_backup.json` και μετά `python reset_chroma.py` (σβήνει τα πάντα).
 Επαναφορά: `python 3-ai-agent/memory_snapshot.py restore my_backup.json`.
+
+---
+
+## 9. Ολόκληρη η σύγκριση με μία εντολή (η καμπάνια)
+
+Έτσι μετρήθηκε το v8.1 στις 21–22/10/2026 (`4-load-testing/campaign-2026-10-21.md`). Το ίδιο script ξαναχρησιμοποιείται
+για κάθε μελλοντική έκδοση του agent (π.χ. άλλο LLM) ή δεύτερη εφαρμογή.
+
+**Τι τρέχει:** 26 runs, το καθένα μέσω του `run_experiment.sh`:
+1. καθαρή επαναφορά: rolling restart, 1 pod (ή 3 για static-3) και 2' αδράνεια·
+2. ξεκινά **μία** στρατηγική·
+3. τρέχει το k6 του σεναρίου (το fault μπαίνει στο λεπτό 4)·
+4. σταματά τη στρατηγική και βαθμολογεί το run.
+
+| Ποιος | Σενάρια | Runs |
+|---|---|---|
+| agent (`llm-v8.1`) | stuck, cpuhog, badconfig, κανονικό φορτίο | 3 × 4 = 12 (μνήμη off στα faults, on στο κανονικό) |
+| HPA, rules, rules-v2 | τα ίδια 4 | 3 × 4 = 12 |
+| static-1, static-3 | κανονικό φορτίο | 2 |
+
+Τα runs του agent και των baselines εναλλάσσονται. Διάρκεια ~13 ώρες: ~45' κάθε κανονικό φορτίο, ~22' κάθε fault, 3'
+αδράνεια ανάμεσα.
+
+### 9.1 Πριν ξεκινήσεις (έλεγχος)
+```bash
+pgrep -fl "full_campaign|campaign_rerun|run_experiment|anomaly_detector|rule_scaler"   # τίποτα δεν πρέπει να τρέχει
+kubectl get pods -A | grep -v Running        # μόνο η κεφαλίδα
+kubectl top pods                             # δουλεύει = υπάρχει metrics-server (το χρειάζεται το HPA)
+pmset -g batt | head -1                      # "AC Power" (στη μπαταρία το macOS κόβει CPU: άλλα νούμερα)
+.venv/bin/python3 -m pytest 3-ai-agent/tests -q     # 83 passed
+.venv/bin/python3 4-load-testing/llm_ready.py       # "answered 3/3" (αν όχι, η καμπάνια τρέχει πρώτα baselines)
+```
+Κλείσε Safari, antivirus κ.λπ.: ο φόρτος του host αλλάζει την CPU ανά αίτημα (CLAUDE.md, «Host load matters»). Άφησε το
+laptop **ανοιχτό και στο ρεύμα**: το script κρατά τον υπολογιστή ξύπνιο (`caffeinate`), αλλά αν πάει στη μπαταρία κάθε run
+περιμένει να ξαναμπεί στην πρίζα. **Μην αλλάξεις κώδικα του agent, μοντέλο ή k6 όσο τρέχει.** Η αναφορά συγκρίνει τα sha256
+στην αρχή και στο τέλος και γράφει «ΟΧΙ, άλλαξαν: …» αν άλλαξε κάτι.
+
+### 9.2 Ξεκίνα
+```bash
+nohup ./4-load-testing/full_campaign.sh campaign-$(date +%F) > 4-load-testing/campaign.nohup 2>&1 &
+# επιλογές: LLM_RUNS=1 (1 run ανά σενάριο, ~6 ώρες) · MAX_WAIT_H=8 (πόσο περιμένει το LLM όταν μείνουν μόνο runs του agent)
+```
+Το όνομα (TAG) μπαίνει στη στήλη `notes` κάθε γραμμής των CSV· έτσι η αναφορά ξεχωρίζει τα runs αυτής της καμπάνιας.
+
+### 9.3 Παρακολούθηση
+```bash
+T=campaign-2026-10-21                                      # το TAG σου
+grep -v "^[0-9a-f]\{64\}" 4-load-testing/$T.log | tail     # start/end κάθε run, αναμονές για LLM ή ρεύμα
+tail -40 4-load-testing/$T.log.runs                        # η βαθμολογία του τελευταίου run
+.venv/bin/python3 4-load-testing/campaign_report.py $T | less   # η αναφορά ως τώρα (δεν γράφει τίποτα)
+tail -f 4-load-testing/eval_*_$(date +%Y%m%d)_*/controller.log  # τι κάνει τώρα ο controller (για τον agent: κάθε βήμα)
+```
+| Γραμμή στο log | Σημαίνει |
+|---|---|
+| `llm_ready: … not ready (ServiceUnavailableError, try 1)` | το κύριο μοντέλο δεν απαντά· τρέχει baseline στη θέση του |
+| `only agent runs left and the primary model is unavailable` | ξαναδοκιμάζει κάθε 5', ως `MAX_WAIT_H` |
+| `on battery: waiting for AC power` | βάλε το laptop στην πρίζα |
+| `end … (exit 0)` | το run τελείωσε και βαθμολογήθηκε |
+
+**Σταμάτημα:** `pkill -f full_campaign.sh; pkill -TERM -f run_experiment.sh`. Τα runs που τελείωσαν μένουν στα CSV.
+
+### 9.4 Τα αποτελέσματα
+| Αρχείο | Τι έχει |
+|---|---|
+| `4-load-testing/<TAG>.md` | **η αναφορά**: έλυσε ο agent κάθε σενάριο (σωστή ενέργεια στην 1η αφύπνιση, ανάκαμψη, χρόνοι), πίνακες ανά σενάριο για όλες τις μεθόδους, κάθε περιστατικό του agent με τη ρίζα που έγραψε, χρήση εφεδρικού μοντέλου, αρνήσεις φραγμών, άκυρα runs |
+| `4-load-testing/comparison.md`, `comparison*_timelines.png` | όλα τα runs όλων των εκδόσεων, στατιστικά (permutation, Fisher) και χρονογραμμές |
+| `4-load-testing/evaluation_results*.csv` | μία γραμμή ανά run (`notes` = TAG, `run_dir` = ο φάκελός του) |
+| `4-load-testing/eval_<σενάριο>_<μέθοδος>_<ώρα>/` (κανονικό φορτίο: `eval_<μέθοδος>_<ώρα>/`) | `controller.log` (κάθε βήμα του agent ή των rules), `k6.log` (τι ένιωσαν οι χρήστες), `experiment.log` (πότε μπήκε το fault, σε ποιο pod), `series.json` (οι χρονοσειρές), `score.txt` |
+| `3-ai-agent/incident_log.csv` | κάθε αφύπνιση του agent: μετρικές, ενέργειες, ετυμηγορία, κλήσεις LLM, επαναλήψεις, fallback, δευτερόλεπτα |
+
+**Ο έλεγχος που κάνει η αναφορά για κάθε run του agent:**
+- **κανονικό φορτίο:** 0 s παραβίαση SLO, 4 κλιμακώσεις, όλες STABLE·
+- **stuck και cpuhog:** restart στην 1η αφύπνιση και STABLE·
+- **badconfig:** rollback στην 1η αφύπνιση και STABLE.
+
+Τα runs των άλλων μεθόδων συγκρίνονται με το `recovery_s` (για το cpuhog με το `cpu_recovery_s`, γιατί εκεί το p95 του
+server ξεγελά, βλ. §4).
+
+**Το Prometheus κρατά μόνο 10 ημέρες.** Γι' αυτό κάθε run σώζει τις χρονοσειρές του στο `series.json`. Μην σβήσεις τους
+φακέλους `eval_*`: είναι το μόνο αντίγραφο.
+
+### 9.5 Όταν ένα run είναι άκυρο ή θες επιπλέον runs
+1. **Στο CSV άλλαξε την ετικέτα** σε `<μέθοδος>-INVALID`, π.χ. `hpa` → `hpa-INVALID`. Το run μένει καταγεγραμμένο, αλλά
+   βγαίνει από πίνακες και στατιστικά. Γράψε στον φάκελό του ένα `INVALID.txt` με την αιτία.
+2. **Ξανάτρεξέ το** με το ίδιο TAG. Αν τρέχει ακόμα η καμπάνια, ο επόμενος περιμένει να τελειώσει:
+   ```bash
+   nohup ./4-load-testing/campaign_rerun.sh <TAG> baseline:hpa stuck:llm > /dev/null 2>&1 &
+   # αν τρέχει ήδη άλλο campaign_rerun: AFTER_PID=<το pid του> nohup ./4-load-testing/campaign_rerun.sh …
+   ```
+   Τα runs του agent (`:llm`) περιμένουν, όπως και στην καμπάνια, να απαντήσει το κύριο μοντέλο. Στο τέλος ξαναβγαίνουν
+   οι αναφορές.
+
+**Δύο περιπτώσεις από τις 21–22/10:**
+- **Ένα run κληρονόμησε το fault του προηγούμενου.** Το reset έκανε restart μόνο στα fault runs, και ένα κολλημένο pod
+  πέρασε στο επόμενο run κανονικού φορτίου. Διορθώθηκε στο `run_experiment.sh`.
+- **Σε 2 runs αποφάσισε και το εφεδρικό μοντέλο.** Ο κανόνας μας, που τον ορίσαμε πριν δούμε τον τρίτο γύρο: ένα
+  επιπλέον run μόνο με το κύριο μοντέλο για κάθε τέτοιο run. Τα runs με το εφεδρικό **μένουν** και αναφέρονται χωριστά·
+  δεν πετάμε αποτελέσματα που δεν μας αρέσουν.
+
+### 9.6 Ένα μόνο run με το χέρι
+```bash
+SCENARIO=stuck AIOPS_MEMORY=off ./4-load-testing/run_experiment.sh llm δοκιμή   # σενάρια: baseline|stuck|cpuhog|badconfig
+RULES_RESTART=on SCENARIO=badconfig ./4-load-testing/run_experiment.sh rules      # rules-v2
+SCENARIO=cpuhog ./4-load-testing/run_experiment.sh hpa                            # ή rules, static-1, static-3
+```
+Το δεύτερο όρισμα μπαίνει στη στήλη `notes`. Η ετικέτα (`LABEL=`) είναι by default `llm-v8.1` ή το όνομα της μεθόδου.
+
+### 9.7 Παγίδες που μάθαμε
+- **Ποτέ δύο στρατηγικές μαζί.** Κλιμακώνουν το ίδιο deployment.
+- **`pgrep -f full_campaign.sh` βρίσκει και τον εαυτό του.** Αν φτιάξεις δικό σου βρόχο αναμονής, μετά βρίσκει και κάθε
+  shell που έχει αυτό το όνομα στη γραμμή εντολών του, οπότε ο βρόχος δεν τελειώνει ποτέ. Περίμενε με βάση το PID:
+  `while kill -0 <pid>; do sleep 60; done`.
+- **Αν αλλάξεις ένα script ενώ τρέχει,** γράψε το νέο σε άλλο αρχείο και κάνε `mv`. Το bash διαβάζει τα scripts κομμάτι
+  κομμάτι, και μια επεξεργασία στη θέση τους μπορεί να σπάσει το αντίγραφο που τρέχει. Το `full_campaign.sh` είναι
+  προστατευμένο: όλο του το σώμα είναι ένα μπλοκ `{ … }`.
+- **Το Gemini έχει ώρες με συνεχή 503.** Η καμπάνια το χειρίζεται μόνη της. Αν κάποιο run χρησιμοποίησε εφεδρικό μοντέλο,
+  δες την 9.5.

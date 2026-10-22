@@ -1,0 +1,77 @@
+📏 Rule-based scaler v2 (with restart rules). Safe rps per replica count: {1: 11.13, 2: 20.88, 3: 27.47}
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+[00:25:21] rps 2.6 cpu 0.09 thr 0.4% p95 0.185s reps 1 -> target 1
+[00:25:31] rps 3.7 cpu 0.30 thr 1.8% p95 0.181s reps 1 -> target 1
+[00:25:41] rps 5.0 cpu 0.42 thr 2.8% p95 0.168s reps 1 -> target 1
+[00:25:51] rps 6.2 cpu 0.49 thr 3.2% p95 0.156s reps 1 -> target 1
+[00:26:01] rps 7.1 cpu 0.51 thr 3.6% p95 0.149s reps 1 -> target 1
+[00:26:11] rps 7.2 cpu 0.41 thr 3.7% p95 0.141s reps 1 -> target 1
+[00:26:21] rps 7.3 cpu 0.45 thr 4.2% p95 0.095s reps 1 -> target 1
+[00:26:31] rps 7.2 cpu 0.52 thr 4.1% p95 0.091s reps 1 -> target 1
+[00:26:41] rps 7.2 cpu 0.43 thr 4.1% p95 0.091s reps 1 -> target 1
+[00:26:51] rps 7.3 cpu 0.52 thr 3.8% p95 0.090s reps 1 -> target 1
+[00:27:01] rps 7.3 cpu 0.52 thr 4.1% p95 0.090s reps 1 -> target 1
+[00:27:11] rps 7.3 cpu 0.52 thr 4.3% p95 0.098s reps 1 -> target 1
+[00:27:21] rps 7.2 cpu 0.52 thr 4.3% p95 0.142s reps 1 -> target 1
+[00:27:31] rps 7.2 cpu 0.51 thr 4.3% p95 0.155s reps 1 -> target 1
+[00:27:41] rps 7.1 cpu 0.51 thr 3.9% p95 0.170s reps 1 -> target 1
+[00:27:51] rps 7.0 cpu 0.50 thr 3.9% p95 0.174s reps 1 -> target 1
+[00:28:01] rps 6.9 cpu 0.50 thr 4.0% p95 0.179s reps 1 -> target 1
+[00:28:11] rps 7.0 cpu 0.50 thr 3.6% p95 0.181s reps 1 -> target 1
+[00:28:21] rps 7.0 cpu 0.43 thr 3.6% p95 0.176s reps 1 -> target 1
+[00:28:31] rps 7.1 cpu 0.51 thr 2.4% p95 0.163s reps 1 -> target 1
+[00:28:41] rps 7.2 cpu 0.52 thr 1.9% p95 0.153s reps 1 -> target 1
+[00:28:51] rps 7.2 cpu 0.35 thr 1.8% p95 0.144s reps 1 -> target 1
+[00:29:01] rps 7.2 cpu 0.45 thr 2.4% p95 0.147s reps 1 -> target 1
+[00:29:12] rps 6.9 cpu 0.62 thr 3.9% p95 0.193s reps 1 -> target 1
+[00:29:22] rps 6.2 cpu 0.69 thr 5.5% p95 0.336s reps 1 -> target 2
+[00:29:32] rps 5.5 cpu 0.73 thr 6.2% p95 0.431s reps 1 -> target 2
+[00:29:42] rps 5.1 cpu 0.85 thr 7.6% p95 0.458s reps 1 -> target restart [R2 runaway (CPU per request 0.168 > 2x healthy)]
+[00:29:52] rps 4.4 cpu 0.92 thr 8.8% p95 0.472s reps 1 -> target restart [R2 runaway (CPU per request 0.206 > 2x healthy)]
+[00:30:02] rps 4.2 cpu 0.76 thr 8.8% p95 0.477s reps 1 -> target restart [R2 runaway (CPU per request 0.181 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[00:30:02] RULE ACTION (R2 runaway (CPU per request 0.181 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[00:30:12] rps 3.3 cpu 0.90 thr 5.4% p95 0.477s reps 1 -> target restart [R2 runaway (CPU per request 0.277 > 2x healthy)]
+[00:30:22] rps 4.6 cpu 0.70 thr 3.8% p95 0.458s reps 1 -> target restart [R2 runaway (CPU per request 0.153 > 2x healthy)]
+[00:30:32] rps 4.9 cpu 0.79 thr 4.7% p95 0.435s reps 1 -> target restart [R2 runaway (CPU per request 0.162 > 2x healthy)]
+[00:30:42] rps 5.4 cpu 0.73 thr 5.5% p95 0.363s reps 1 -> target 2
+[00:30:52] rps 5.6 cpu 0.29 thr 9.4% p95 0.146s reps 1 -> target 2
+[00:31:02] rps 6.8 cpu 0.51 thr 6.5% p95 0.144s reps 1 -> target 2
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=1 to=2 cooldown=30s
+[00:31:02] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 2 replicas in namespace 'default'.
+[00:31:12] rps 6.9 cpu 0.38 thr 4.3% p95 0.137s reps 1 -> target 1
+[00:32:52] rps 7.3 cpu 0.24 thr 1.5% p95 0.099s reps 2 -> target 1
+[00:33:02] rps 7.3 cpu 0.28 thr 1.1% p95 0.096s reps 2 -> target 1
+[00:33:12] rps 7.3 cpu 0.25 thr 1.6% p95 0.093s reps 2 -> target 1
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=2 to=1 cooldown=30s
+[00:33:12] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 1 replicas in namespace 'default'.
+[00:34:53] rps 7.0 cpu 0.50 thr 5.6% p95 0.158s reps 1 -> target 2
+[00:35:03] rps 7.2 cpu 0.51 thr 3.1% p95 0.149s reps 1 -> target 1
+[00:35:13] rps 7.2 cpu 0.51 thr 3.3% p95 0.139s reps 1 -> target 1
+[00:35:23] rps 7.3 cpu 0.52 thr 5.1% p95 0.095s reps 1 -> target 2
+[00:35:33] rps 7.3 cpu 0.52 thr 4.2% p95 0.090s reps 1 -> target 1
+[00:35:43] rps 7.3 cpu 0.39 thr 3.6% p95 0.090s reps 1 -> target 1
+[00:35:53] rps 7.2 cpu 0.51 thr 4.0% p95 0.090s reps 1 -> target 1
+[00:36:03] rps 7.2 cpu 0.39 thr 3.4% p95 0.090s reps 1 -> target 1
+[00:36:13] rps 7.3 cpu 0.52 thr 4.4% p95 0.090s reps 1 -> target 1
+[00:36:23] rps 7.3 cpu 0.43 thr 3.4% p95 0.090s reps 1 -> target 1
+[00:36:33] rps 7.4 cpu 0.52 thr 4.2% p95 0.090s reps 1 -> target 1
+[00:36:43] rps 7.4 cpu 0.43 thr 4.2% p95 0.090s reps 1 -> target 1
+[00:36:53] rps 7.3 cpu 0.52 thr 4.3% p95 0.089s reps 1 -> target 1
+[00:37:03] rps 7.3 cpu 0.52 thr 5.9% p95 0.089s reps 1 -> target 2
+[00:37:13] rps 7.2 cpu 0.52 thr 6.3% p95 0.090s reps 1 -> target 2
+[00:37:23] rps 7.2 cpu 0.43 thr 6.3% p95 0.090s reps 1 -> target 2
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=1 to=2 cooldown=30s
+[00:37:23] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 2 replicas in namespace 'default'.
+[00:39:04] rps 7.3 cpu 0.26 thr 0.9% p95 0.100s reps 2 -> target 1
+[00:39:14] rps 7.3 cpu 0.23 thr 0.8% p95 0.098s reps 2 -> target 1
+[00:39:24] rps 7.3 cpu 0.26 thr 1.0% p95 0.096s reps 2 -> target 1
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=2 to=1 cooldown=30s
+[00:39:24] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 1 replicas in namespace 'default'.
+
+⏹️ Rule-based scaler stopped.

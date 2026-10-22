@@ -1,6 +1,7 @@
 #!/bin/bash
-# One comparable experiment: clean reset -> start ONE scaling strategy -> baseline.js
-# (~40 min, 5→20→30→14→5 VUs) -> stop the strategy -> score with evaluate_run.py.
+# One comparable experiment: clean reset -> start ONE scaling strategy -> the scenario's k6 script
+# (4-load-testing/k6/<SCENARIO>.js; baseline: 38 min, 5→20→30→14→5 VUs) -> stop the strategy -> score with
+# evaluate_run.py.
 #
 # Usage (from repo root):  ./4-load-testing/run_experiment.sh <strategy> [notes]
 #   llm       anomaly detector + LLM agent (needs GEMINI_API_KEY, read from .env if unset)
@@ -10,22 +11,23 @@
 #   static-3  no autoscaling, 3 replicas (the opposite)
 #
 # SCENARIO=stuck ./4-load-testing/run_experiment.sh <strategy>   (default SCENARIO=baseline)
-#   fault_load.js (8 VUs, 16 min, 1-replica band); at t=4 min every backend pod gets
+#   k6/stuck.js (8 VUs, 16 min, 1-replica band); at t=4 min every backend pod gets
 #   POST /chaos/stuck (requests wait 3 s on a "leaked DB connection", no CPU; only a
 #   restart fixes it). Scored with recovery time into evaluation_results_stuck.csv.
-# SCENARIO=cpuhog: same load and timing, but POST /chaos/cpuhog (a background job that
+# SCENARIO=cpuhog: k6/cpuhog.js, same load and timing, but POST /chaos/cpuhog (a background job that
 #   never ends and blocks the event loop 600 ms at a time: CPU ~0.9, throttling ~18%,
 #   p95 ~0.5 s at only ~4 rps). Looks like overload, but only a restart fixes it. Added
 #   after prompt v4 was frozen: a blind test. Results in evaluation_results_cpuhog.csv.
-# SCENARIO=badconfig: same load and timing, but at t=4 min "someone else" deploys a config
+# SCENARIO=badconfig: k6/badconfig.js, same load and timing, but at t=4 min "someone else" deploys a config
 #   change (kubectl set env FEATURE_LOGIN_AUDIT=true): every login then runs a synchronous
 #   PBKDF2 (1.5M iterations). The bad state lives in the deployment, not in the processes:
 #   restarts and new pods do not help, only a rollback does. Designed after prompt v6 was
 #   frozen (2026-10-03): the blind test for v6. Results in evaluation_results_badconfig.csv.
-# Env switches passed through to the controller: AIOPS_PROMPT (v4|v5|v6|v7|v8, default v8),
-#   AIOPS_MEMORY (on|off), RULES_RESTART (on = rules v2), LABEL (result label). Without LABEL the
-#   label follows the version: llm-<prompt> (plain "llm" only for v4, the label its measured runs
-#   carry), rules-v2 when RULES_RESTART=on, else the strategy name.
+# Env switches passed through to the controller: AIOPS_MEMORY (on|off), AIOPS_ACT_GUARD (on|off),
+#   RULES_RESTART (on = rules v2), LABEL (result label). Without LABEL: llm-v8.1 for the agent (since
+#   2026-10-11: prompt v8 with corrected tool descriptions; the measured v8 runs are labelled llm-v8),
+#   rules-v2 when RULES_RESTART=on, else the strategy name. Older agent versions
+#   (and their labels llm, llm-v5 ... llm-v7) were removed on 2026-10-10: thesis_notes/removed_and_archived.md.
 # Output: 4-load-testing/eval_[stuck_]<strategy>_<time>/ + one row in the results CSV
 # The whole body is one { ... } block: bash parses it completely before running, so editing
 # this file while it runs cannot break the running copy (an edit at 14:44 on 2026-10-03 did).
@@ -35,22 +37,18 @@ cd "$(dirname "$0")/.."
 STRATEGY=$1
 NOTES=${2:-}
 SCENARIO=${SCENARIO:-baseline}
-# "llm" in the results CSVs means prompt v4 (the 2026-10-01 runs): a run of any other prompt must
-# not land in that group (before 2026-10-07 a default-v8 run without LABEL would have).
 DEFAULT_LABEL=$STRATEGY
-if [ "$STRATEGY" = "llm" ]; then
-  PROMPT=$(echo "${AIOPS_PROMPT:-v8}" | tr '[:upper:]' '[:lower:]')
-  [ "$PROMPT" != "v4" ] && DEFAULT_LABEL="llm-$PROMPT"
-fi
+[ "$STRATEGY" = "llm" ] && DEFAULT_LABEL=llm-v8.1
 [ "$STRATEGY" = "rules" ] && [ "$(echo "${RULES_RESTART:-off}" | tr '[:upper:]' '[:lower:]')" = "on" ] && DEFAULT_LABEL=rules-v2
 LABEL=${LABEL:-$DEFAULT_LABEL}
+# One k6 script per scenario (since 2026-10-11; until then baseline_eval.js and one fault_load.js for all
+# three faults, with the same load as k6/stuck.js, k6/cpuhog.js and k6/badconfig.js).
 case "$SCENARIO" in
-  baseline) K6_SCRIPT=4-load-testing/baseline_eval.js; PREFIX=""; RESULTS=4-load-testing/evaluation_results.csv ;;
-  stuck)    K6_SCRIPT=4-load-testing/fault_load.js; PREFIX="stuck_"; RESULTS=4-load-testing/evaluation_results_stuck.csv ;;
-  cpuhog)   K6_SCRIPT=4-load-testing/fault_load.js; PREFIX="cpuhog_"; RESULTS=4-load-testing/evaluation_results_cpuhog.csv ;;
-  badconfig) K6_SCRIPT=4-load-testing/fault_load.js; PREFIX="badconfig_"; RESULTS=4-load-testing/evaluation_results_badconfig.csv ;;
+  baseline) PREFIX=""; RESULTS=4-load-testing/evaluation_results.csv ;;
+  stuck|cpuhog|badconfig) PREFIX="${SCENARIO}_"; RESULTS=4-load-testing/evaluation_results_${SCENARIO}.csv ;;
   *) echo "unknown SCENARIO $SCENARIO"; exit 1 ;;
 esac
+K6_SCRIPT=4-load-testing/k6/$SCENARIO.js
 FAULT_AFTER_SECONDS=240
 OUT="4-load-testing/eval_${PREFIX}${STRATEGY}_$(date +%Y%m%d_%H%M)"
 mkdir -p "$OUT"
@@ -85,14 +83,16 @@ caffeinate -dimsu -w $$ &
 stop_all_controllers
 START_REPLICAS=1; [ "$STRATEGY" = "static-3" ] && START_REPLICAS=3
 log "scenario=$SCENARIO strategy=$STRATEGY: reset to $START_REPLICAS replica(s)"
-log "env: AIOPS_PROMPT=${AIOPS_PROMPT:-default(v8)} AIOPS_MEMORY=${AIOPS_MEMORY:-on} RULES_RESTART=${RULES_RESTART:-off} LABEL=$LABEL"
+log "env: AIOPS_MEMORY=${AIOPS_MEMORY:-on} AIOPS_ACT_GUARD=${AIOPS_ACT_GUARD:-on} RULES_RESTART=${RULES_RESTART:-off} LABEL=$LABEL"
 # Undo a bad-config change an earlier run may have left behind (no-op if absent).
 if kubectl get $DEPLOY -o jsonpath='{.spec.template.spec.containers[0].env[*].name}' | grep -qw FEATURE_LOGIN_AUDIT; then
   log "removing FEATURE_LOGIN_AUDIT left by an earlier run"
   kubectl set env $DEPLOY FEATURE_LOGIN_AUDIT- >/dev/null
 fi
-# Fresh pods for the fault scenario: a pod left stuck by an earlier run stays stuck.
-[ "$SCENARIO" != "baseline" ] && kubectl rollout restart $DEPLOY >/dev/null
+# Fresh pods for every run: a pod left stuck or hogged by an earlier run (by a strategy that never restarts)
+# stays that way. Until 2026-10-22 00:55 only fault runs restarted, so the normal-load HPA run of
+# campaign-2026-10-21 (21:48) inherited the cpuhog pod of the run before it (relabelled hpa-INVALID).
+kubectl rollout restart $DEPLOY >/dev/null
 kubectl scale $DEPLOY --replicas=$START_REPLICAS >/dev/null
 kubectl rollout status $DEPLOY --timeout=180s >/dev/null
 # Fresh rollout history for every run (added 2026-10-03 15:30, moved after the restart 15:45):

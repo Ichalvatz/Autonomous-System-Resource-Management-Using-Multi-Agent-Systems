@@ -148,6 +148,10 @@ pod είναι υγιές. Αν το πρόβλημα ζει στο **template**
 | Χαμηλή κίνηση | < 0.8 rps → παράλειψη | χωρίς κίνηση δεν υπάρχει νόημα |
 | Cooldown μετά τον agent | 60 s | να φανεί το αποτέλεσμα της ενέργειας |
 
+**Τυφλό σημείο της πύλης των 0.8 rps:** τα αιτήματα μετριούνται όταν τελειώνουν. Μια εφαρμογή που δεν απαντά καθόλου
+δίνει «σιωπή», όπως μια εφαρμογή χωρίς χρήστες, και ο ανιχνευτής την προσπερνά (Α21). Τη λογική των πυλών την ελέγχουν
+τα unit tests στο `3-ai-agent/tests/test_detector.py`.
+
 ### 4.7 Από πού έρχονται τα δεδομένα εκπαίδευσης (`5-ml-training/`)
 1. `capacity_discovery.py`: για 1, 2, 3 pods ανεβάζει το φορτίο ώσπου CPU > 0.75, throttling > 8% ή p95 > 1 s.
    Βγάζει τον **πίνακα χωρητικότητας** (safe rps ανά αριθμό pods: 11.1 / 20.9 / 27.5).
@@ -186,7 +190,7 @@ tools είναι απλές συναρτήσεις Python που ο agent μπο
 **Γιατί έτσι (απόφαση Α1):** στην πρώτη έκδοση το LLM έκανε και επαλήθευση και αποθήκευση· ένα 503 του Gemini μετά από
 ένα scale άφησε την ενέργεια ανεπαλήθευτη. Τώρα το LLM μόνο αποφασίζει και ενεργεί· τα υπόλοιπα είναι εγγυημένα.
 
-### 5.4 Τα tools του τελικού agent (v8)
+### 5.4 Τα tools του τελικού agent (v8 / v8.1)
 | Tool | Είδος | Φραγμοί (κώδικας) |
 |---|---|---|
 | `get_pod_breakdown()` | παρατήρηση: ανά pod CPU, throttling, rps, CPU ανά αίτημα, p95, 5xx, event-loop lag, μνήμη, restarts, ηλικία, revision | – |
@@ -198,6 +202,12 @@ tools είναι απλές συναρτήσεις Python που ο agent μπο
 | `rollback_kubernetes_deployment(revision=0)` | ενέργεια | μόνο revisions του ίδιου deployment, cooldown 60 s |
 Namespace και deployment είναι καρφωμένα στον κώδικα: το LLM δεν μπορεί να αγγίξει τίποτε άλλο.
 
+**Οι περιγραφές (docstrings) είναι μέρος του prompt.** Το smolagents βάζει το docstring κάθε tool αυτούσιο στο system
+prompt· είναι ό,τι ξέρει το LLM για το εργαλείο. Στις 2026-10-11 (v8.1) διορθώθηκαν 4 που αντέφασκαν με το prompt ή ήταν
+ανακριβείς (π.χ. το scale έλεγε «increased latency → scale up»). Κάθε περιγραφή λέει πλέον τι αλλάζει η ενέργεια και τι
+αφήνει ίδιο. **Restart deployment και restart pod** μένουν χωριστά: το πρώτο αντικαθιστά όλα τα pods και γράφει νέο
+revision, το δεύτερο μόνο ένα pod, χωρίς να αγγίξει το deployment (αναλυτικά: `design_decisions.md` Α20).
+
 ### 5.5 Η εξέλιξη του prompt (και τι μας δίδαξε κάθε έκδοση)
 | Έκδοση | Τι άλλαξε | Τι δείξαμε |
 |---|---|---|
@@ -206,7 +216,8 @@ Namespace και deployment είναι καρφωμένα στον κώδικα:
 | v5 | + ο κώδικας υπολογίζει «CPU ανά αίτημα = N×» με κανόνα «≫ → logs → restart» | Cpuhog 2/2, αλλά «του δώσαμε την απάντηση» |
 | v6 | Αντί για κανόνα: εργαλεία έρευνας (ανά pod, ιστορικό, logs) + restart pod + rollback + πρόσφατες ενέργειες | **Τυφλό badconfig: rollback στην 1η αφύπνιση (2/2)**· cpuhog/stuck λυμένα. Αλλά **παλινδρόμηση στην κλιμάκωση** (δεν έκανε scale-down) και μία «προ-δέσμευση» |
 | v7 | v6 + βήμα ταξινόμησης με υπολογισμένα γεγονότα + οι ρητές βαθμίδες του v4 για τη χωρητικότητα + 2 φραγμοί | Demo 2/2 σωστό (η παλινδρόμηση διορθώθηκε), cpuhog 2/2, stuck 1/1. Αλλά 2 restart **χωρίς πλήρη διάγνωση** (badconfig #2: restart πριν δει το ιστορικό· demo #2: restart για στιγμιαία αιχμή) |
-| **v8 (τελική)** | v7 + 3ος φραγμός «διάγνωση πριν από διακοπτική ενέργεια» + restart μόνο με στοιχεία για την αιτία, έλεγχος «τι άλλαξε» πρώτα | **6/6 runs σωστά με την πρώτη αφύπνιση**: demo ×2 (0 s παραβίαση, 71.0/71.7 replica-min), cpuhog, stuck, badconfig ×2 |
+| **v8 (τελική, μετρημένη)** | v7 + 3ος φραγμός «διάγνωση πριν από διακοπτική ενέργεια» + restart μόνο με στοιχεία για την αιτία, έλεγχος «τι άλλαξε» πρώτα | **6/6 runs σωστά με την πρώτη αφύπνιση**: demo ×2 (0 s παραβίαση, 71.0/71.7 replica-min), cpuhog, stuck, badconfig ×2 |
+| v8.1 (κώδικας από 2026-10-11) | ίδιο prompt με το v8· διορθωμένες περιγραφές 4 tools (Α20) | δεν έχει μετρηθεί ακόμα |
 
 ### 5.6 Το prompt του v8 σε μία σελίδα
 1. **Υπολογισμένα γεγονότα** (κώδικας, γιατί τα LLM κάνουν λάθη στην αριθμητική): «X rps σε M pods· ο ελάχιστος αριθμός
@@ -257,12 +268,13 @@ Namespace και deployment είναι καρφωμένα στον κώδικα:
 
 | Σενάριο | Τι γίνεται (κώδικας) | Συμπτώματα | Σωστή ενέργεια | Γιατί οι άλλες αποτυγχάνουν |
 |---|---|---|---|---|
-| **baseline** (`baseline_eval.js`, 38') | 5 → 20 → 30 → 14 → 5 χρήστες | CPU/throttling ανεβαίνουν με την κίνηση· σπατάλη όταν πέφτει | 1→2→3→2→1 pods | static-1: παραβίαση SLO· static-3: 3× κόστος |
+| **baseline** (`k6/baseline.js`, 38') | 5 → 20 → 30 → 14 → 5 χρήστες | CPU/throttling ανεβαίνουν με την κίνηση· σπατάλη όταν πέφτει | 1→2→3→2→1 pods | static-1: παραβίαση SLO· static-3: 3× κόστος |
 | **stuck** (`POST /chaos/stuck`, `app.js`) | κάθε αίτημα περιμένει 3 s ένα «χαμένο» DB connection, χωρίς CPU | p95 ~3 s, CPU χαμηλή, logs: `DB connection pool exhausted` | **restart** (η κακή κατάσταση ζει στη διεργασία) | scale: τα νέα pods αραιώνουν αλλά το παλιό μένει κολλημένο· HPA δεν βλέπει τίποτα (CPU χαμηλή) |
 | **cpuhog** (`POST /chaos/cpuhog`) | ένα background job μπλοκάρει το event loop 600 ms κάθε φορά, για πάντα | CPU ~0.9, throttling ~18%, μόλις ~4 rps· CPU ανά αίτημα 3×· event-loop lag ~1 s· logs: `job "rebuild-search-index" still running` | **restart** | scale: μοιάζει με υπερφόρτωση, αλλά το job μένει· μετά το scale-up το p95 του server «φαίνεται» υγιές (τυφλό σημείο), οπότε μοιάζει με σπατάλη → ταλάντωση |
 | **badconfig** (`kubectl set env FEATURE_LOGIN_AUDIT=true`, `services/authService.js`) | κάθε login τρέχει σύγχρονο PBKDF2 1.5M επαναλήψεων (~0.35 s CPU) | CPU ανά αίτημα ~5× σε **όλα** τα pods, p95 > 1 s, logs χωρίς σφάλματα, ιστορικό: «revision N πριν 1': env FEATURE_LOGIN_AUDIT=true added» | **rollback** (η κακή κατάσταση ζει στο template) | restart: τα νέα pods γεννιούνται χαλασμένα· scale: κάθε login κοστίζει 0.35 s, άρα το p95 δεν επανέρχεται με κανέναν αριθμό pods |
 
-Στο harness (`4-load-testing/run_experiment.sh`) τα faults εγχέονται στο t = 4 λεπτά, με 8 σταθερούς χρήστες (`fault_load.js`, 16').
+Στο harness (`4-load-testing/run_experiment.sh`) τα faults εγχέονται στο t = 4 λεπτά, με 8 σταθερούς χρήστες για 16' (`k6/stuck.js`, `k6/cpuhog.js`, `k6/badconfig.js`: ίδιο φορτίο, ένα αρχείο ανά
+σενάριο· ως 2026-10-11 ένα κοινό `fault_load.js`). Το fault το βάζει το harness, όχι το k6.
 
 ---
 
@@ -282,7 +294,7 @@ Namespace και deployment είναι καρφωμένα στον κώδικα:
 ### 8.1 Το harness
 `run_experiment.sh <strategy>`: καθαρή αρχή (restart, 1 pod, καθαρό ιστορικό revisions, 2' αδράνεια) → **μία**
 στρατηγική κάθε φορά (δύο controllers στο ίδιο deployment «μάχονται») → φορτίο k6 → fault (αν υπάρχει) → τέλος →
-βαθμολόγηση από το ιστορικό του Prometheus (`evaluate_run.py`). Οι ουρές (`v8_queue.sh` κ.λπ.) τρέχουν πολλά runs στη σειρά.
+βαθμολόγηση από το ιστορικό του Prometheus (`evaluate_run.py`). Οι ουρές (`queue.sh`· οι παλιές, π.χ. `archive/v8_queue.sh`) τρέχουν πολλά runs στη σειρά.
 
 ### 8.2 Οι μετρικές
 | Μετρική | Ορισμός | Τι δείχνει |
@@ -314,15 +326,15 @@ badconfig (πέτυχε).
 | Αρχείο | Τι να κοιτάξεις |
 |---|---|
 | `3-ai-agent/anomaly_detector.py` | `QUERIES` (οι 5 μετρικές), `evaluate` (ποιο μοντέλο κρίνει), `run_monitor` (πύλες, αφύπνιση) |
-| `3-ai-agent/agent.py` | `RetryingLiteLLMModel`, κατασκευή `sre_agent` ανά έκδοση, `_computed_facts`, `V7_PROMPT`, `trigger_ai_agent` (η ροή της 5.3), `_rollback_failed_scale_down` |
-| `3-ai-agent/agent_tools.py` | τα tools (ενότητα «Prompt v6»), `verify_metrics_stabilization`, `query_knowledge_base` / `_metric_distance`, οι φραγμοί (τέλος αρχείου) |
+| `3-ai-agent/agent.py` | `RetryingLiteLLMModel`, `sre_agent` (τα 7 tools και οι φραγμοί), `_computed_facts`, `AGENT_PROMPT`, `trigger_ai_agent` (η ροή της 5.3), `_rollback_failed_scale_down` |
+| `3-ai-agent/agent_tools.py` | ο πίνακας των 7 tools στην κορυφή, οι ενότητες «Observation tools» και «Action tools», `verify_metrics_stabilization`, `query_knowledge_base` / `_metric_distance`, οι φραγμοί (τέλος αρχείου) |
 | `3-ai-agent/rule_scaler.py` | `decide` (rules v1), `restart_reason` (R1/R2 του rules-v2) |
 | `5-ml-training/train_health_baseline.py` | `make_ocsvm` (μετασχηματισμοί + μοντέλο), `build_probes` |
 | `2-target-app/software-backend/app.js` | `/chaos/stuck`, `/chaos/cpuhog` |
 | `2-target-app/software-backend/services/authService.js` | `FEATURE_LOGIN_AUDIT` (badconfig) |
 | `4-load-testing/run_experiment.sh` | το harness (reset, έγχυση faults, βαθμολόγηση) |
 | `4-load-testing/analyze_agent_steps.py` | βήμα-βήμα τι έκανε ο agent σε κάθε περιστατικό |
-| `3-ai-agent/tests/` | 68 unit tests: διάβασέ τα ως «προδιαγραφή» του τι πρέπει να κάνει κάθε κομμάτι |
+| `3-ai-agent/tests/` | 83 unit tests: διάβασέ τα ως «προδιαγραφή» του τι πρέπει να κάνει κάθε κομμάτι |
 
 ---
 

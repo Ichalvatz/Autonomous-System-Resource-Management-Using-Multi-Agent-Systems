@@ -9,6 +9,7 @@ evaluate_run.py) and writes:
 Usage (from repo root):  python 4-load-testing/compare_results.py
 """
 import glob
+import json
 import os
 from datetime import datetime
 
@@ -21,7 +22,7 @@ from evaluate_run import QUERIES, SLO_P95, fetch  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.join(HERE, "evaluation_results.csv")
-ORDER = ["static-1", "static-3", "hpa", "rules", "rules-v2", "llm-v3", "llm-nomem", "llm", "llm-v5", "llm-v6", "llm-v7", "llm-v8"]
+ORDER = ["static-1", "static-3", "hpa", "rules", "rules-v2", "llm-v3", "llm-nomem", "llm", "llm-v5", "llm-v6", "llm-v7", "llm-v8", "llm-v8.1"]
 COLUMNS = [
     ("slo_violation_s", "SLO violation (s, p95 > 0.35 s)"),
     ("pressure_s", "Pressure (s, CPU > 0.75 or throttling > 5%)"),
@@ -72,13 +73,30 @@ def table(df, columns=COLUMNS):
     return "\n".join(lines)
 
 
+def run_series(r):
+    """A run's desired replicas, rps and p95: from its own series.json (written by evaluate_run.py since
+    2026-10-21), else from Prometheus, which keeps only 10 days."""
+    run_dir = r.get("run_dir")
+    if isinstance(run_dir, str) and run_dir:
+        path = os.path.join(os.path.dirname(HERE), run_dir, "series.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                return {k: {int(t): v for t, v in s.items()} for k, s in json.load(f).items()}
+    start = datetime.strptime(r["start"], "%Y-%m-%d %H:%M:%S").timestamp()
+    end = datetime.strptime(r["end"], "%Y-%m-%d %H:%M:%S").timestamp()
+    return {k: fetch(QUERIES[k], start, end) for k in ["desired_replicas", "throughput", "latency_p95"]}
+
+
 def timelines(df, out_name="comparison_timelines.png", stuck=False):
-    runs = df.reset_index(drop=True)
-    fig, axes = plt.subplots(len(runs), 1, figsize=(11, 2.3 * len(runs)), sharex=True, squeeze=False)
-    for i, r in runs.iterrows():
+    # Runs whose history is gone (older than 10 days, no series.json) are left out, so a regeneration never
+    # draws empty panels; the full figures of the runs up to 2026-10-04 are in archive/timelines_until_2026-10-04/.
+    drawn = [(r, run_series(r)) for _, r in df.reset_index(drop=True).iterrows()]
+    drawn = [(r, s) for r, s in drawn if s.get("desired_replicas")]
+    if not drawn:
+        return f"{out_name}: no run with data, figure not rewritten"
+    fig, axes = plt.subplots(len(drawn), 1, figsize=(11, 2.3 * len(drawn)), sharex=True, squeeze=False)
+    for i, (r, s) in enumerate(drawn):
         start = datetime.strptime(r["start"], "%Y-%m-%d %H:%M:%S").timestamp()
-        end = datetime.strptime(r["end"], "%Y-%m-%d %H:%M:%S").timestamp()
-        s = {k: fetch(QUERIES[k], start, end) for k in ["desired_replicas", "throughput", "latency_p95"]}
         ax = axes[i][0]
         t = sorted(s["desired_replicas"])
         minutes = [(x - start) / 60 for x in t]
@@ -112,16 +130,16 @@ def timelines(df, out_name="comparison_timelines.png", stuck=False):
 FAULTS = [
     # (csv, timeline png, heading, explanation)
     ("evaluation_results_stuck.csv", "comparison_stuck_timelines.png",
-     "Stuck-dependency fault (fault_load.js, 8 VUs; POST /chaos/stuck at t = 4 min)",
+     "Stuck-dependency fault (k6/stuck.js, 8 VUs; POST /chaos/stuck at t = 4 min)",
      "Only a restart fixes the fault; adding replicas dilutes it."),
     ("evaluation_results_cpuhog.csv", "comparison_cpuhog_timelines.png",
-     "Runaway background job (fault_load.js, 8 VUs; POST /chaos/cpuhog at t = 4 min)",
+     "Runaway background job (k6/cpuhog.js, 8 VUs; POST /chaos/cpuhog at t = 4 min)",
      "Blind test: designed after prompt v4 was frozen. Looks like CPU overload (CPU ~0.9, throttling ~18%) "
      "at a third of the capacity rps; only a restart fixes it. **The server-side p95 rows are not meaningful here**: "
      "the app's histogram does not time requests queued behind a blocked event loop, so once the hogged pods "
      "get few requests the server p95 looks healthy while users wait. Judge by \"Fault gone after\" and the k6 rows."),
     ("evaluation_results_badconfig.csv", "comparison_badconfig_timelines.png",
-     "Bad configuration change (fault_load.js, 8 VUs; FEATURE_LOGIN_AUDIT=true deployed at t = 4 min)",
+     "Bad configuration change (k6/badconfig.js, 8 VUs; FEATURE_LOGIN_AUDIT=true deployed at t = 4 min)",
      "Blind test for prompt v6: designed after v6 was frozen (2026-10-03 14:28). Every login runs a synchronous "
      "PBKDF2 (1.5M iterations, ~0.35 s of CPU per login), so CPU per request rises ~5x in EVERY pod and no "
      "replica count meets the p95 objective. The bad state lives in the "
@@ -154,11 +172,16 @@ def statistics(df, faults):
     llm_cost = df.loc[df["label"].isin(["llm", "llm-v3"]), "replica_minutes"].astype(float).tolist()
     # Final version alone, and every LLM version with the v4-style capacity tiers (v3, v4, v7, v8) pooled,
     # against HPA and against the rule scaler (rules and rules-v2 share the same scaling rules).
+    # v8.1 (2026-10-11) = the v8 prompt with corrected tool descriptions: reported alone and pooled with v8.
     final_cost = df.loc[df["label"] == "llm-v8", "replica_minutes"].astype(float).tolist()
-    tiers_cost = df.loc[df["label"].isin(["llm", "llm-v3", "llm-v7", "llm-v8"]), "replica_minutes"].astype(float).tolist()
+    v81_cost = df.loc[df["label"] == "llm-v8.1", "replica_minutes"].astype(float).tolist()
+    v8_all_cost = df.loc[df["label"].isin(["llm-v8", "llm-v8.1"]), "replica_minutes"].astype(float).tolist()
+    tiers_cost = df.loc[df["label"].isin(["llm", "llm-v3", "llm-v7", "llm-v8", "llm-v8.1"]),
+                        "replica_minutes"].astype(float).tolist()
     rules_cost = df.loc[df["label"].isin(["rules", "rules-v2"]), "replica_minutes"].astype(float).tolist()
     hpa_cost = df.loc[df["label"] == "hpa", "replica_minutes"].astype(float).tolist()
-    for name, a in [("LLM v8 (final)", final_cost), ("LLM v3+v4+v7+v8", tiers_cost)]:
+    for name, a in [("LLM v8", final_cost), ("LLM v8.1 (final)", v81_cost), ("LLM v8+v8.1", v8_all_cost),
+                    ("LLM v3+v4+v7+v8+v8.1", tiers_cost)]:
         for other, b in [("hpa", hpa_cost), ("rules+rules-v2", rules_cost)]:
             if len(a) >= 2 and b:
                 lines.append(f"- Scaling, replica-minutes, {name} (n={len(a)}, mean {sum(a)/len(a):.1f}) < {other} "
@@ -181,15 +204,15 @@ def statistics(df, faults):
             lines.append(f"- {name} ({col}): recovered, all LLM versions {table_[0][0]}/{sum(table_[0])} vs baselines "
                          f"{table_[1][0]}/{sum(table_[1])}: one-sided Fisher exact p = {p:.4f}")
         # The tool-using agents pooled (v6 and v7 share the same tools) against all baselines pooled.
-        tools = st["label"].isin(["llm-v6", "llm-v7", "llm-v8"])
+        tools = st["label"].isin(["llm-v6", "llm-v7", "llm-v8", "llm-v8.1"])
         if tools.any() and (~is_llm).any():
             t = [[int((rec & tools).sum()), int((~rec & tools).sum())],
                  [int((rec & ~is_llm).sum()), int((~rec & ~is_llm).sum())]]
             p = fisher_exact(t, alternative="greater").pvalue
-            lines.append(f"  - tool-using agents (v6+v7+v8) {t[0][0]}/{sum(t[0])} vs all baselines {t[1][0]}/{sum(t[1])}: "
-                         f"Fisher p = {p:.4f}")
-        # The tool-using agents (v6 = blind-tested, v8 = final) against each baseline separately.
-        for agent_label in ["llm-v6", "llm-v8"]:
+            lines.append(f"  - tool-using agents (v6+v7+v8+v8.1) {t[0][0]}/{sum(t[0])} vs all baselines "
+                         f"{t[1][0]}/{sum(t[1])}: Fisher p = {p:.4f}")
+        # The tool-using agents (v6 = blind-tested, v8 = measured final, v8.1 = code) against each baseline.
+        for agent_label in ["llm-v6", "llm-v8", "llm-v8.1"]:
             ag = st["label"] == agent_label
             if not ag.any():
                 continue
@@ -243,7 +266,7 @@ def agent_actions(row, incidents):
 def main():
     df = pd.read_csv(RESULTS)
     df = df[~df["label"].str.contains("INVALID")]  # contaminated runs stay in the CSV for the record
-    md = ["# Scaling strategy comparison (baseline.js, 5→20→30→14→5 VUs)", "",
+    md = ["# Scaling strategy comparison (k6/baseline.js, 5→20→30→14→5 VUs)", "",
           f"Generated {datetime.now():%Y-%m-%d %H:%M} from `evaluation_results.csv` ({len(df)} runs).", "",
           table(df), "",
           "Lower is better except correct provisioning. `llm` rows with notes mentioning an older agent version are",

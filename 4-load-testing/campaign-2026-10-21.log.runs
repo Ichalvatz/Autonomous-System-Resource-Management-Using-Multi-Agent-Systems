@@ -1,0 +1,809 @@
+[20:43:25] scenario=badconfig strategy=rules: reset to 1 replica(s)
+[20:43:25] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=on LABEL=rules-v2
+[20:43:31] rollout history reset: 1 ReplicaSet(s) left
+[20:45:36] k6 badconfig.js started
+[21:01:39] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-21 20:45:36
+               end: 2026-10-21 21:01:39
+      duration_min: 16.1
+   slo_violation_s: 700
+        pressure_s: 700
+          p95_mean: 1.071
+           p95_p99: 1.403
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_rules_20261021_2043
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 1
+     agent_actions: 
+      rule_actions: 20:50:44 restart R2 | 20:51:44 restart R2 | 20:52:44 restart R2 | 20:53:44 restart R2 | 20:54:45 restart R2 | 20:55:45 restart R2 | 20:56:45 restart R2 | 20:57:45 restart R2 | 20:58:45 restart R2 | 20:59:45 restart R2 | 21:00:56 restart R2
+[21:02:00] done
+[21:05:06] scenario=stuck strategy=hpa: reset to 1 replica(s)
+[21:05:06] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=hpa
+[21:05:06] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[21:05:12] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[21:07:17] k6 stuck.js started
+[21:23:19] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-21 21:07:17
+               end: 2026-10-21 21:23:19
+      duration_min: 16.0
+   slo_violation_s: 710
+        pressure_s: 80
+          p95_mean: 3.625
+           p95_p99: 4.85
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_hpa_20261021_2105
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 710
+    cpu_recovery_s: 0
+max_replicas_after_fault: 1
+     agent_actions: 
+      rule_actions: 
+[21:23:40] done
+[21:26:49] scenario=cpuhog strategy=rules: reset to 1 replica(s)
+[21:26:49] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=rules
+[21:26:55] rollout history reset: 1 ReplicaSet(s) left
+[21:29:00] k6 cpuhog.js started
+[21:45:03] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-21 21:29:00
+               end: 2026-10-21 21:45:03
+      duration_min: 16.1
+   slo_violation_s: 190
+        pressure_s: 500
+          p95_mean: 0.276
+           p95_p99: 0.654
+   replica_minutes: 22.5
+      under_prov_s: 0
+       over_prov_s: 380
+  correct_prov_pct: 59.6
+     scale_actions: 6
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_rules_20261021_2126
+      fault_at_min: 4.0
+        recovery_s: 90
+slo_violation_after_fault_s: 190
+    cpu_recovery_s: never
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 21:33:38 scale->2 | 21:35:39 scale->1 | 21:37:39 scale->2 | 21:39:59 scale->1 | 21:42:00 scale->2 | 21:44:00 scale->1
+[21:45:23] done
+[21:48:57] scenario=baseline strategy=hpa: reset to 1 replica(s)
+[21:48:57] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=hpa
+[21:49:03] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[21:51:08] k6 baseline.js started
+[22:29:09] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-21 21:51:08
+               end: 2026-10-21 22:29:09
+      duration_min: 38.0
+   slo_violation_s: 1050
+        pressure_s: 1520
+          p95_mean: 0.386
+           p95_p99: 0.697
+   replica_minutes: 75.0
+      under_prov_s: 0
+       over_prov_s: 1240
+  correct_prov_pct: 44.6
+     scale_actions: 1
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_hpa_20261021_2148
+[22:29:30] done
+[22:33:30] scenario=stuck strategy=rules: reset to 1 replica(s)
+[22:33:30] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=on LABEL=rules-v2
+[22:33:36] rollout history reset: 1 ReplicaSet(s) left
+[22:35:41] k6 stuck.js started
+[22:51:42] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-21 22:35:41
+               end: 2026-10-21 22:51:42
+      duration_min: 16.0
+   slo_violation_s: 70
+        pressure_s: 100
+          p95_mean: 0.452
+           p95_p99: 4.721
+   replica_minutes: 20.2
+      under_prov_s: 0
+       over_prov_s: 240
+  correct_prov_pct: 74.7
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_rules_20261021_2233
+      fault_at_min: 4.0
+        recovery_s: 90
+slo_violation_after_fault_s: 70
+    cpu_recovery_s: 0
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 22:40:19 restart R1 | 22:41:29 scale->2 | 22:43:30 scale->1 | 22:46:00 scale->2 | 22:48:01 scale->1
+[22:52:03] done
+[22:55:09] scenario=cpuhog strategy=hpa: reset to 1 replica(s)
+[22:55:09] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=hpa
+[22:55:16] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[22:57:21] k6 cpuhog.js started
+[23:13:23] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-21 22:57:21
+               end: 2026-10-21 23:13:23
+      duration_min: 16.0
+   slo_violation_s: 40
+        pressure_s: 300
+          p95_mean: 0.225
+           p95_p99: 0.38
+   replica_minutes: 27.5
+      under_prov_s: 0
+       over_prov_s: 680
+  correct_prov_pct: 28.4
+     scale_actions: 1
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_hpa_20261021_2255
+      fault_at_min: 4.0
+        recovery_s: 90
+slo_violation_after_fault_s: 40
+    cpu_recovery_s: never
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 
+[23:13:44] done
+[23:17:19] scenario=badconfig strategy=rules: reset to 1 replica(s)
+[23:17:19] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=rules
+[23:17:25] rollout history reset: 1 ReplicaSet(s) left
+[23:19:31] k6 badconfig.js started
+[23:35:32] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-21 23:19:31
+               end: 2026-10-21 23:35:32
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 230
+          p95_mean: 0.426
+           p95_p99: 1.473
+   replica_minutes: 37.8
+      under_prov_s: 0
+       over_prov_s: 770
+  correct_prov_pct: 18.9
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_rules_20261021_2317
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 3
+     agent_actions: 
+      rule_actions: 23:20:38 scale->2 | 23:22:38 scale->1 | 23:24:38 scale->2 | 23:26:39 scale->3
+[23:35:53] done
+[23:39:02] scenario=baseline strategy=rules: reset to 1 replica(s)
+[23:39:02] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=rules
+[23:39:02] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[23:39:09] rollout history reset: 1 ReplicaSet(s) left
+[23:41:14] k6 baseline.js started
+[00:19:15] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-21 23:41:14
+               end: 2026-10-22 00:19:15
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 110
+          p95_mean: 0.113
+           p95_p99: 0.167
+   replica_minutes: 72.5
+      under_prov_s: 40
+       over_prov_s: 210
+  correct_prov_pct: 88.8
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_rules_20261021_2338
+[00:19:36] done
+[00:22:42] scenario=cpuhog strategy=rules: reset to 1 replica(s)
+[00:22:42] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=on LABEL=rules-v2
+[00:22:49] rollout history reset: 1 ReplicaSet(s) left
+[00:24:54] k6 cpuhog.js started
+[00:40:55] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-22 00:24:54
+               end: 2026-10-22 00:40:55
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 210
+          p95_mean: 0.159
+           p95_p99: 0.477
+   replica_minutes: 20.5
+      under_prov_s: 0
+       over_prov_s: 260
+  correct_prov_pct: 72.6
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_rules_20261022_0022
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 140
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 00:30:02 restart R2 | 00:31:02 scale->2 | 00:33:12 scale->1 | 00:37:23 scale->2 | 00:39:24 scale->1
+[00:41:16] done
+[00:44:23] scenario=badconfig strategy=hpa: reset to 1 replica(s)
+[00:44:23] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=hpa
+[00:44:29] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[00:46:34] k6 badconfig.js started
+[01:02:36] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-22 00:46:34
+               end: 2026-10-22 01:02:36
+      duration_min: 16.0
+   slo_violation_s: 700
+        pressure_s: 90
+          p95_mean: 0.379
+           p95_p99: 1.189
+   replica_minutes: 39.0
+      under_prov_s: 0
+       over_prov_s: 700
+  correct_prov_pct: 26.3
+     scale_actions: 2
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_hpa_20261022_0044
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 700
+    cpu_recovery_s: never
+max_replicas_after_fault: 3
+     agent_actions: 
+      rule_actions: 
+[01:02:56] done
+[01:06:37] scenario=stuck strategy=rules: reset to 1 replica(s)
+[01:06:37] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=rules
+[01:06:37] removing FEATURE_LOGIN_AUDIT left by an earlier run
+[01:06:44] rollout history reset: 1 ReplicaSet(s) left
+[01:08:49] k6 stuck.js started
+[01:24:49] k6 finished (exit 0)
+             label: rules
+             start: 2026-10-22 01:08:49
+               end: 2026-10-22 01:24:49
+      duration_min: 16.0
+   slo_violation_s: 710
+        pressure_s: 20
+          p95_mean: 3.581
+           p95_p99: 4.817
+   replica_minutes: 41.2
+      under_prov_s: 0
+       over_prov_s: 820
+  correct_prov_pct: 13.7
+     scale_actions: 2
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_rules_20261022_0106
+      fault_at_min: 4.0
+        recovery_s: never
+slo_violation_after_fault_s: 710
+    cpu_recovery_s: 0
+max_replicas_after_fault: 3
+     agent_actions: 
+      rule_actions: 01:11:06 scale->2 | 01:13:26 scale->3
+[01:25:10] done
+[01:28:34] scenario=baseline strategy=rules: reset to 1 replica(s)
+[01:28:34] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=on LABEL=rules-v2
+[01:28:41] rollout history reset: 1 ReplicaSet(s) left
+[01:30:46] k6 baseline.js started
+[02:08:47] k6 finished (exit 0)
+             label: rules-v2
+             start: 2026-10-22 01:30:46
+               end: 2026-10-22 02:08:47
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 100
+          p95_mean: 0.119
+           p95_p99: 0.183
+   replica_minutes: 72.3
+      under_prov_s: 60
+       over_prov_s: 200
+  correct_prov_pct: 88.4
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_rules_20261022_0128
+[02:09:08] done
+[02:12:16] scenario=baseline strategy=static-1: reset to 1 replica(s)
+[02:12:16] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=static-1
+[02:12:23] rollout history reset: 1 ReplicaSet(s) left
+[02:14:28] k6 baseline.js started
+[02:52:29] k6 finished (exit 0)
+             label: static-1
+             start: 2026-10-22 02:14:28
+               end: 2026-10-22 02:52:29
+      duration_min: 38.0
+   slo_violation_s: 580
+        pressure_s: 1390
+          p95_mean: 0.285
+           p95_p99: 0.71
+   replica_minutes: 38.2
+      under_prov_s: 1380
+       over_prov_s: 0
+  correct_prov_pct: 38.4
+     scale_actions: 0
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_static-1_20261022_0212
+[02:52:50] done
+[02:56:22] scenario=stuck strategy=llm: reset to 1 replica(s)
+[02:56:22] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[02:56:28] rollout history reset: 1 ReplicaSet(s) left
+[02:58:33] k6 stuck.js started
+[03:14:34] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 02:58:33
+               end: 2026-10-22 03:14:34
+      duration_min: 16.0
+   slo_violation_s: 130
+        pressure_s: 290
+          p95_mean: 0.742
+           p95_p99: 4.85
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 88.3
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_llm_20261022_0256
+      fault_at_min: 4.0
+        recovery_s: 140
+slo_violation_after_fault_s: 130
+    cpu_recovery_s: 0
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[03:14:55] done
+[03:17:58] scenario=baseline strategy=static-3: reset to 3 replica(s)
+[03:17:58] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=static-3
+[03:18:06] rollout history reset: 1 ReplicaSet(s) left
+[03:20:11] k6 baseline.js started
+[03:58:12] k6 finished (exit 0)
+             label: static-3
+             start: 2026-10-22 03:20:11
+               end: 2026-10-22 03:58:12
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 0
+          p95_mean: 0.119
+           p95_p99: 0.216
+   replica_minutes: 114.5
+      under_prov_s: 0
+       over_prov_s: 1740
+  correct_prov_pct: 22.3
+     scale_actions: 0
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_static-3_20261022_0317
+[03:58:32] done
+[04:03:31] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[04:03:31] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[04:03:37] rollout history reset: 1 ReplicaSet(s) left
+[04:05:42] k6 cpuhog.js started
+[04:21:44] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 04:05:42
+               end: 2026-10-22 04:21:44
+      duration_min: 16.0
+   slo_violation_s: 130
+        pressure_s: 240
+          p95_mean: 0.222
+           p95_p99: 0.65
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 7
+      agent_s_mean: 77.2
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_llm_20261022_0403
+      fault_at_min: 4.0
+        recovery_s: 170
+slo_violation_after_fault_s: 130
+    cpu_recovery_s: 170
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[04:22:05] done
+[04:25:44] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[04:25:44] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[04:25:50] rollout history reset: 1 ReplicaSet(s) left
+[04:27:55] k6 badconfig.js started
+[04:43:57] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 04:27:55
+               end: 2026-10-22 04:43:57
+      duration_min: 16.0
+   slo_violation_s: 120
+        pressure_s: 310
+          p95_mean: 0.301
+           p95_p99: 1.41
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 45.9
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_llm_20261022_0425
+      fault_at_min: 4.0
+        recovery_s: 140
+slo_violation_after_fault_s: 120
+    cpu_recovery_s: 130
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 185
+      rule_actions: 
+[04:44:17] done
+[04:58:11] scenario=baseline strategy=llm: reset to 1 replica(s)
+[04:58:11] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[04:58:18] rollout history reset: 1 ReplicaSet(s) left
+[05:00:23] k6 baseline.js started
+[05:38:24] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 05:00:23
+               end: 2026-10-22 05:38:24
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 140
+          p95_mean: 0.119
+           p95_p99: 0.229
+   replica_minutes: 71.5
+      under_prov_s: 120
+       over_prov_s: 220
+  correct_prov_pct: 84.8
+     scale_actions: 4
+         incidents: 4
+            stable: 4
+         llm_calls: 13
+      agent_s_mean: 19.6
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_llm_20261022_0458
+[05:38:45] done
+[05:42:16] scenario=stuck strategy=llm: reset to 1 replica(s)
+[05:42:16] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[05:42:23] rollout history reset: 1 ReplicaSet(s) left
+[05:44:28] k6 stuck.js started
+[06:00:29] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 05:44:28
+               end: 2026-10-22 06:00:29
+      duration_min: 16.0
+   slo_violation_s: 270
+        pressure_s: 250
+          p95_mean: 1.445
+           p95_p99: 4.85
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 17
+      agent_s_mean: 201.4
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_llm_20261022_0542
+      fault_at_min: 4.0
+        recovery_s: 290
+slo_violation_after_fault_s: 270
+    cpu_recovery_s: 0
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[06:00:50] done
+[06:15:13] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[06:15:13] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[06:15:19] rollout history reset: 1 ReplicaSet(s) left
+[06:17:24] k6 cpuhog.js started
+[06:33:26] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 06:17:24
+               end: 2026-10-22 06:33:26
+      duration_min: 16.0
+   slo_violation_s: 100
+        pressure_s: 90
+          p95_mean: 0.174
+           p95_p99: 0.468
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 6
+      agent_s_mean: 31.6
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_llm_20261022_0615
+      fault_at_min: 4.0
+        recovery_s: 130
+slo_violation_after_fault_s: 100
+    cpu_recovery_s: 130
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[06:33:46] done
+[06:37:32] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[06:37:32] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[06:37:39] rollout history reset: 1 ReplicaSet(s) left
+[06:39:44] k6 badconfig.js started
+[06:55:45] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 06:39:44
+               end: 2026-10-22 06:55:45
+      duration_min: 16.0
+   slo_violation_s: 120
+        pressure_s: 510
+          p95_mean: 0.29
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 7
+      agent_s_mean: 57.6
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_llm_20261022_0637
+      fault_at_min: 4.0
+        recovery_s: 150
+slo_violation_after_fault_s: 120
+    cpu_recovery_s: 140
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 193
+      rule_actions: 
+[06:56:06] done
+[06:59:33] scenario=baseline strategy=llm: reset to 1 replica(s)
+[06:59:33] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[06:59:40] rollout history reset: 1 ReplicaSet(s) left
+[07:01:45] k6 baseline.js started
+[07:39:46] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 07:01:45
+               end: 2026-10-22 07:39:46
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 220
+          p95_mean: 0.123
+           p95_p99: 0.28
+   replica_minutes: 71.5
+      under_prov_s: 160
+       over_prov_s: 260
+  correct_prov_pct: 81.2
+     scale_actions: 4
+         incidents: 4
+            stable: 4
+         llm_calls: 16
+      agent_s_mean: 32.2
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_llm_20261022_0659
+[07:40:07] done
+[07:43:35] scenario=stuck strategy=llm: reset to 1 replica(s)
+[07:43:35] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[07:43:41] rollout history reset: 1 ReplicaSet(s) left
+[07:45:46] k6 stuck.js started
+[08:01:47] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 07:45:46
+               end: 2026-10-22 08:01:47
+      duration_min: 16.0
+   slo_violation_s: 100
+        pressure_s: 260
+          p95_mean: 0.591
+           p95_p99: 4.85
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 35.9
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_llm_20261022_0743
+      fault_at_min: 4.0
+        recovery_s: 120
+slo_violation_after_fault_s: 100
+    cpu_recovery_s: 0
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[08:02:08] done
+[08:05:31] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[08:05:31] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[08:05:38] rollout history reset: 1 ReplicaSet(s) left
+[08:07:43] k6 cpuhog.js started
+[08:23:44] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 08:07:43
+               end: 2026-10-22 08:23:44
+      duration_min: 16.0
+   slo_violation_s: 60
+        pressure_s: 210
+          p95_mean: 0.147
+           p95_p99: 0.392
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 5
+      agent_s_mean: 11.1
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_llm_20261022_0805
+      fault_at_min: 4.0
+        recovery_s: 100
+slo_violation_after_fault_s: 60
+    cpu_recovery_s: 110
+max_replicas_after_fault: 1
+     agent_actions: restart
+      rule_actions: 
+[08:24:05] done
+[08:27:29] scenario=badconfig strategy=llm: reset to 1 replica(s)
+[08:27:29] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[08:27:35] rollout history reset: 1 ReplicaSet(s) left
+[08:29:41] k6 badconfig.js started
+[08:45:42] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 08:29:40
+               end: 2026-10-22 08:45:42
+      duration_min: 16.0
+   slo_violation_s: 140
+        pressure_s: 380
+          p95_mean: 0.297
+           p95_p99: 1.4
+   replica_minutes: 16.2
+      under_prov_s: 0
+       over_prov_s: 0
+  correct_prov_pct: 100.0
+     scale_actions: 0
+         incidents: 1
+            stable: 1
+         llm_calls: 8
+      agent_s_mean: 67.3
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_badconfig_llm_20261022_0827
+      fault_at_min: 4.0
+        recovery_s: 169
+slo_violation_after_fault_s: 140
+    cpu_recovery_s: 169
+max_replicas_after_fault: 1
+     agent_actions: rollback to revision 201
+      rule_actions: 
+[08:46:03] done
+[08:49:36] scenario=baseline strategy=llm: reset to 1 replica(s)
+[08:49:36] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=llm-v8.1
+[08:49:42] rollout history reset: 1 ReplicaSet(s) left
+[08:51:47] k6 baseline.js started
+[09:29:49] k6 finished (exit 0)
+             label: llm-v8.1
+             start: 2026-10-22 08:51:47
+               end: 2026-10-22 09:29:49
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 190
+          p95_mean: 0.116
+           p95_p99: 0.217
+   replica_minutes: 73.0
+      under_prov_s: 140
+       over_prov_s: 330
+  correct_prov_pct: 79.0
+     scale_actions: 4
+         incidents: 4
+            stable: 4
+         llm_calls: 21
+      agent_s_mean: 64.9
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_llm_20261022_0849
+[09:30:10] done
+[09:36:52] scenario=baseline strategy=hpa: reset to 1 replica(s)
+[09:36:52] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on RULES_RESTART=off LABEL=hpa
+[09:36:59] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[09:39:04] k6 baseline.js started
+[10:17:06] k6 finished (exit 0)
+             label: hpa
+             start: 2026-10-22 09:39:04
+               end: 2026-10-22 10:17:06
+      duration_min: 38.0
+   slo_violation_s: 0
+        pressure_s: 120
+          p95_mean: 0.113
+           p95_p99: 0.167
+   replica_minutes: 79.3
+      under_prov_s: 40
+       over_prov_s: 630
+  correct_prov_pct: 70.1
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_hpa_20261022_0936
+[10:17:26] done

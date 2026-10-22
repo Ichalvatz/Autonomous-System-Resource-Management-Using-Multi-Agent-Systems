@@ -5,7 +5,8 @@
 #   ./4-load-testing/inject.sh badconfig   deploys FEATURE_LOGIN_AUDIT=true (every login ~0.35 s CPU)    (fix: rollback)
 #   ./4-load-testing/inject.sh reset       removes the bad config, rolling restart, 1 replica, waits for the rollout
 #   ./4-load-testing/inject.sh status      replicas, pods, revision, and whether the bad config is present
-# Run a load first in another terminal (k6 run 4-load-testing/fault_load.js) and the agent in a third one.
+# Run the scenario's load first in another terminal (k6 run 4-load-testing/k6/<stuck|cpuhog|badconfig>.js)
+# and the agent in a third one.
 set -u
 cd "$(dirname "$0")/.."
 D=deploy/aiops-backend-deployment

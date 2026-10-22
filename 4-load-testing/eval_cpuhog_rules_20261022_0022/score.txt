@@ -1,0 +1,26 @@
+             label: rules-v2
+             start: 2026-10-22 00:24:54
+               end: 2026-10-22 00:40:55
+      duration_min: 16.0
+   slo_violation_s: 80
+        pressure_s: 210
+          p95_mean: 0.159
+           p95_p99: 0.477
+   replica_minutes: 20.5
+      under_prov_s: 0
+       over_prov_s: 260
+  correct_prov_pct: 72.6
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_cpuhog_rules_20261022_0022
+      fault_at_min: 4.0
+        recovery_s: 110
+slo_violation_after_fault_s: 80
+    cpu_recovery_s: 140
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 00:30:02 restart R2 | 00:31:02 scale->2 | 00:33:12 scale->1 | 00:37:23 scale->2 | 00:39:24 scale->1

@@ -145,7 +145,8 @@ Supersedes the 2026-10-01 numbers above where they differ; full log in `NOTES_20
 
 - **Agent versions:** v6 replaced the code-computed hint of v5 with investigation tools (frozen 2026-10-03 14:28);
   v7 added a classify step and two code guards; **v8 (final, default)** added a third guard (full diagnosis before a
-  disruptive action). v4–v7 stay selectable and byte-identical for reproducibility.
+  disruptive action). Since 2026-10-10 only v8 is in the code; v4–v7 are in git (commit `a1fd3d5`,
+  see `thesis_notes/removed_and_archived.md`).
 - **v8:** 6/6 scenario runs right at the first wake-up (demo ×2: 4/4 scaling actions, 0 s SLO violation, 71.0 / 71.7
   replica-min; stuck restart 120 s; cpuhog restart 130 s; badconfig rollback ×2, 160 / 110 s).
 - **Blind generalization test (badconfig, designed after v6 was frozen):** agents with investigation tools recovered
@@ -154,7 +155,7 @@ Supersedes the 2026-10-01 numbers above where they differ; full log in `NOTES_20
 - **Cost (normal load):** the agent's capacity tiers (v3/v4/v7/v8, n = 9) 71.5 replica-min vs HPA 79.5 (n = 3,
   permutation p = 0.005) and rules 76.5 (n = 4, p = 0.001; a small difference, −6.5%).
 - **Stuck fault:** all LLM versions 13/13 vs baselines 1/6 (only rules-v2, written after seeing it), p = 0.0005.
-- **Engineering:** 74 unit tests; `requirements.txt`; fallback LLM (`gemini-2.5-flash`, after all measurements).
+- **Engineering:** 71 unit tests (74 before the old prompt versions were removed); `requirements.txt`; fallback LLM (`gemini-2.5-flash`, after all measurements).
 - **Limits (stated first):** n = 1–2 per scenario for v7/v8; v7/v8 were designed after seeing all four scenarios
   (only v4 on cpuhog and v6 on badconfig are blind); one laptop node, at most 3 pods, closed-loop load, one LLM provider.
 - **Open:** a blind fault for v8 designed by someone other than the agent's designer (`thesis_notes/manual_testing.md`

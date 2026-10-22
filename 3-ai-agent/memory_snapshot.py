@@ -4,7 +4,7 @@ Save or restore the incident memory (ChromaDB collection "sre_runbooks") as JSON
   python 3-ai-agent/memory_snapshot.py save    <file.json>
   python 3-ai-agent/memory_snapshot.py restore <file.json>   # replaces the WHOLE collection with the file
 
-Used by 4-load-testing/mem_queue2.sh so that every run of the memory experiment starts from the
+Used by 4-load-testing/archive/mem_queue2.sh so that every run of the memory experiment starts from the
 same memory (independent repetitions). Always `save` the current state before a `restore`.
 """
 import json

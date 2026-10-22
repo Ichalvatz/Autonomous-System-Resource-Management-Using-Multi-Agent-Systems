@@ -1,0 +1,168 @@
+# Scaling strategy comparison (baseline.js, 5→20→30→14→5 VUs)
+
+Generated 2026-10-04 04:36 from `evaluation_results.csv` (22 runs).
+
+| Metric | static-1 (n=1) | static-3 (n=1) | hpa (n=3) | rules (n=3) | rules-v2 (n=1) | llm-v3 (n=3) | llm (n=2) | llm-v5 (n=1) | llm-v6 (n=1) | llm-v7 (n=2) | llm-v8 (n=2) | llm-agent-v1 (n=1) | llm-agent-v2 (n=1) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| SLO violation (s, p95 > 0.35 s) | 550 | 0 | 0 ± 0 | 0 ± 0 | 0 | 0 ± 0 | 0 ± 0 | 0 | 0 | 20 ± 28 | 0 ± 0 | 0 | 0 |
+| Pressure (s, CPU > 0.75 or throttling > 5%) | 1540 | 0 | 187 ± 1.6e+02 | 117 ± 5.8 | 130 | 393 ± 45 | 195 ± 21 | 350 | 330 | 195 ± 21 | 230 ± 42 | 240 | 240 |
+| p95 mean (s) | 0.284 | 0.109 | 0.11 ± 0.0038 | 0.111 ± 0.0038 | 0.115 | 0.109 ± 0.0021 | 0.114 ± 0.0021 | 0.114 | 0.122 | 0.131 ± 0.028 | 0.117 ± 0.014 | 0.138 | 0.129 |
+| Replica-minutes (cost) | 38.2 | 114.5 | 79.5 ± 0.2 | 77.7 ± 1 | 72.8 | 71.6 ± 0.17 | 71.5 ± 0 | 73.8 | 69.3 | 71.4 ± 0.85 | 71.3 ± 0.49 | 68.8 | 74 |
+| Correct provisioning (%) | 39.1 | 22.3 | 68.7 ± 0.55 | 77.4 ± 0.71 | 88.8 | 85.9 ± 0.98 | 85.2 ± 1.9 | 80.4 | 75.9 | 83 ± 1.3 | 82.2 ± 4.5 | 83.3 | 86.6 |
+| Under-provisioned (s) | 1370 | 0 | 56.7 ± 5.8 | 13.3 ± 23 | 30 | 103 ± 15 | 110 ± 28 | 100 | 280 | 145 ± 35 | 155 ± 64 | 120 | 20 |
+| Over-provisioned (s) | 0 | 1740 | 647 ± 15 | 493 ± 38 | 220 | 213 ± 5.8 | 220 ± 14 | 340 | 260 | 235 ± 7.1 | 245 ± 35 | 230 | 280 |
+| Scale actions | 0 | 0 | 4 ± 0 | 4 ± 0 | 4 | 4 ± 0 | 4 ± 0 | 4 | 4 | 4 ± 0 | 4 ± 0 | 4 | 4 |
+| LLM calls | – | – | – | – | – | 9 ± 1.7 | 8.5 ± 0.71 | 13 | 22 | 12.5 ± 4.9 | 9.5 ± 0.71 | – | 8 |
+
+Lower is better except correct provisioning. `llm` rows with notes mentioning an older agent version are
+kept for history; see the notes column in the CSV.
+
+# Stuck-dependency fault (fault_load.js, 8 VUs; POST /chaos/stuck at t = 4 min)
+
+19 runs from `evaluation_results_stuck.csv`. Only a restart fixes the fault; adding replicas dilutes it.
+
+| Metric | static-1 (n=1) | hpa (n=2) | rules (n=2) | rules-v2 (n=1) | llm-v3 (n=3) | llm-nomem (n=2) | llm (n=4) | llm-v5 (n=1) | llm-v6 (n=1) | llm-v7 (n=1) | llm-v8 (n=1) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Recovery after fault (s; p95 < 0.35 s held 60 s) | never (1/1) | never (2/2) | never (2/2) | 90 | 270 ± 2.9e+02 | 100 ± 0 | 100 ± 8.2 | 120 | 110 | 280 | 120 |
+| Fault gone after (s; CPU per request ≤ 0.10 held 60 s) | – | – | – | 0 | – | – | – | 0 | 0 | 0 | 0 |
+| SLO violation after fault (s) | 710 | 710 ± 0 | 710 ± 0 | 70 | 250 ± 2.9e+02 | 80 ± 0 | 82.5 ± 5 | 100 | 90 | 290 | 100 |
+| Max replicas after fault | 1 | 1 ± 0 | 3 ± 0 | 2 | 1.67 ± 1.2 | 1 ± 0 | 1 ± 0 | 1 | 1 | 2 | 1 |
+| User-side p95 over the whole run (s, k6) | 3.11 | 3.13 ± 0.035 | 3.12 ± 0.014 | 0.223 | 1.17 ± 1.7 | 0.172 ± 0.0021 | 0.177 ± 0.0041 | 0.178 | 0.191 | 3.1 | 0.171 |
+| Logins completed (k6; closed loop: fewer = users slowed) | 3120 | 3.12e+03 ± 28 | 4.23e+03 ± 19 | 6624 | 5.95e+03 ± 1.1e+03 | 6.61e+03 ± 18 | 6.61e+03 ± 59 | 6487 | 6462 | 5594 | 6551 |
+| Replica-minutes (cost) | 16.2 | 16.2 ± 0 | 37.4 ± 0.21 | 18.2 | 21.5 ± 9.1 | 16.2 ± 0 | 16.2 ± 0 | 16.2 | 16.2 | 20.2 | 16.2 |
+| Scale actions | 0 | 0 ± 0 | 4 ± 0 | 2 | 1.67 ± 2.9 | 0 ± 0 | 0 ± 0 | 0 | 0 | 1 | 0 |
+| Agent incidents | – | – | – | – | 2 ± 1.7 | 1 ± 0 | 1 ± 0 | 1 | 1 | 3 | 1 |
+| Verified STABLE | – | – | – | – | 0.333 ± 0.58 | 1 ± 0 | 1 ± 0 | 1 | 1 | 2 | 1 |
+| LLM calls | – | – | – | – | 7.33 ± 6.7 | 2.5 ± 0.71 | 2.75 ± 0.5 | 5 | 8 | 17 | 6 |
+
+Agent actions per run (each agent wake-up, with its verification verdict):
+
+- llm-v3 10-01 08:07: recovery 100 s; restart (UNSTABLE)
+- llm-v3 10-01 09:32: recovery 100 s; restart (UNSTABLE)
+- llm-v3 10-01 10:37: recovery 610 s; scale 1->2 (UNSTABLE) | scale 2->3 (UNSTABLE) | scale 3->1; rollback to 3 () | restart (STABLE)
+- llm 10-01 10:59: recovery 90 s; restart (STABLE)
+- llm 10-01 11:21: recovery 100 s; restart (STABLE)
+- llm 10-01 12:27: recovery 100 s; restart (STABLE)
+- llm 10-01 12:49: recovery 110 s; restart (STABLE)
+- llm-nomem 10-01 13:55: recovery 100 s; restart (STABLE)
+- llm-nomem 10-01 14:17: recovery 100 s; restart (STABLE)
+- llm-v5 10-01 20:31: recovery 120 s; restart (STABLE)
+- llm-v6 10-03 16:12: recovery 110 s; restart (STABLE)
+- llm-v7 10-03 20:00: recovery 280 s; none () | restart (STABLE) | scale 1->2 (STABLE)
+- llm-v8 10-03 23:25: recovery 120 s; restart (STABLE)
+
+Rule-based actions per run (from the controller log):
+
+- rules-v2 10-03 17:33: recovery 90 s; 17:37:38 restart R1 | 17:39:59 scale->2 | 17:41:59 scale->1
+
+# Runaway background job (fault_load.js, 8 VUs; POST /chaos/cpuhog at t = 4 min)
+
+17 runs from `evaluation_results_cpuhog.csv`. Blind test: designed after prompt v4 was frozen. Looks like CPU overload (CPU ~0.9, throttling ~18%) at a third of the capacity rps; only a restart fixes it. **The server-side p95 rows are not meaningful here**: the app's histogram does not time requests queued behind a blocked event loop, so once the hogged pods get few requests the server p95 looks healthy while users wait. Judge by "Fault gone after" and the k6 rows.
+
+| Metric | hpa (n=1) | rules (n=1) | rules-v2 (n=1) | llm (n=2) | llm-v5 (n=2) | llm-v6 (n=2) | llm-v7 (n=2) | llm-v8 (n=1) | llm-v4-mem (n=2) | llm-v4-mem-indep (n=3) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Recovery after fault (s; p95 < 0.35 s held 60 s) | 0 | 129 | 110 | 54.5 ± 77 | 105 ± 7.1 | 55 ± 78 | 60 ± 85 | 130 | 95 ± 21 | 100 ± 0 |
+| Fault gone after (s; CPU per request ≤ 0.10 held 60 s) | never (1/1) | never (1/1) | 110 | never (2/2) | 115 ± 7.1 | 360 ± 3.5e+02 | 115 ± 21 | 130 | 115 ± 21 | 107 ± 15 |
+| SLO violation after fault (s) | 0 | 130 | 60 | 280 ± 57 | 85 ± 7.1 | 80 ± 28 | 40 ± 57 | 90 | 60 ± 0 | 70 ± 10 |
+| Max replicas after fault | 2 | 3 | 2 | 3 ± 0 | 1 ± 0 | 1.5 ± 0.71 | 1 ± 0 | 1 | 1 ± 0 | 1 ± 0 |
+| User-side p95 over the whole run (s, k6) | 0.739 | 0.863 | 0.342 | 0.961 ± 0.011 | 0.251 ± 0.028 | 0.524 ± 0.38 | 0.413 ± 0.25 | 0.75 | 0.437 ± 0.23 | 0.28 ± 0.023 |
+| Logins completed (k6; closed loop: fewer = users slowed) | 6106 | 5901 | 6620 | 5.78e+03 ± 2.7e+02 | 6.63e+03 ± 48 | 6.35e+03 ± 2.8e+02 | 6.69e+03 ± 28 | 6539 | 6.61e+03 ± 66 | 6.61e+03 ± 11 |
+| Replica-minutes (cost) | 27.5 | 30.2 | 20.2 | 30.6 ± 1.6 | 16.2 ± 0 | 21.2 ± 7.1 | 16.2 ± 0 | 16.2 | 16.2 ± 0 | 16.2 ± 0 |
+| Scale actions | 1 | 8 | 4 | 8.5 ± 0.71 | 0 ± 0 | 0.5 ± 0.71 | 0 ± 0 | 0 | 0 ± 0 | 0 ± 0 |
+| Agent incidents | – | – | – | 5 ± 0 | 1 ± 0 | 3 ± 2.8 | 1 ± 0 | 1 | 1 ± 0 | 1 ± 0 |
+| Verified STABLE | – | – | – | 2 ± 0 | 1 ± 0 | 1.5 ± 0.71 | 1 ± 0 | 1 | 1 ± 0 | 1 ± 0 |
+| LLM calls | – | – | – | 13 ± 1.4 | 5 ± 0 | 10.5 ± 4.9 | 5 ± 0 | 5 | 3.5 ± 2.1 | 3.67 ± 0.58 |
+
+Agent actions per run (each agent wake-up, with its verification verdict):
+
+- llm 10-01 18:31: recovery 0 s; scale 1->2 (STABLE) | scale 2->3 (STABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE)
+- llm 10-01 19:10: recovery 109 s; scale 1->2 (STABLE) | scale 2->3 (STABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE)
+- llm-v5 10-01 19:50: recovery 100 s; restart (STABLE)
+- llm-v5 10-01 20:11: recovery 110 s; restart (STABLE)
+- llm-v4-mem 10-01 22:56: recovery 80 s; restart (STABLE)
+- llm-v4-mem 10-01 23:16: recovery 110 s; restart (STABLE)
+- llm-v4-mem-indep 10-02 00:02: recovery 100 s; restart (STABLE)
+- llm-v4-mem-indep 10-02 00:21: recovery 100 s; restart (STABLE)
+- llm-v4-mem-indep 10-02 00:41: recovery 100 s; restart (STABLE)
+- llm-v6 10-03 15:31: recovery 110 s; restart (STABLE)
+- llm-v7 10-03 19:20: recovery 0 s; restart (STABLE)
+- llm-v7 10-03 21:23: recovery 120 s; restart (STABLE)
+- llm-v6 10-03 21:43: recovery 0 s; none () | scale 1->2 (STABLE) | none () | none () | restart pod aiops-backend-deployment-85b9689959-qqzx6 (STABLE)
+- llm-v8 10-03 23:04: recovery 130 s; restart (STABLE)
+
+Rule-based actions per run (from the controller log):
+
+- rules-v2 10-03 16:52: recovery 110 s; 16:53:42 scale->2 | 16:55:43 scale->1 | 16:57:43 restart R2 | 16:58:44 scale->2 | 17:00:44 scale->1
+
+# Bad configuration change (fault_load.js, 8 VUs; FEATURE_LOGIN_AUDIT=true deployed at t = 4 min)
+
+12 runs from `evaluation_results_badconfig.csv`. Blind test for prompt v6: designed after v6 was frozen (2026-10-03 14:28). Every login runs a synchronous PBKDF2 (1.5M iterations, ~0.35 s of CPU per login), so CPU per request rises ~5x in EVERY pod and no replica count meets the p95 objective. The bad state lives in the deployment's configuration: restarts and new pods do not help, only a rollback does. Server-side p95 is meaningful here (the extra work runs inside the handler).
+
+| Metric | hpa (n=1) | rules (n=1) | rules-v2 (n=1) | llm (n=1) | llm-v5 (n=1) | llm-v6 (n=3) | llm-v7 (n=2) | llm-v8 (n=2) |
+|---|---|---|---|---|---|---|---|---|
+| Recovery after fault (s; p95 < 0.35 s held 60 s) | never (1/1) | never (1/1) | never (1/1) | never (1/1) | never (1/1) | 117 ± 12 | 185 ± 1.1e+02 | 135 ± 35 |
+| Fault gone after (s; CPU per request ≤ 0.10 held 60 s) | never (1/1) | never (1/1) | never (1/1) | never (1/1) | never (1/1) | 110 ± 17 | 180 ± 99 | 130 ± 42 |
+| SLO violation after fault (s) | 700 | 710 | 710 | 700 | 700 | 86.7 ± 12 | 155 ± 1.1e+02 | 115 ± 35 |
+| Max replicas after fault | 3 | 3 | 2 | 3 | 2 | 1 ± 0 | 1 ± 0 | 1 ± 0 |
+| User-side p95 over the whole run (s, k6) | 0.437 | 0.887 | 1.76 | 1.64 | 1.66 | 0.22 ± 0.0038 | 0.917 ± 1 | 0.523 ± 0.49 |
+| Logins completed (k6; closed loop: fewer = users slowed) | 5831 | 5326 | 3859 | 5436 | 5191 | 6.61e+03 ± 15 | 6.35e+03 ± 3.4e+02 | 6.54e+03 ± 1.6e+02 |
+| Replica-minutes (cost) | 38.5 | 36.5 | 18.2 | 33 | 24.8 | 16.2 ± 0 | 16.2 ± 0 | 16.2 ± 0 |
+| Scale actions | 2 | 2 | 2 | 4 | 1 | 0 ± 0 | 0 ± 0 | 0 ± 0 |
+| Agent incidents | – | – | – | 4 | 4 | 1 ± 0 | 1.5 ± 0.71 | 1 ± 0 |
+| Verified STABLE | – | – | – | 0 | 0 | 0.667 ± 0.58 | 1 ± 0 | 1 ± 0 |
+| LLM calls | – | – | – | 12 | 9 | 2.67 ± 1.2 | 5.5 ± 2.1 | 6 ± 1.4 |
+
+Agent actions per run (each agent wake-up, with its verification verdict):
+
+- llm-v6 10-03 15:11: recovery 110 s; rollback to revision 70 (STABLE)
+- llm-v6 10-03 17:12: recovery 110 s; rollback to revision 98 (UNVERIFIABLE)
+- llm-v7 10-03 19:40: recovery 110 s; rollback to revision 108 (STABLE)
+- llm-v7 10-03 21:03: recovery 260 s; restart (UNSTABLE) | rollback to revision 114 (STABLE)
+- llm-v8 10-03 22:02: recovery 160 s; rollback to revision 121 (STABLE)
+- llm-v8 10-03 23:45: recovery 110 s; rollback to revision 128 (STABLE)
+- llm-v6 10-04 00:47: recovery 130 s; rollback to revision 131 (STABLE)
+- llm-v5 10-04 01:07: recovery never s; restart (UNSTABLE) | scale 1->2 (UNSTABLE) | restart (UNSTABLE) | restart (UNSTABLE)
+- llm 10-04 01:28: recovery never s; scale 1->2 (UNSTABLE) | scale 2->3 (UNSTABLE) | restart (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE)
+
+Rule-based actions per run (from the controller log):
+
+- rules-v2 10-03 15:51: recovery never s; 15:53:52 scale->2 | 15:55:52 scale->1 | 15:57:53 restart R2 | 15:58:53 restart R2 | 15:59:53 restart R2 | 16:00:53 restart R2 | 16:01:53 restart R2 | 16:02:54 restart R2 | 16:03:54 restart R2 | 16:04:54 restart R2 | 16:05:54 restart R2 | 16:06:54 restart R2 | 16:07:55 restart R2
+- rules 10-03 18:19: recovery never s; 18:24:14 scale->2 | 18:26:14 scale->3
+
+# Statistics (exact tests; small n)
+
+- Scaling, replica-minutes, LLM v8 (final) (n=2, mean 71.3) < hpa (n=3, mean 79.5): one-sided exact permutation p = 0.100
+- Scaling, replica-minutes, LLM v8 (final) (n=2, mean 71.3) < rules+rules-v2 (n=4, mean 76.5): one-sided exact permutation p = 0.067
+- Scaling, replica-minutes, LLM v3+v4+v7+v8 (n=9, mean 71.5) < hpa (n=3, mean 79.5): one-sided exact permutation p = 0.005
+- Scaling, replica-minutes, LLM v3+v4+v7+v8 (n=9, mean 71.5) < rules+rules-v2 (n=4, mean 76.5): one-sided exact permutation p = 0.001
+- Scaling, replica-minutes, LLM v3+v4 (n=5, mean 71.6) < hpa (n=3, mean 79.5): one-sided exact permutation p = 0.018
+- Scaling, replica-minutes, LLM v3+v4 (n=5, mean 71.6) < rules (n=3, mean 77.7): one-sided exact permutation p = 0.018
+- Scaling, replica-minutes, LLM v3+v4 (n=5, mean 71.6) < static-3 (n=1, mean 114.5): one-sided exact permutation p = 0.167
+- Stuck-dependency fault (recovery_s): recovered, all LLM versions 13/13 vs baselines 1/6: one-sided Fisher exact p = 0.0005
+  - tool-using agents (v6+v7+v8) 3/3 vs all baselines 1/6: Fisher p = 0.0476
+  - llm-v6 1/1 vs rules-v2 1/1: Fisher p = 1.000
+  - llm-v6 1/1 vs rules 0/2: Fisher p = 0.333
+  - llm-v6 1/1 vs hpa 0/2: Fisher p = 0.333
+  - llm-v6 1/1 vs static-1 0/1: Fisher p = 0.500
+  - llm-v8 1/1 vs rules-v2 1/1: Fisher p = 1.000
+  - llm-v8 1/1 vs rules 0/2: Fisher p = 0.333
+  - llm-v8 1/1 vs hpa 0/2: Fisher p = 0.333
+  - llm-v8 1/1 vs static-1 0/1: Fisher p = 0.500
+- Runaway background job (cpu_recovery_s): recovered, all LLM versions 12/14 vs baselines 1/3: one-sided Fisher exact p = 0.1206
+  - tool-using agents (v6+v7+v8) 5/5 vs all baselines 1/3: Fisher p = 0.1071
+  - llm-v6 2/2 vs rules-v2 1/1: Fisher p = 1.000
+  - llm-v6 2/2 vs rules 0/1: Fisher p = 0.333
+  - llm-v6 2/2 vs hpa 0/1: Fisher p = 0.333
+  - llm-v8 1/1 vs rules-v2 1/1: Fisher p = 1.000
+  - llm-v8 1/1 vs rules 0/1: Fisher p = 0.500
+  - llm-v8 1/1 vs hpa 0/1: Fisher p = 0.500
+- Bad configuration change (cpu_recovery_s): recovered, all LLM versions 7/9 vs baselines 0/3: one-sided Fisher exact p = 0.0455
+  - tool-using agents (v6+v7+v8) 7/7 vs all baselines 0/3: Fisher p = 0.0083
+  - llm-v6 3/3 vs rules-v2 0/1: Fisher p = 0.250
+  - llm-v6 3/3 vs rules 0/1: Fisher p = 0.250
+  - llm-v6 3/3 vs hpa 0/1: Fisher p = 0.250
+  - llm-v8 2/2 vs rules-v2 0/1: Fisher p = 0.333
+  - llm-v8 2/2 vs rules 0/1: Fisher p = 0.333
+  - llm-v8 2/2 vs hpa 0/1: Fisher p = 0.333
+
+Pooling LLM v3 and v4 on the scaling load is justified by their identical results there (71.5-71.8 replica-min); on the fault runs every LLM version is pooled against every baseline.

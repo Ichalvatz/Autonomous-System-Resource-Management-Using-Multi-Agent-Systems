@@ -1,5 +1,5 @@
 """
-Step-by-step view of every agent incident in the experiment runs (prompt v6 by default).
+Step-by-step view of every agent incident in the experiment runs (the final agent, v8, by default; older versions only in the logs of their runs).
 
 For each incident: the code block of each LLM step (which tools it called), whether the block
 executed or failed to parse, and two behaviours worth reporting in the thesis:
@@ -7,7 +7,7 @@ executed or failed to parse, and two behaviours worth reporting in the thesis:
   - pre-commitment: an action tool written in the SAME code block as an observation tool, i.e.
     the LLM decided before it had seen the evidence (whether or not the block ran)
 
-Usage (repo root):  python 4-load-testing/analyze_agent_steps.py [label-substring, default "llm"] [prompt, default v6]
+Usage (repo root):  python 4-load-testing/analyze_agent_steps.py [label-substring, default "llm"] [agent version, default v8; v8.1 = the same prompt with the tool descriptions of 2026-10-11; logs of older versions are still readable]
 """
 import glob
 import os
@@ -22,7 +22,7 @@ ACT = ["scale_kubernetes_deployment", "restart_kubernetes_deployment", "restart_
 
 def incidents(log_text, prompt):
     """Split a controller log into agent incidents of the given prompt version."""
-    parts = re.split(r"🤖 \[AIOps Agent\] Agent woke up \(prompt (\w+)\)!", log_text)
+    parts = re.split(r"🤖 \[AIOps Agent\] Agent woke up \(prompt ([\w.]+)\)!", log_text)
     for i in range(1, len(parts), 2):
         if parts[i] == prompt:
             yield parts[i + 1].split("Agent cooldown")[0]
@@ -47,7 +47,7 @@ def steps(incident):
 
 def main():
     label = sys.argv[1] if len(sys.argv) > 1 else "llm"
-    prompt = sys.argv[2] if len(sys.argv) > 2 else "v6"
+    prompt = sys.argv[2] if len(sys.argv) > 2 else "v8"
     total = precommit = investigated = 0
     for d in sorted(glob.glob(os.path.join(HERE, f"eval_*{label}*"))):
         log = os.path.join(d, "controller.log")

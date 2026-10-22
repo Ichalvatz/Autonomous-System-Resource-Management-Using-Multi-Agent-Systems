@@ -1,0 +1,200 @@
+"""
+Report of one experiment campaign (full_campaign.sh): every run whose notes column is the campaign TAG,
+per scenario and method, with the checks that say whether the agent did the right thing.
+
+Usage (from repo root):
+    .venv/bin/python3 4-load-testing/campaign_report.py campaign-2026-10-21 > 4-load-testing/campaign-2026-10-21.md
+
+Reads 4-load-testing/evaluation_results*.csv (one row per run), 3-ai-agent/incident_log.csv (one row per
+agent wake-up), each run's controller.log (guard refusals) and the campaign log (provenance hashes).
+The checks, per agent run:
+  normal load  0 s SLO violation, every applied action verified STABLE, 4 scale actions (1->2->3->2->1)
+  stuck        the first wake-up restarts (deployment or one pod) and is verified STABLE; p95 recovers
+  cpuhog       same; recovery judged by CPU per request (the server p95 cannot see this fault)
+  badconfig    the first wake-up rolls back and is verified STABLE; p95 recovers
+A run decided partly by the fallback model is flagged: that is a different agent.
+"""
+import csv
+import hashlib
+import os
+import re
+import sys
+from datetime import datetime
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
+AGENT = "llm-v8.1"
+METHODS = [AGENT, "rules-v2", "rules", "hpa", "static-1", "static-3"]
+# scenario, results CSV, right action (regex on the incident's actions), recovery column, Greek name
+SCENARIOS = [
+    ("baseline", "evaluation_results.csv", None, None, "Κανονικό φορτίο (38')"),
+    ("stuck", "evaluation_results_stuck.csv", r"\brestart\b", "recovery_s", "Stuck"),
+    ("cpuhog", "evaluation_results_cpuhog.csv", r"\brestart\b", "cpu_recovery_s", "Cpuhog"),
+    ("badconfig", "evaluation_results_badconfig.csv", r"rollback to revision", "recovery_s", "Badconfig"),
+]
+RIGHT_ACTION = {"baseline": "1→2→3→2→1", "stuck": "restart", "cpuhog": "restart", "badconfig": "rollback"}
+STAMP = "%Y-%m-%d %H:%M:%S"
+
+
+def read_csv(path):
+    if not os.path.exists(path):
+        return []
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def incidents_in(row, incidents):
+    start, end = datetime.strptime(row["start"], STAMP), datetime.strptime(row["end"], STAMP)
+    return [i for i in incidents if start <= datetime.strptime(i["woke_at"], STAMP) <= end]
+
+
+def refusals(row):
+    """Guard refusals the LLM saw in this run (each refusal text appears in the controller log)."""
+    path = os.path.join(ROOT, row.get("run_dir") or "", "controller.log")
+    if not row.get("run_dir") or not os.path.exists(path):
+        return None
+    text = open(path, errors="replace").read()
+    return {"evidence": text.count("Refused (evidence before action)"),
+            "diagnosis": text.count("Refused (diagnosis first)"),
+            "claim": text.count("Refused: no action tool was executed")}
+
+
+def mean(values):
+    nums = [float(v) for v in values if v not in ("", "never", None)]
+    return f"{sum(nums) / len(nums):.0f}" if nums else "–"
+
+
+def agent_checks(scenario, right, rec_col, row, inc):
+    """(first wake-up right, recovered, notes) for one agent run."""
+    acted = [i for i in inc if i["actions"]]
+    notes = []
+    if sum(int(i["llm_fallback_calls"] or 0) for i in inc):
+        notes.append("⚠ fallback model")
+    if any(i["agent_error"] for i in inc):
+        notes.append("⚠ agent error")
+    if scenario == "baseline":
+        stable = all(i["verification"] == "STABLE" for i in acted)
+        ok = row["slo_violation_s"] == "0" and stable and row["scale_actions"] == "4"
+        if not stable:
+            notes.append("μη STABLE ενέργεια")
+        return ok, row["slo_violation_s"] == "0", notes
+    first = inc[0] if inc else None
+    ok = bool(first and re.search(right, first["actions"] or "") and first["verification"] == "STABLE")
+    if first is None:
+        notes.append("καμία αφύπνιση")
+    return ok, row.get(rec_col, "never") not in ("never", "", None), notes
+
+
+def provenance(tag):
+    log = os.path.join(HERE, f"{tag}.log")
+    if not os.path.exists(log):
+        return ["(δεν βρέθηκε το log της καμπάνιας)"]
+    lines, changed = [], []
+    for line in open(log):
+        m = re.match(r"([0-9a-f]{64})  (.+)$", line.strip())
+        if m:
+            path = os.path.join(ROOT, m.group(2))
+            now = hashlib.sha256(open(path, "rb").read()).hexdigest() if os.path.exists(path) else "missing"
+            if now != m.group(1):
+                changed.append(m.group(2))
+        elif "campaign " in line or "git HEAD" in line or "all runs done" in line or "unavailable after" in line:
+            lines.append(line.strip())
+    lines.append("Κώδικας, μοντέλο και φορτίο αμετάβλητα από την αρχή ως τώρα: "
+                 + ("ναι (ίδια sha256)" if not changed else "**ΟΧΙ**, άλλαξαν: " + ", ".join(changed)))
+    return lines
+
+
+def main():
+    tag = sys.argv[1]
+    incidents = read_csv(INCIDENTS)
+    out = [f"# Καμπάνια {tag}", "", f"*Αναφορά από `campaign_report.py`, {datetime.now():%Y-%m-%d %H:%M}.*", ""]
+    out += ["## Προέλευση", ""] + [f"- {line}" for line in provenance(tag)] + [""]
+
+    summary = ["## Έλυσε ο agent κάθε σενάριο;", "",
+               "| Σενάριο | Σωστή ενέργεια | Runs | Σωστά στην 1η αφύπνιση | Ανέκαμψε | Μέσος χρόνος ανάκαμψης (s) | Σημειώσεις |",
+               "|---|---|---|---|---|---|---|"]
+    details, agent_runs, problems = [], [], []
+    for scenario, csv_name, right, rec_col, title in SCENARIOS:
+        rows = [r for r in read_csv(os.path.join(HERE, csv_name)) if r.get("notes") == tag]
+        if not rows:
+            continue
+        by_method = {m: [r for r in rows if r["label"] == m] for m in METHODS}
+        problems += [f"- Άκυρο, εκτός πινάκων: {title} {r['label']} {r['start']} ({r.get('run_dir', '')})"
+                     for r in rows if "INVALID" in r["label"]]
+        details += [f"## {title}", ""]
+        if scenario == "baseline":
+            details += ["| Μέθοδος | Runs | Παραβίαση SLO (s) | replica-min | Σωστή προμήθεια (%) | Πίεση (s) | Scale actions |",
+                        "|---|---|---|---|---|---|---|"]
+            for m, rs in by_method.items():
+                if rs:
+                    details.append(f"| {m} | {len(rs)} | {' / '.join(r['slo_violation_s'] for r in rs)} | "
+                                   f"{' / '.join(r['replica_minutes'] for r in rs)} | "
+                                   f"{' / '.join(r['correct_prov_pct'] for r in rs)} | "
+                                   f"{' / '.join(r['pressure_s'] for r in rs)} | {' / '.join(r['scale_actions'] for r in rs)} |")
+        else:
+            details += ["| Μέθοδος | Runs | Ανάκαμψη (s) | Ανάκαμψη CPU/αίτημα (s) | Παραβίαση μετά το fault (s) | Max pods | replica-min | Ενέργειες |",
+                        "|---|---|---|---|---|---|---|---|"]
+            for m, rs in by_method.items():
+                if rs:
+                    acts = " ‖ ".join((r.get("agent_actions") or r.get("rule_actions") or "καμία") for r in rs)
+                    details.append(f"| {m} | {len(rs)} | {' / '.join(r['recovery_s'] for r in rs)} | "
+                                   f"{' / '.join(r.get('cpu_recovery_s', '') for r in rs)} | "
+                                   f"{' / '.join(r['slo_violation_after_fault_s'] for r in rs)} | "
+                                   f"{' / '.join(r['max_replicas_after_fault'] for r in rs)} | "
+                                   f"{' / '.join(r['replica_minutes'] for r in rs)} | {acts} |")
+        details.append("")
+
+        agent = by_method[AGENT]
+        if agent:
+            checks = [agent_checks(scenario, right, rec_col, r, incidents_in(r, incidents)) for r in agent]
+            notes = sorted({n for _, _, ns in checks for n in ns})
+            rec_times = [r["recovery_s"] if scenario != "cpuhog" else r["cpu_recovery_s"] for r in agent] \
+                if scenario != "baseline" else []
+            summary.append(f"| {title} | {RIGHT_ACTION[scenario]} | {len(agent)} | {sum(c[0] for c in checks)}/{len(agent)} | "
+                           f"{sum(c[1] for c in checks)}/{len(agent)} | {mean(rec_times) if rec_times else '–'} | "
+                           f"{', '.join(notes) or '–'} |")
+            for r, c in zip(agent, checks):
+                agent_runs.append((title, r, c))
+                if not (c[0] and c[1]) or c[2]:
+                    problems.append(f"- {title} {r['start']}: σωστό στην 1η αφύπνιση {c[0]}, ανέκαμψε {c[1]}, "
+                                    f"{', '.join(c[2]) or '–'} (`{r.get('run_dir', '')}`)")
+
+    out += summary + [""] + details
+    out += ["## Τα runs του agent ένα ένα", ""]
+    for title, r, c in agent_runs:
+        ref = refusals(r)
+        ref_txt = (f"φραγμοί: evidence {ref['evidence']}, diagnosis {ref['diagnosis']}, claim {ref['claim']}"
+                   if ref else "φραγμοί: –")
+        out += [f"### {title}, {r['start']} (`{r.get('run_dir', '')}`)", "",
+                f"Σωστά στην 1η αφύπνιση: **{'ναι' if c[0] else 'όχι'}** · ανέκαμψε: **{'ναι' if c[1] else 'όχι'}** · {ref_txt}", ""]
+        for i in incidents_in(r, read_csv(INCIDENTS)):
+            answer = (i["final_answer"] or "").replace("\n", " ").replace("|", "/")[:220]
+            out.append(f"- {i['woke_at'][11:]} `{i['signature'].replace('State -> ', '')}` → "
+                       f"**{i['actions'] or 'καμία ενέργεια'}** ({i['verification'] or '–'}); "
+                       f"LLM calls {i['llm_calls']}, retries {i['llm_retries']}, fallback {i['llm_fallback_calls']}, "
+                       f"agent {i['agent_seconds']} s, σύνολο {i['total_seconds']} s"
+                       f"{'; error: ' + i['agent_error'][:120] if i['agent_error'] else ''}")
+            if answer:
+                out.append(f"  - «{answer}»")
+        out.append("")
+
+    out += ["## Σύγκριση με το μετρημένο v8 (3-4/10)", "",
+            "| Σενάριο | v8: runs, μέσος όρος | v8.1 (αυτή η καμπάνια): runs, μέσος όρος |", "|---|---|---|"]
+    for scenario, csv_name, _, rec_col, title in SCENARIOS:
+        rows = read_csv(os.path.join(HERE, csv_name))
+        col = "replica_minutes" if scenario == "baseline" else rec_col
+        unit = "replica-min" if scenario == "baseline" else "s ανάκαμψη"
+        v8 = [r[col] for r in rows if r["label"] == "llm-v8" and col in r]
+        v81 = [r[col] for r in rows if r["label"] == AGENT and r.get("notes") == tag and col in r]
+        if v8 or v81:
+            out.append(f"| {title} | {len(v8)}, {mean(v8)} {unit} | {len(v81)}, {mean(v81)} {unit} |")
+    out += ["", "## Τι να κοιτάξεις", ""] + (problems or [
+        "- Τίποτα: κάθε run του agent πέρασε όλους τους ελέγχους." if agent_runs
+        else "- Δεν έχει τρέξει ακόμα κανένα run του agent."])
+    out += ["", "Όλοι οι πίνακες με όλα τα runs (και των προηγούμενων εκδόσεων) και τα στατιστικά: `4-load-testing/comparison.md`."]
+    print("\n".join(out))
+
+
+if __name__ == "__main__":
+    main()

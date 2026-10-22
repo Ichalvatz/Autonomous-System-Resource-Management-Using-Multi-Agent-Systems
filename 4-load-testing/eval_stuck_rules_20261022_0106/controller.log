@@ -1,0 +1,88 @@
+📏 Rule-based scaler. Safe rps per replica count: {1: 11.13, 2: 20.88, 3: 27.47}
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+[01:09:05] rps 1.8 cpu 0.00 thr 0.0% p95 0.278s reps 1 -> target 1
+[01:09:15] rps 3.0 cpu 0.16 thr 1.2% p95 0.198s reps 1 -> target 1
+[01:09:25] rps 4.1 cpu 0.18 thr 1.8% p95 0.194s reps 1 -> target 1
+[01:09:35] rps 5.4 cpu 0.41 thr 2.5% p95 0.190s reps 1 -> target 1
+[01:09:45] rps 6.6 cpu 0.49 thr 2.9% p95 0.187s reps 1 -> target 1
+[01:09:55] rps 7.2 cpu 0.41 thr 3.0% p95 0.148s reps 1 -> target 1
+[01:10:05] rps 7.2 cpu 0.37 thr 2.9% p95 0.140s reps 1 -> target 1
+[01:10:15] rps 7.2 cpu 0.36 thr 2.9% p95 0.095s reps 1 -> target 1
+[01:10:25] rps 7.2 cpu 0.52 thr 2.7% p95 0.092s reps 1 -> target 1
+[01:10:36] rps 7.3 cpu 0.35 thr 2.7% p95 0.090s reps 1 -> target 1
+[01:10:46] rps 7.3 cpu 0.51 thr 5.4% p95 0.090s reps 1 -> target 2
+[01:10:56] rps 7.3 cpu 0.52 thr 5.3% p95 0.090s reps 1 -> target 2
+[01:11:06] rps 7.4 cpu 0.40 thr 5.3% p95 0.090s reps 1 -> target 2
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=1 to=2 cooldown=30s
+[01:11:06] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 2 replicas in namespace 'default'.
+[01:12:46] rps 7.3 cpu 0.24 thr 1.0% p95 0.099s reps 2 -> target 1
+[01:12:56] rps 6.6 cpu 0.24 thr 1.6% p95 0.133s reps 2 -> target 1
+[01:13:06] rps 5.5 cpu 0.22 thr 2.3% p95 3.275s reps 2 -> target 3
+[01:13:16] rps 4.6 cpu 0.20 thr 1.7% p95 4.287s reps 2 -> target 3
+[01:13:26] rps 3.4 cpu 0.14 thr 1.4% p95 4.602s reps 2 -> target 3
+[SAFETY] scale applied: deployment=aiops-backend-deployment namespace=default from=2 to=3 cooldown=30s
+[01:13:26] RULE ACTION: ✅ Scaling was successful for deployment 'aiops-backend-deployment' to 3 replicas in namespace 'default'.
+[01:15:07] rps 2.6 cpu 0.07 thr 0.1% p95 4.782s reps 3 -> target 3
+[01:15:17] rps 2.5 cpu 0.07 thr 0.1% p95 4.780s reps 3 -> target 3
+[01:15:27] rps 2.4 cpu 0.07 thr 0.1% p95 4.774s reps 3 -> target 3
+[01:15:37] rps 2.5 cpu 0.07 thr 0.2% p95 4.773s reps 3 -> target 3
+[01:15:47] rps 2.6 cpu 0.07 thr 0.1% p95 4.778s reps 3 -> target 3
+[01:15:57] rps 2.6 cpu 0.07 thr 0.0% p95 4.778s reps 3 -> target 3
+[01:16:07] rps 2.6 cpu 0.07 thr 0.0% p95 4.780s reps 3 -> target 3
+[01:16:17] rps 2.6 cpu 0.07 thr 0.4% p95 4.778s reps 3 -> target 3
+[01:16:27] rps 2.6 cpu 0.07 thr 0.4% p95 4.772s reps 3 -> target 3
+[01:16:37] rps 2.6 cpu 0.07 thr 0.4% p95 4.767s reps 3 -> target 3
+[01:16:47] rps 2.6 cpu 0.07 thr 0.4% p95 4.770s reps 3 -> target 3
+[01:16:57] rps 2.7 cpu 0.07 thr 0.1% p95 4.772s reps 3 -> target 3
+[01:17:07] rps 2.6 cpu 0.07 thr 0.1% p95 4.775s reps 3 -> target 3
+[01:17:17] rps 2.6 cpu 0.07 thr 0.3% p95 4.780s reps 3 -> target 3
+[01:17:27] rps 2.5 cpu 0.07 thr 0.3% p95 4.780s reps 3 -> target 3
+[01:17:37] rps 2.5 cpu 0.07 thr 0.4% p95 4.773s reps 3 -> target 3
+[01:17:47] rps 2.5 cpu 0.07 thr 0.3% p95 4.773s reps 3 -> target 3
+[01:17:57] rps 2.6 cpu 0.07 thr 0.1% p95 4.778s reps 3 -> target 3
+[01:18:07] rps 2.6 cpu 0.07 thr 0.3% p95 4.778s reps 3 -> target 3
+[01:18:17] rps 2.6 cpu 0.08 thr 0.4% p95 4.778s reps 3 -> target 3
+[01:18:27] rps 2.6 cpu 0.07 thr 0.7% p95 4.778s reps 3 -> target 3
+[01:18:37] rps 2.6 cpu 0.07 thr 0.5% p95 4.772s reps 3 -> target 3
+[01:18:47] rps 2.6 cpu 0.06 thr 0.7% p95 4.767s reps 3 -> target 3
+[01:18:58] rps 2.6 cpu 0.07 thr 0.4% p95 4.768s reps 3 -> target 3
+[01:19:08] rps 2.7 cpu 0.07 thr 0.5% p95 4.775s reps 3 -> target 3
+[01:19:18] rps 2.6 cpu 0.07 thr 0.4% p95 4.780s reps 3 -> target 3
+[01:19:28] rps 2.6 cpu 0.07 thr 0.4% p95 4.782s reps 3 -> target 3
+[01:19:38] rps 2.6 cpu 0.07 thr 0.4% p95 4.777s reps 3 -> target 3
+[01:19:48] rps 2.5 cpu 0.07 thr 0.4% p95 4.776s reps 3 -> target 3
+[01:19:58] rps 2.5 cpu 0.07 thr 0.3% p95 4.772s reps 3 -> target 3
+[01:20:08] rps 2.6 cpu 0.08 thr 0.4% p95 4.777s reps 3 -> target 3
+[01:20:18] rps 2.6 cpu 0.07 thr 0.4% p95 4.778s reps 3 -> target 3
+[01:20:28] rps 2.6 cpu 0.07 thr 0.3% p95 4.782s reps 3 -> target 3
+[01:20:38] rps 2.6 cpu 0.07 thr 0.5% p95 4.777s reps 3 -> target 3
+[01:20:48] rps 2.7 cpu 0.07 thr 0.5% p95 4.771s reps 3 -> target 3
+[01:20:58] rps 2.6 cpu 0.07 thr 0.8% p95 4.768s reps 3 -> target 3
+[01:21:08] rps 2.6 cpu 0.07 thr 0.7% p95 4.768s reps 3 -> target 3
+[01:21:18] rps 2.7 cpu 0.07 thr 0.8% p95 4.772s reps 3 -> target 3
+[01:21:28] rps 2.6 cpu 0.07 thr 0.6% p95 4.777s reps 3 -> target 3
+[01:21:38] rps 2.6 cpu 0.06 thr 0.3% p95 4.782s reps 3 -> target 3
+[01:21:48] rps 2.6 cpu 0.07 thr 0.3% p95 4.777s reps 3 -> target 3
+[01:21:58] rps 2.5 cpu 0.07 thr 0.3% p95 4.776s reps 3 -> target 3
+[01:22:08] rps 2.5 cpu 0.07 thr 0.3% p95 4.772s reps 3 -> target 3
+[01:22:19] rps 2.5 cpu 0.07 thr 0.1% p95 4.776s reps 3 -> target 3
+[01:22:29] rps 2.6 cpu 0.07 thr 0.2% p95 4.778s reps 3 -> target 3
+[01:22:39] rps 2.6 cpu 0.06 thr 0.5% p95 4.782s reps 3 -> target 3
+[01:22:49] rps 2.6 cpu 0.06 thr 0.6% p95 4.777s reps 3 -> target 3
+[01:22:59] rps 2.7 cpu 0.06 thr 1.0% p95 4.771s reps 3 -> target 3
+[01:23:09] rps 2.6 cpu 0.07 thr 0.8% p95 4.769s reps 3 -> target 3
+[01:23:19] rps 2.6 cpu 0.07 thr 0.7% p95 4.768s reps 3 -> target 3
+[01:23:29] rps 2.6 cpu 0.06 thr 0.4% p95 4.769s reps 3 -> target 3
+[01:23:39] rps 2.6 cpu 0.07 thr 0.0% p95 4.778s reps 3 -> target 3
+[01:23:49] rps 2.5 cpu 0.07 thr 0.0% p95 4.784s reps 3 -> target 3
+[01:23:59] rps 2.5 cpu 0.07 thr 0.1% p95 4.778s reps 3 -> target 3
+[01:24:09] rps 2.5 cpu 0.06 thr 0.2% p95 4.778s reps 3 -> target 3
+[01:24:19] rps 2.5 cpu 0.07 thr 0.3% p95 4.776s reps 3 -> target 3
+[01:24:29] rps 2.5 cpu 0.06 thr 0.3% p95 4.775s reps 3 -> target 3
+[01:24:39] rps 2.6 cpu 0.07 thr 0.4% p95 4.778s reps 3 -> target 3
+[01:24:49] rps 2.6 cpu 0.07 thr 0.4% p95 4.782s reps 3 -> target 3
+
+⏹️ Rule-based scaler stopped.

@@ -39,7 +39,7 @@ Prometheus ──(5 metrics / 10 s)──▶ anomaly_detector.py ──(3 anomal
                                                                      rollback failed scale-downs   (guarded tools)
 ```
 
-**Agent versions** (`AIOPS_PROMPT`, all kept for reproducibility):
+**Agent versions.** The code contains only the final version, **v8**. The earlier ones are part of the results (how each failure led to the next version) and live in git at commit `a1fd3d5`; what was removed and how to rerun an old version: `thesis_notes/removed_and_archived.md`.
 
 | Version | Tools | What the prompt adds | Status |
 |---|---|---|---|
@@ -47,7 +47,7 @@ Prometheus ──(5 metrics / 10 s)──▶ anomaly_detector.py ──(3 anomal
 | v5 | same | a code-computed "CPU cost per request = N× healthy" hint | measured 2026-10-01 |
 | v6 | **per-pod view, deployment history, logs; scale, rolling restart, restart one pod, rollback** | investigate → act on the cause; its own recent actions and their verdicts; no fault-specific hint | frozen 2026-10-03, blind-tested |
 | v7 | same as v6 | classify first (code-computed facts: minimum replicas, CPU per request): capacity → v4's scaling tiers; anything else → v6's investigation; two code-enforced guards (evidence before action, no claimed action without a tool call) | 2026-10-03 |
-| **v8 (final, default)** | same as v6 | v7 + a third guard, *diagnosis before a disruptive action* (restart / pod restart / rollback only after all three observation tools) + evidence-based restart (check what changed first; symptom-only warnings are not evidence) | 6/6 scenario runs right at the first wake-up (2026-10-03/04) |
+| **v8 (final, the only one in the code)** | same as v6 | v7 + a third guard, *diagnosis before a disruptive action* (restart / pod restart / rollback only after all three observation tools) + evidence-based restart (check what changed first; symptom-only warnings are not evidence) | 6/6 scenario runs right at the first wake-up (2026-10-03/04) |
 
 **Scenarios** (`SCENARIO`): `baseline` (normal 40-min demo load), `stuck` (leaked DB pool: restart fixes it),
 `cpuhog` (runaway background job: restart fixes it), `badconfig` (a bad configuration deployed: only a rollback fixes it).
@@ -71,7 +71,7 @@ python 3-ai-agent/anomaly_detector.py --dry-run    # detector only, no LLM, no c
 python 3-ai-agent/anomaly_detector.py              # detector + agent, final version v8 (run from the repo root)
 ./4-load-testing/run_experiment.sh llm             # one scored experiment (also: rules, hpa, static-1, static-3)
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm    # fault experiment (also SCENARIO=cpuhog, badconfig)
-AIOPS_PROMPT=v6 AIOPS_MEMORY=off SCENARIO=badconfig LABEL=llm-v6 ./4-load-testing/run_experiment.sh llm
+AIOPS_MEMORY=off SCENARIO=badconfig ./4-load-testing/run_experiment.sh llm   # memory off, as in the measured fault runs
 RULES_RESTART=on SCENARIO=cpuhog LABEL=rules-v2 ./4-load-testing/run_experiment.sh rules
 python 4-load-testing/compare_results.py           # tables, statistics and timeline figures
 .venv/bin/python3 -m pytest 3-ai-agent/tests -q    # unit tests (all external systems mocked)

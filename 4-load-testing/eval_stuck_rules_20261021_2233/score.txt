@@ -1,0 +1,26 @@
+             label: rules-v2
+             start: 2026-10-21 22:35:41
+               end: 2026-10-21 22:51:42
+      duration_min: 16.0
+   slo_violation_s: 70
+        pressure_s: 100
+          p95_mean: 0.452
+           p95_p99: 4.721
+   replica_minutes: 20.2
+      under_prov_s: 0
+       over_prov_s: 240
+  correct_prov_pct: 74.7
+     scale_actions: 4
+         incidents: 
+            stable: 
+         llm_calls: 
+      agent_s_mean: 
+             notes: campaign-2026-10-21
+           run_dir: 4-load-testing/eval_stuck_rules_20261021_2233
+      fault_at_min: 4.0
+        recovery_s: 90
+slo_violation_after_fault_s: 70
+    cpu_recovery_s: 0
+max_replicas_after_fault: 2
+     agent_actions: 
+      rule_actions: 22:40:19 restart R1 | 22:41:29 scale->2 | 22:43:30 scale->1 | 22:46:00 scale->2 | 22:48:01 scale->1

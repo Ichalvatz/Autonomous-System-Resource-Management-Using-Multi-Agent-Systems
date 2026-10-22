@@ -1,0 +1,124 @@
+📏 Rule-based scaler v2 (with restart rules). Safe rps per replica count: {1: 11.13, 2: 20.88, 3: 27.47}
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+Metric unavailable: throughput returned no result
+Metric unavailable: latency_p95 returned no result
+[20:45:53] rps 1.9 cpu 0.01 thr 0.0% p95 0.313s reps 1 -> target 1
+[20:46:03] rps 3.1 cpu 0.20 thr 2.3% p95 0.244s reps 1 -> target 1
+[20:46:13] rps 4.3 cpu 0.22 thr 3.1% p95 0.223s reps 1 -> target 1
+[20:46:23] rps 5.5 cpu 0.46 thr 4.1% p95 0.207s reps 1 -> target 1
+[20:46:33] rps 6.7 cpu 0.42 thr 4.1% p95 0.204s reps 1 -> target 1
+[20:46:43] rps 7.2 cpu 0.56 thr 3.0% p95 0.174s reps 1 -> target 1
+[20:46:53] rps 7.1 cpu 0.43 thr 2.5% p95 0.180s reps 1 -> target 1
+[20:47:03] rps 7.1 cpu 0.54 thr 1.5% p95 0.185s reps 1 -> target 1
+[20:47:13] rps 7.0 cpu 0.44 thr 1.9% p95 0.184s reps 1 -> target 1
+[20:47:23] rps 7.1 cpu 0.53 thr 2.7% p95 0.164s reps 1 -> target 1
+[20:47:33] rps 7.1 cpu 0.36 thr 4.3% p95 0.150s reps 1 -> target 1
+[20:47:43] rps 7.2 cpu 0.53 thr 3.0% p95 0.146s reps 1 -> target 1
+[20:47:53] rps 7.2 cpu 0.54 thr 2.5% p95 0.146s reps 1 -> target 1
+[20:48:03] rps 7.2 cpu 0.52 thr 1.5% p95 0.142s reps 1 -> target 1
+[20:48:13] rps 7.2 cpu 0.53 thr 1.3% p95 0.136s reps 1 -> target 1
+[20:48:23] rps 7.3 cpu 0.54 thr 1.4% p95 0.136s reps 1 -> target 1
+[20:48:34] rps 7.3 cpu 0.43 thr 1.4% p95 0.127s reps 1 -> target 1
+[20:48:44] rps 7.3 cpu 0.54 thr 1.3% p95 0.096s reps 1 -> target 1
+[20:48:54] rps 7.3 cpu 0.41 thr 1.4% p95 0.128s reps 1 -> target 1
+[20:49:04] rps 7.2 cpu 0.52 thr 2.4% p95 0.146s reps 1 -> target 1
+[20:49:14] rps 7.1 cpu 0.52 thr 2.8% p95 0.149s reps 1 -> target 1
+[20:49:24] rps 7.1 cpu 0.51 thr 3.4% p95 0.160s reps 1 -> target 1
+[20:49:34] rps 6.9 cpu 0.50 thr 2.6% p95 0.168s reps 1 -> target 1
+[20:49:44] rps 5.8 cpu 0.38 thr 2.6% p95 0.168s reps 1 -> target 1
+[20:49:54] rps 4.5 cpu 0.30 thr 1.5% p95 0.168s reps 1 -> target 1
+[20:50:04] rps 4.5 cpu 0.65 thr 10.5% p95 1.102s reps 1 -> target 2
+[20:50:14] rps 3.7 cpu 0.36 thr 17.7% p95 1.263s reps 1 -> target 2
+[20:50:24] rps 2.0 cpu 0.77 thr 18.6% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.380 > 2x healthy)]
+[20:50:34] rps 2.6 cpu 0.70 thr 18.6% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.271 > 2x healthy)]
+[20:50:44] rps 3.0 cpu 1.00 thr 18.8% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.337 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:50:44] RULE ACTION (R2 runaway (CPU per request 0.337 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:50:54] rps 2.3 cpu 1.00 thr 18.6% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.426 > 2x healthy)]
+[20:51:04] rps 2.9 cpu 0.77 thr 18.6% p95 1.391s reps 1 -> target restart [R2 runaway (CPU per request 0.268 > 2x healthy)]
+[20:51:14] rps 2.9 cpu 0.89 thr 20.3% p95 1.392s reps 1 -> target restart [R2 runaway (CPU per request 0.312 > 2x healthy)]
+[20:51:24] rps 2.8 cpu 1.06 thr 17.6% p95 1.393s reps 1 -> target restart [R2 runaway (CPU per request 0.376 > 2x healthy)]
+[20:51:34] rps 2.4 cpu 0.58 thr 16.6% p95 1.392s reps 1 -> target restart [R2 runaway (CPU per request 0.238 > 2x healthy)]
+[20:51:44] rps 3.0 cpu 0.97 thr 15.1% p95 1.393s reps 1 -> target restart [R2 runaway (CPU per request 0.326 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:51:44] RULE ACTION (R2 runaway (CPU per request 0.326 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:51:54] rps 2.4 cpu 0.72 thr 12.2% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.296 > 2x healthy)]
+[20:52:04] rps 3.0 cpu 0.55 thr 12.6% p95 1.399s reps 1 -> target restart [R2 runaway (CPU per request 0.181 > 2x healthy)]
+[20:52:14] rps 2.9 cpu 0.48 thr 6.8% p95 1.399s reps 1 -> target restart [R2 runaway (CPU per request 0.164 > 2x healthy)]
+[20:52:24] rps 2.9 cpu 0.65 thr 5.2% p95 1.399s reps 1 -> target restart [R2 runaway (CPU per request 0.221 > 2x healthy)]
+[20:52:34] rps 2.5 cpu 0.62 thr 5.2% p95 1.398s reps 1 -> target restart [R2 runaway (CPU per request 0.250 > 2x healthy)]
+[20:52:44] rps 3.0 cpu 0.98 thr 4.5% p95 1.398s reps 1 -> target restart [R2 runaway (CPU per request 0.333 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:52:44] RULE ACTION (R2 runaway (CPU per request 0.333 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:52:54] rps 2.4 cpu 0.78 thr 3.0% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.329 > 2x healthy)]
+[20:53:04] rps 2.7 cpu 0.91 thr 6.2% p95 1.404s reps 1 -> target restart [R2 runaway (CPU per request 0.335 > 2x healthy)]
+[20:53:14] rps 2.7 cpu 0.69 thr 6.4% p95 1.403s reps 1 -> target restart [R2 runaway (CPU per request 0.254 > 2x healthy)]
+[20:53:24] rps 2.7 cpu 0.62 thr 6.6% p95 1.403s reps 1 -> target restart [R2 runaway (CPU per request 0.227 > 2x healthy)]
+[20:53:34] rps 2.3 cpu 0.52 thr 6.6% p95 1.403s reps 1 -> target restart [R2 runaway (CPU per request 0.227 > 2x healthy)]
+[20:53:44] rps 2.5 cpu 0.95 thr 5.0% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.380 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:53:44] RULE ACTION (R2 runaway (CPU per request 0.380 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:53:55] rps 2.6 cpu 1.00 thr 2.7% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.381 > 2x healthy)]
+[20:54:05] rps 3.1 cpu 0.71 thr 2.4% p95 1.395s reps 1 -> target restart [R2 runaway (CPU per request 0.228 > 2x healthy)]
+[20:54:15] rps 3.0 cpu 0.79 thr 8.4% p95 1.397s reps 1 -> target restart [R2 runaway (CPU per request 0.261 > 2x healthy)]
+[20:54:25] rps 3.1 cpu 0.74 thr 8.1% p95 1.396s reps 1 -> target restart [R2 runaway (CPU per request 0.236 > 2x healthy)]
+[20:54:35] rps 2.4 cpu 0.78 thr 10.2% p95 1.396s reps 1 -> target restart [R2 runaway (CPU per request 0.323 > 2x healthy)]
+[20:54:45] rps 2.9 cpu 0.80 thr 9.8% p95 1.395s reps 1 -> target restart [R2 runaway (CPU per request 0.271 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:54:45] RULE ACTION (R2 runaway (CPU per request 0.271 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:54:55] rps 2.6 cpu 1.00 thr 8.8% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.391 > 2x healthy)]
+[20:55:05] rps 3.1 cpu 1.00 thr 11.4% p95 1.403s reps 1 -> target restart [R2 runaway (CPU per request 0.322 > 2x healthy)]
+[20:55:15] rps 3.0 cpu 0.77 thr 11.4% p95 1.402s reps 1 -> target restart [R2 runaway (CPU per request 0.258 > 2x healthy)]
+[20:55:25] rps 3.0 cpu 1.03 thr 13.9% p95 1.401s reps 1 -> target restart [R2 runaway (CPU per request 0.341 > 2x healthy)]
+[20:55:35] rps 2.4 cpu 0.79 thr 14.1% p95 1.401s reps 1 -> target restart [R2 runaway (CPU per request 0.324 > 2x healthy)]
+[20:55:45] rps 2.9 cpu 0.75 thr 14.1% p95 1.401s reps 1 -> target restart [R2 runaway (CPU per request 0.258 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:55:45] RULE ACTION (R2 runaway (CPU per request 0.258 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:55:55] rps 2.4 cpu 1.00 thr 15.1% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.412 > 2x healthy)]
+[20:56:05] rps 2.9 cpu 0.81 thr 14.5% p95 1.394s reps 1 -> target restart [R2 runaway (CPU per request 0.280 > 2x healthy)]
+[20:56:15] rps 3.0 cpu 1.12 thr 13.3% p95 1.395s reps 1 -> target restart [R2 runaway (CPU per request 0.375 > 2x healthy)]
+[20:56:25] rps 2.9 cpu 1.13 thr 11.1% p95 1.395s reps 1 -> target restart [R2 runaway (CPU per request 0.395 > 2x healthy)]
+[20:56:35] rps 2.5 cpu 0.80 thr 5.9% p95 1.395s reps 1 -> target restart [R2 runaway (CPU per request 0.322 > 2x healthy)]
+[20:56:45] rps 2.9 cpu 0.73 thr 5.9% p95 1.396s reps 1 -> target restart [R2 runaway (CPU per request 0.250 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:56:45] RULE ACTION (R2 runaway (CPU per request 0.250 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:56:55] rps 2.4 cpu 0.80 thr 4.7% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.333 > 2x healthy)]
+[20:57:05] rps 1.9 cpu 0.63 thr 4.7% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.339 > 2x healthy)]
+[20:57:15] rps 2.5 cpu 0.76 thr 5.1% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.306 > 2x healthy)]
+[20:57:25] rps 2.5 cpu 0.63 thr 9.3% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.251 > 2x healthy)]
+[20:57:35] rps 2.1 cpu 0.61 thr 9.3% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.287 > 2x healthy)]
+[20:57:45] rps 2.6 cpu 0.96 thr 10.9% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.372 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:57:45] RULE ACTION (R2 runaway (CPU per request 0.372 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:57:55] rps 2.3 cpu 0.71 thr 13.0% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.316 > 2x healthy)]
+[20:58:05] rps 1.8 cpu 0.53 thr 14.3% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.297 > 2x healthy)]
+[20:58:15] rps 2.3 cpu 0.65 thr 13.0% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.280 > 2x healthy)]
+[20:58:25] rps 2.4 cpu 0.63 thr 14.3% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.258 > 2x healthy)]
+[20:58:35] rps 2.1 cpu 0.80 thr 15.8% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.378 > 2x healthy)]
+[20:58:45] rps 2.7 cpu 0.74 thr 15.8% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.281 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:58:45] RULE ACTION (R2 runaway (CPU per request 0.281 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:58:55] rps 2.3 cpu 1.00 thr 19.2% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.425 > 2x healthy)]
+[20:59:05] rps 1.9 cpu 0.69 thr 20.9% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.368 > 2x healthy)]
+[20:59:15] rps 2.6 cpu 0.99 thr 20.5% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.380 > 2x healthy)]
+[20:59:25] rps 2.3 cpu 0.72 thr 20.4% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.315 > 2x healthy)]
+[20:59:35] rps 2.3 cpu 0.79 thr 10.2% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.347 > 2x healthy)]
+[20:59:45] rps 2.5 cpu 0.97 thr 10.2% p95 1.399s reps 1 -> target restart [R2 runaway (CPU per request 0.380 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[20:59:45] RULE ACTION (R2 runaway (CPU per request 0.380 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[20:59:56] rps 2.6 cpu 0.78 thr 6.3% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.297 > 2x healthy)]
+[21:00:06] rps 2.2 cpu 0.60 thr 10.2% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.275 > 2x healthy)]
+[21:00:16] rps 2.7 cpu 0.88 thr 9.0% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.326 > 2x healthy)]
+[21:00:26] rps 2.7 cpu 0.36 thr 7.9% p95 1.400s reps 1 -> target 2
+[21:00:36] rps 2.0 cpu 0.79 thr 4.7% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.387 > 2x healthy)]
+[21:00:46] rps 2.9 cpu 0.96 thr 3.7% p95 1.394s reps 1 -> target restart [R2 runaway (CPU per request 0.332 > 2x healthy)]
+[21:00:56] rps 2.9 cpu 0.75 thr 1.6% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.260 > 2x healthy)]
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+[21:00:56] RULE ACTION (R2 runaway (CPU per request 0.260 > 2x healthy)): ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[21:01:06] rps 2.6 cpu 0.84 thr 1.8% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.329 > 2x healthy)]
+[21:01:16] rps 2.0 cpu 1.00 thr 1.5% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.499 > 2x healthy)]
+[21:01:26] rps 2.6 cpu 1.16 thr 4.6% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.442 > 2x healthy)]
+[21:01:36] rps 2.6 cpu 0.92 thr 4.4% p95 1.400s reps 1 -> target restart [R2 runaway (CPU per request 0.351 > 2x healthy)]
+
+⏹️ Rule-based scaler stopped.
