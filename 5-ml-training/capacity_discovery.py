@@ -37,7 +37,7 @@ SAFE_ERR, SLO_ERR = 0.001, 0.01
 STEP_S = 90
 IDLE_AFTER_SCALE_S = 60
 # Ladder: set from the endpoint costs (endpoint_costs.py, 2026-10-22): see START_RPS / STEP_RPS below.
-START_RPS = 20.0          # first rate for 1 pod
+START_RPS = 30.0          # first rate for 1 pod (the mix costs ~10.3 ms CPU per request: ~73 rps per pod at 0.75 core)
 STEP_RPS = 5.0            # per pod: the step grows with the replica count
 MAX_RPS_PER_POD = 400.0   # safety stop
 USER_RPS = 0.2            # one active user = one request every 5 s (to state the capacity in users)

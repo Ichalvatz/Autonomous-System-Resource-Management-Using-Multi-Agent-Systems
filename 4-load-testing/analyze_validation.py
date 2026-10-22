@@ -9,7 +9,8 @@ Columns:
   flagged     readings the model called anomalous
   wakes       times the detector would have woken the agent (3 in a row + cooldown)
   first_wake  seconds from phase start to the first wake-up
-  slo_breach  readings with p95 > 0.35 s (the agent's latency SLO), i.e. real degradation
+  slo_breach  readings that break the NFRs (p95 > 0.35 s or errors > 1%), i.e. real degradation
+Phase 2 (2026-10-22): the readings are the NFR metrics at the ingress; phase 1's run: archive/detector_validation_phase1/.
 """
 import sys
 from datetime import datetime
@@ -17,6 +18,7 @@ from datetime import datetime
 import pandas as pd
 
 SLO_P95 = 0.35
+MAX_ERR = 0.01
 
 readings_csv = sys.argv[1] if len(sys.argv) > 1 else "5-ml-training/dry_run_readings.csv"
 phases_csv = sys.argv[2] if len(sys.argv) > 2 else "4-load-testing/detector_validation_phases.csv"
@@ -48,9 +50,10 @@ for i, phase in phases.iterrows():
         "flagged": int((r["prediction"] == -1).sum()),
         "wakes": len(wakes),
         "first_wake": int(wakes["t"].iloc[0] - start) if len(wakes) else None,
-        "slo_breach": int((r["latency_p95"] > SLO_P95).sum()),
+        "slo_breach": int(((r["latency_p95"] > SLO_P95) | (r["error_rate"] > MAX_ERR)).sum()),
         "p95_median": round(r["latency_p95"].median(), 3) if len(r) else None,
         "rps_median": round(r["throughput"].median(), 1) if len(r) else None,
+        "score_median": round(r["score"].median(), 3) if len(r) else None,
     })
 
 summary = pd.DataFrame(rows)

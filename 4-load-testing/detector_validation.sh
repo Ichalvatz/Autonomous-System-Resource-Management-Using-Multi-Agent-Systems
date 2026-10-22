@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Detector validation (~34 min): k6 drives the load, this script sets the
-# replica count at each phase boundary (see k6/detector_validation.js), and
-# anomaly_detector.py --dry-run logs every reading. No LLM, no agent.
+# Detector validation (~34 min): k6 drives the load (the request mix at the arrival rates of
+# k6/detector_validation.js, generated from the NFR capacity table), this script sets the
+# replica count at each phase boundary, and anomaly_detector.py --dry-run logs every reading.
+# No LLM, no agent. Phase 1's run (login-only load, per-replica models) and its data:
+# archive/detector_validation_phase1/.
 # Run from the repo root. Outputs:
 #   5-ml-training/dry_run_readings.csv          (detector, one row per reading)
 #   4-load-testing/detector_validation_phases.csv (phase start times)

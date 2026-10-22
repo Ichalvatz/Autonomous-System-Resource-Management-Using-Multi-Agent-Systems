@@ -1,18 +1,19 @@
 """
-Report of one experiment campaign (full_campaign.sh): every run whose notes column is the campaign TAG,
-per scenario and method, with the checks that say whether the agent did the right thing.
+Report of one experiment campaign (full_campaign.sh), phase 2 (2026-10-22): every run whose notes column is the
+campaign TAG, per scenario and method (agent v9, HPA), with the checks that say whether the agent did the right thing.
 
 Usage (from repo root):
-    .venv/bin/python3 4-load-testing/campaign_report.py campaign-2026-10-21 > 4-load-testing/campaign-2026-10-21.md
+    .venv/bin/python3 4-load-testing/campaign_report.py <TAG> > 4-load-testing/<TAG>.md
 
-Reads 4-load-testing/evaluation_results*.csv (one row per run), 3-ai-agent/incident_log.csv (one row per
-agent wake-up), each run's controller.log (guard refusals) and the campaign log (provenance hashes).
-The checks, per agent run:
-  normal load  0 s SLO violation, every applied action verified STABLE, 4 scale actions (1->2->3->2->1)
-  stuck        the first wake-up restarts (deployment or one pod) and is verified STABLE; p95 recovers
-  cpuhog       same; recovery judged by CPU per request (the server p95 cannot see this fault)
-  badconfig    the first wake-up rolls back and is verified STABLE; p95 recovers
+Reads 4-load-testing/results_nfr*.csv (one row per run), 3-ai-agent/incident_log.csv (one row per agent wake-up),
+each run's controller.log (guard refusals) and the campaign log (provenance hashes). The checks, per agent run:
+  normal load  the replica count went 1->2->3->2->1 (4 changes) and every applied action was verified STABLE;
+               the NFR violation is reported, not judged (in an open-model load every strategy pays for the
+               time a scale-up takes)
+  stuck        the first wake-up restarts the app and is verified STABLE; the NFRs recover
+  cpuhog       the same
 A run decided partly by the fallback model is flagged: that is a different agent.
+(Phase 1's version, with rules / static / badconfig and the v8 comparison: git tag v8.1-campaign.)
 """
 import csv
 import hashlib
@@ -24,16 +25,15 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
-AGENT = "llm-v8.1"
-METHODS = [AGENT, "rules-v2", "rules", "hpa", "static-1", "static-3"]
+AGENT = "llm-v9"
+METHODS = [AGENT, "hpa"]
 # scenario, results CSV, right action (regex on the incident's actions), recovery column, Greek name
 SCENARIOS = [
-    ("baseline", "evaluation_results.csv", None, None, "Κανονικό φορτίο (38')"),
-    ("stuck", "evaluation_results_stuck.csv", r"\brestart\b", "recovery_s", "Stuck"),
-    ("cpuhog", "evaluation_results_cpuhog.csv", r"\brestart\b", "cpu_recovery_s", "Cpuhog"),
-    ("badconfig", "evaluation_results_badconfig.csv", r"rollback to revision", "recovery_s", "Badconfig"),
+    ("baseline", "results_nfr.csv", None, None, "Κανονικό φορτίο"),
+    ("stuck", "results_nfr_stuck.csv", r"\brestart\b", "recovery_s", "Stuck"),
+    ("cpuhog", "results_nfr_cpuhog.csv", r"\brestart\b", "recovery_s", "Cpuhog"),
 ]
-RIGHT_ACTION = {"baseline": "1→2→3→2→1", "stuck": "restart", "cpuhog": "restart", "badconfig": "rollback"}
+RIGHT_ACTION = {"baseline": "1→2→3→2→1", "stuck": "restart", "cpuhog": "restart"}
 STAMP = "%Y-%m-%d %H:%M:%S"
 
 
@@ -73,12 +73,15 @@ def agent_checks(scenario, right, rec_col, row, inc):
         notes.append("⚠ fallback model")
     if any(i["agent_error"] for i in inc):
         notes.append("⚠ agent error")
+    if any(i.get("rewake") == "True" for i in inc):
+        notes.append("ξαναξύπνημα")
     if scenario == "baseline":
         stable = all(i["verification"] == "STABLE" for i in acted)
-        ok = row["slo_violation_s"] == "0" and stable and row["scale_actions"] == "4"
+        path = [c.split(" ")[1] for c in (row.get("replica_changes") or "").split(" | ") if c]
+        ok = stable and path == ["1->2", "2->3", "3->2", "2->1"]
         if not stable:
             notes.append("μη STABLE ενέργεια")
-        return ok, row["slo_violation_s"] == "0", notes
+        return ok, stable, notes
     first = inc[0] if inc else None
     ok = bool(first and re.search(right, first["actions"] or "") and first["verification"] == "STABLE")
     if first is None:
@@ -124,33 +127,35 @@ def main():
                      for r in rows if "INVALID" in r["label"]]
         details += [f"## {title}", ""]
         if scenario == "baseline":
-            details += ["| Μέθοδος | Runs | Παραβίαση SLO (s) | replica-min | Σωστή προμήθεια (%) | Πίεση (s) | Scale actions |",
-                        "|---|---|---|---|---|---|---|"]
-            for m, rs in by_method.items():
-                if rs:
-                    details.append(f"| {m} | {len(rs)} | {' / '.join(r['slo_violation_s'] for r in rs)} | "
-                                   f"{' / '.join(r['replica_minutes'] for r in rs)} | "
-                                   f"{' / '.join(r['correct_prov_pct'] for r in rs)} | "
-                                   f"{' / '.join(r['pressure_s'] for r in rs)} | {' / '.join(r['scale_actions'] for r in rs)} |")
-        else:
-            details += ["| Μέθοδος | Runs | Ανάκαμψη (s) | Ανάκαμψη CPU/αίτημα (s) | Παραβίαση μετά το fault (s) | Max pods | replica-min | Ενέργειες |",
+            details += ["| Μέθοδος | Runs | Παραβίαση NFR (s) | Σφάλματα (%) | replica-min | Σωστή προμήθεια (%) | Αλλαγές pods | Liveness restarts |",
                         "|---|---|---|---|---|---|---|---|"]
             for m, rs in by_method.items():
                 if rs:
-                    acts = " ‖ ".join((r.get("agent_actions") or r.get("rule_actions") or "καμία") for r in rs)
+                    details.append(f"| {m} | {len(rs)} | {' / '.join(r['nfr_violation_s'] for r in rs)} | "
+                                   f"{' / '.join(r['errors_pct'] for r in rs)} | "
+                                   f"{' / '.join(r['replica_minutes'] for r in rs)} | "
+                                   f"{' / '.join(r['correct_prov_pct'] for r in rs)} | "
+                                   f"{' ‖ '.join(r.get('replica_changes') or '–' for r in rs)} | "
+                                   f"{' / '.join(r.get('liveness_restarts', '') for r in rs)} |")
+        else:
+            details += ["| Μέθοδος | Runs | Ανάκαμψη (s) | Παραβίαση NFR μετά το fault (s) | Σφάλματα (%) | Max pods | replica-min | Liveness restarts | Ενέργειες |",
+                        "|---|---|---|---|---|---|---|---|---|"]
+            for m, rs in by_method.items():
+                if rs:
+                    acts = " ‖ ".join((r.get("agent_actions") or r.get("replica_changes") or "καμία") for r in rs)
                     details.append(f"| {m} | {len(rs)} | {' / '.join(r['recovery_s'] for r in rs)} | "
-                                   f"{' / '.join(r.get('cpu_recovery_s', '') for r in rs)} | "
-                                   f"{' / '.join(r['slo_violation_after_fault_s'] for r in rs)} | "
+                                   f"{' / '.join(r['nfr_violation_after_fault_s'] for r in rs)} | "
+                                   f"{' / '.join(r['errors_pct'] for r in rs)} | "
                                    f"{' / '.join(r['max_replicas_after_fault'] for r in rs)} | "
-                                   f"{' / '.join(r['replica_minutes'] for r in rs)} | {acts} |")
+                                   f"{' / '.join(r['replica_minutes'] for r in rs)} | "
+                                   f"{' / '.join(r.get('liveness_restarts', '') for r in rs)} | {acts} |")
         details.append("")
 
         agent = by_method[AGENT]
         if agent:
             checks = [agent_checks(scenario, right, rec_col, r, incidents_in(r, incidents)) for r in agent]
             notes = sorted({n for _, _, ns in checks for n in ns})
-            rec_times = [r["recovery_s"] if scenario != "cpuhog" else r["cpu_recovery_s"] for r in agent] \
-                if scenario != "baseline" else []
+            rec_times = [r["recovery_s"] for r in agent] if scenario != "baseline" else []
             summary.append(f"| {title} | {RIGHT_ACTION[scenario]} | {len(agent)} | {sum(c[0] for c in checks)}/{len(agent)} | "
                            f"{sum(c[1] for c in checks)}/{len(agent)} | {mean(rec_times) if rec_times else '–'} | "
                            f"{', '.join(notes) or '–'} |")
@@ -171,7 +176,7 @@ def main():
         for i in incidents_in(r, read_csv(INCIDENTS)):
             answer = (i["final_answer"] or "").replace("\n", " ").replace("|", "/")[:220]
             out.append(f"- {i['woke_at'][11:]} `{i['signature'].replace('State -> ', '')}` → "
-                       f"**{i['actions'] or 'καμία ενέργεια'}** ({i['verification'] or '–'}); "
+                       f"**{i['actions'] or 'καμία ενέργεια'}** ({i.get('verification_detail') or i['verification'] or '–'}); "
                        f"LLM calls {i['llm_calls']}, retries {i['llm_retries']}, fallback {i['llm_fallback_calls']}, "
                        f"agent {i['agent_seconds']} s, σύνολο {i['total_seconds']} s"
                        f"{'; error: ' + i['agent_error'][:120] if i['agent_error'] else ''}")
@@ -179,20 +184,10 @@ def main():
                 out.append(f"  - «{answer}»")
         out.append("")
 
-    out += ["## Σύγκριση με το μετρημένο v8 (3-4/10)", "",
-            "| Σενάριο | v8: runs, μέσος όρος | v8.1 (αυτή η καμπάνια): runs, μέσος όρος |", "|---|---|---|"]
-    for scenario, csv_name, _, rec_col, title in SCENARIOS:
-        rows = read_csv(os.path.join(HERE, csv_name))
-        col = "replica_minutes" if scenario == "baseline" else rec_col
-        unit = "replica-min" if scenario == "baseline" else "s ανάκαμψη"
-        v8 = [r[col] for r in rows if r["label"] == "llm-v8" and col in r]
-        v81 = [r[col] for r in rows if r["label"] == AGENT and r.get("notes") == tag and col in r]
-        if v8 or v81:
-            out.append(f"| {title} | {len(v8)}, {mean(v8)} {unit} | {len(v81)}, {mean(v81)} {unit} |")
-    out += ["", "## Τι να κοιτάξεις", ""] + (problems or [
+    out += ["## Τι να κοιτάξεις", ""] + (problems or [
         "- Τίποτα: κάθε run του agent πέρασε όλους τους ελέγχους." if agent_runs
         else "- Δεν έχει τρέξει ακόμα κανένα run του agent."])
-    out += ["", "Όλοι οι πίνακες με όλα τα runs (και των προηγούμενων εκδόσεων) και τα στατιστικά: `4-load-testing/comparison.md`."]
+    out += ["", "Όλοι οι πίνακες με μέσους όρους και τα στατιστικά: `4-load-testing/comparison_nfr.md`."]
     print("\n".join(out))
 
 

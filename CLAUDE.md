@@ -1,5 +1,32 @@
 # CLAUDE.md
 
+> **PHASE 2 IN PROGRESS (since 2026-10-22, branch `nfr-v9`; phase 1 = git tag `v8.1-campaign`).** After a meeting
+> with the supervisors, the system is being rebuilt around the **non-functional requirements** (NFRs). Plan and
+> decisions: `thesis_notes/design_decisions.md` A24. Running log: `thesis_notes/phase2_worklog.md`.
+> Where the sections below disagree with this box, this box is current.
+> - **NFRs:** p95 < 0.35 s and errors < 1%, measured at the **ingress-nginx** (`1-infrastructure/ingress-metrics.yaml`;
+>   the controller is pinned to v1.15.1 with `--enable-metrics=true --time-buckets=` the backend's buckets).
+>   PromQL in one place: `3-ai-agent/nfr_metrics.py` (throughput, error_rate, latency_p95, replicas = desired,
+>   ready_replicas; rps_per_pod derived; CPU only for diagnosis and the HPA target).
+> - **Load:** open model (k6 arrival rate), request mix in `4-load-testing/k6/lib/mix.js` (30% search, 25% place,
+>   15% reviews, 10% recommendations, 10% login, 10% writes) against a generated catalogue (backend
+>   `SEED_DATASET=load`: 5k places, 50k reviews, 1k users). Scenario scripts are generated from the capacity
+>   table by `4-load-testing/k6/make_profiles.py`: baseline, demo, stuck, cpuhog, detector_validation.
+> - **ML:** `5-ml-training/` scripts drive k6 (`k6_driver.py`); capacity = highest rate with p95 <= 0.25 s and no
+>   errors (1-4 pods); **one One-Class SVM** with the pod count as an input (`3-ai-agent/health_model.py`:
+>   transform, score, explain, embedding, judge_trajectory). Phase 1's pipeline and data: `5-ml-training/phase1/`.
+> - **Agent v9:** 5 tools (3 observation + scale + rolling restart; no pod restart, no rollback); verification by
+>   the trajectory of the SVM score (improving -> wait, normal twice -> STABLE, worse / stuck -> UNSTABLE and an
+>   immediate re-wake by the detector, at most 2 in a row); memory in ChromaDB collection `incidents_nfr` with the
+>   model's feature vector as embedding (top-2 STABLE + recent 15 min in the prompt). ChromaDB volume now at
+>   `/data` (persists). New `incident_log.csv`; phase 1's is `incident_log_phase1.csv`.
+> - **Comparison:** only the native HPA (`baselines/hpa.yaml`, CPU target from the capacity run, scale-down
+>   stabilization 120 s), with readiness (`/ready`) and liveness (`/health`) probes on the deployment for every
+>   strategy. Scenarios: baseline, stuck (now 503 after 3 s), cpuhog; badconfig removed. Results in
+>   `4-load-testing/results_nfr*.csv`, `comparison_nfr.md`; campaign `full_campaign.sh` (agent vs HPA).
+> - Removed from the code (kept in git and in `thesis_notes/removed_and_archived.md`): rule_scaler.py, static
+>   strategies, per-replica models, threshold verification, pod-restart and rollback tools, badconfig.
+
 Thesis project: **autonomous resource management of a Kubernetes workload using an LLM agent (AIOps)**.
 A monitor runs one One-Class SVM per replica count on Prometheus metrics (it replaced the Isolation Forest on 2026-09-30, see "Model choice"). When it flags an anomaly, it wakes an LLM "SRE agent"
 (smolagents `CodeAgent` + Gemini via LiteLLM). The agent reasons over the metrics, a measured capacity table and

@@ -1,7 +1,13 @@
-# Baseline: standard Kubernetes HPA on CPU (needs metrics-server).
-# Same bounds as the agent (1-3 replicas). Target 70% of the 1-core request,
-# just under the agent's 0.75-core SLO. Default behaviour otherwise
-# (immediate scale-up, 300 s scale-down stabilization): "HPA as shipped".
+# The native baseline (thesis phase 2, 2026-10-22): Kubernetes HPA on CPU, the mechanism Kubernetes ships,
+# tuned as well as the measurements allow so the comparison with the agent is fair (design_decisions.md A24):
+# - the same bounds as the agent (1-3 replicas);
+# - target utilization = the CPU per pod measured at the NFR-safe load of the request mix
+#   (capacity_discovery.py: cpu_per_pod_at_safe, averaged over 1-3 pods), so the HPA aims at the same
+#   operating point as the capacity table the agent is given;
+# - scale-up immediate (the default), scale-down after 120 s of lower demand instead of the default 300 s
+#   (about the agent's own reaction: 3 readings + 90 s settle), so neither strategy pays for a longer wait.
+# The readiness and liveness probes of the deployment (2-target-app/backend-deployment.yaml) are part of the
+# native setup for every strategy. Phase 1 used target 70% and the default behaviour ("HPA as shipped").
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -20,4 +26,7 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70
+          averageUtilization: 70   # TO BE SET from capacity_table.json (phase 3)
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 120

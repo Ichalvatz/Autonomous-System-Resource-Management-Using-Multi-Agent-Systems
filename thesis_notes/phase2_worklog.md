@@ -29,3 +29,27 @@
     - probes στο backend (readiness `/ready` 5 s / 2 s / ×3, liveness `/health` 10 s / 5 s / ×3)·
     - ChromaDB καρφωμένο στο digest που έτρεχε (server 1.0.0), με τον όγκο στο `/data`. Ελέγχθηκε: ένα collection επιβιώνει σε restart.
   - Αντίγραφο της μνήμης της φάσης 1 (13 περιστατικά): `4-load-testing/archive/memory_snapshots/chroma_snapshot_2026-10-22_end_of_phase1.json`.
+- 23:28 Μέτρηση κόστους ανά endpoint (`k6/endpoint_costs.js` + `endpoint_costs.py`): κάθε endpoint μόνο του για 90 s, στο 1 pod, ~16 λεπτά.
+  - Ο laptop είχε μπει σε αδράνεια πριν από αυτό (καπάκι, μπαταρία). Από εδώ και πέρα κάθε μακριά μέτρηση τρέχει με `caffeinate`.
+- 23:30–23:45 Κώδικας της φάσης 2, όσο έτρεχε η μέτρηση (commit `297b522`):
+  - `k6/lib/mix.js`: η μίξη· `constant_rate.js` / `ramp_rate.js` για τα ML scripts.
+  - `3-ai-agent/nfr_metrics.py`: τα queries στο ingress, ένα σημείο αντί για 4 αντίγραφα.
+  - `3-ai-agent/health_model.py`: μετασχηματισμός, score, `explain`, `embedding`, `judge_trajectory`.
+  - Τα ML scripts με k6 (`5-ml-training/k6_driver.py`).
+  - Ο detector με ξαναξύπνημα.
+  - Ο agent v9:
+    - 5 εργαλεία, prompt με NFR·
+    - γεγονότα: score + εξήγηση, «μέσα/πάνω από τη χωρητικότητα», pods μη έτοιμα·
+    - επαλήθευση με την πορεία του score·
+    - μνήμη `incidents_nfr` με embedding του μοντέλου·
+    - επιστρέφει `{resolved, rewake, verdict}`.
+  - Tests: 68/68.
+  - Αφαιρέθηκαν από τον κώδικα:
+    - `rule_scaler.py`·
+    - τα εργαλεία `restart_kubernetes_pod` και `rollback_kubernetes_deployment`·
+    - η επαλήθευση με κατώφλια·
+    - το badconfig στο harness.
+  - Μεταφέρθηκαν:
+    - τα artifacts του phase-1 ML στο `5-ml-training/phase1/`, με αντίγραφα των 3 scripts ώστε τα σχήματα να ξαναβγαίνουν·
+    - το παλιό `incident_log.csv` → `incident_log_phase1.csv`.
+  - Νέα αρχεία αποτελεσμάτων: `results_nfr*.csv`, ώστε να μην αναμειγνύονται οι ορισμοί μετρικών της φάσης 1 με της φάσης 2.

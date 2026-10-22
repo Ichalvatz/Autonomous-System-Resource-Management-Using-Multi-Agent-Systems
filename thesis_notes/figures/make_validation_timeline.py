@@ -6,7 +6,7 @@ k6 drove the demo states one after another and the replica count was set by hand
 score of every evaluated reading (below 0 = anomaly) and the moments it would have woken the agent
 (3 anomalous readings in a row, then a 60 s cooldown). Bottom: the load and the replica count.
 
-Data: 4-load-testing/detector_validation_readings_run2.csv and detector_validation_phases.csv (the same files
+Data: 4-load-testing/archive/detector_validation_phase1/detector_validation_readings_run2.csv and detector_validation_phases.csv (the same files
 analyze_validation.py summarises). Run from the repo root:  .venv/bin/python3 thesis_notes/figures/make_validation_timeline.py
 """
 import os
@@ -18,7 +18,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-LT = os.path.join(ROOT, "4-load-testing")
+LT = os.path.join(ROOT, "4-load-testing", "archive", "detector_validation_phase1")  # moved 2026-10-22
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detector_validation_timeline.png")
 VUS = {"A": 5, "B": 20, "C": 20, "D": 30, "E": 30, "F": 14, "G": 14, "H": 5, "I": 5}  # detector_validation.js
 
