@@ -129,3 +129,26 @@ frontend, τα `.DS_Store`, το αδέσποτο `2-target-app/software-fronten
 `design_decisions.md`. **Δεν** άλλαξαν: τα scripts στο `archive/` και οι σημειώσεις με ημερομηνία (`NOTES_*`,
 `READ_ME_FIRST_*`, `OVERNIGHT_REPORT_*`): γράφουν τα παλιά ονόματα, όπως ήταν τότε. Τα παλιά αρχεία:
 `git show a1fd3d5:4-load-testing/fault_load.js` (κ.λπ.).
+
+## 7. Φάση 2: ό,τι έφυγε από τον κώδικα με τον σχεδιασμό NFR (2026-10-22)
+
+Αφορμή και αποφάσεις: `design_decisions.md` Α24. Όλη η φάση 1 μπήκε σε commit πριν από την πρώτη αλλαγή: branch
+`nfr-v9`, commit `1794a69`, **tag `v8.1-campaign`**. Κάθε αρχείο που αναφέρεται εδώ ξαναβγαίνει με
+`git show v8.1-campaign:<path>`.
+
+| Τι | Πού ήταν | Γιατί έφυγε / πού είναι τώρα |
+|---|---|---|
+| Ένα OCSVM ανά αριθμό pods, χαρακτηριστικά CPU / throttling / p95 / throughput (backend) | `5-ml-training/*.py`, `health_model.pkl` | Οι καθηγητές ζήτησαν ένα μοντέλο με είσοδο τον αριθμό pods, και ανίχνευση με βάση τις NFR, όχι τη CPU. Τα scripts, τα δεδομένα και τα μοντέλα της φάσης 1 είναι στο `5-ml-training/phase1/` (αντίγραφα που τρέχουν, ώστε τα σχήματα της φάσης 1 να ξαναβγαίνουν). |
+| Επαλήθευση με κατώφλια (CPU < 0.75, throttling < 10%, p95 < 0.35 σε ένα παράθυρο 40 s) | `agent_tools._check_stabilization` | Ο χρήστης όρισε επαλήθευση με την πορεία του score του SVM (Α24). |
+| Εργαλεία `restart_kubernetes_pod`, `rollback_kubernetes_deployment` | `agent_tools.py` | Απόφαση του χρήστη: ο agent κρατά scale και restart όλης της εφαρμογής. |
+| Σενάριο badconfig (`FEATURE_LOGIN_AUDIT`, `k6/badconfig.js`) | backend `services/authService.js`, harness | Χωρίς rollback ο agent δεν μπορεί να το λύσει, άρα δεν μετριέται. |
+| Baselines rules / rules-v2 / static-1 / static-3 (`3-ai-agent/rule_scaler.py`) | `3-ai-agent/`, `run_experiment.sh` | Οι καθηγητές ζήτησαν σύγκριση μόνο με τον native μηχανισμό (HPA). |
+| Φορτίο κλειστού μοντέλου μόνο σε login (`k6/*.js` με VUs) | `4-load-testing/k6/` | Αντικαταστάθηκε από μίξη endpoints σε ανοιχτό μοντέλο (`k6/lib/mix.js`, `make_profiles.py`). |
+| `incident_log.csv` της φάσης 1 | `3-ai-agent/` | Μετονομάστηκε `incident_log_phase1.csv` (η φάση 2 έχει άλλες στήλες). |
+| Επικύρωση ανιχνευτή της φάσης 1 (run 2, φάσεις, logs, scripts) | `4-load-testing/detector_validation_*` | `4-load-testing/archive/detector_validation_phase1/` (το σχήμα `make_validation_timeline.py` διαβάζει από εκεί). |
+| `campaign_rerun.sh` και τα `*.nohup` της καμπάνιας 21/10 | `4-load-testing/` | `4-load-testing/archive/`. |
+
+**Δεν άλλαξαν:** τα αποτελέσματα της φάσης 1 (`evaluation_results*.csv`, `comparison.md`, `eval_*` φάκελοι, η αναφορά
+`campaign-2026-10-21.md`), τα σχήματα της φάσης 1 και οι σημειώσεις με ημερομηνία. Η φάση 2 γράφει σε νέα αρχεία
+(`results_nfr*.csv`, `comparison_nfr.md`), γιατί οι μετρικές της (στο ingress, με τη μίξη) δεν συγκρίνονται ένα προς ένα με
+της φάσης 1.

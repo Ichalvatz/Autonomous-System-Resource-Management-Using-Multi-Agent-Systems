@@ -51,10 +51,14 @@ SCALE_COOLDOWN_SECONDS = 30
 RESTART_COOLDOWN_SECONDS = 60
 
 
-# Median / max CPU cost per request (core-seconds) over baseline_metrics_healthy.csv (rps > 2),
-# measured on 2026-09-30 before any fault existed.
-HEALTHY_CPU_PER_REQUEST = 0.073
-HEALTHY_CPU_PER_REQUEST_MAX = 0.10
+# Healthy reference for the per-pod view (diagnosis only, not used by the detector), for the phase-2 request
+# mix: CPU cost per request (core-seconds) and the per-pod p95 / throttling of healthy traffic. Provisional from
+# the endpoint costs of 2026-10-22 (k6/endpoint_costs.js: the mix at 40 rps on 1 pod, 0.0103 core-s per request);
+# replaced by the median / max of the healthy training data once collected (collect_healthy_data.py).
+HEALTHY_CPU_PER_REQUEST = 0.010
+HEALTHY_CPU_PER_REQUEST_MAX = 0.013
+HEALTHY_POD_P95 = 0.15
+HEALTHY_POD_THROTTLING = 0.06
 
 
 REVISION_ANNOTATION = "deployment.kubernetes.io/revision"
@@ -186,9 +190,10 @@ def get_pod_breakdown() -> str:
     except Exception as e:
         return f"Error building the pod breakdown: {e}"
 
-    lines = [f"{len(pods)} backend pod(s). Healthy reference (training data, normal login traffic): "
+    lines = [f"{len(pods)} backend pod(s). Healthy reference (healthy traffic of the normal request mix): "
              f"CPU per request ~{HEALTHY_CPU_PER_REQUEST} core-s (max {HEALTHY_CPU_PER_REQUEST_MAX}), "
-             "p95 <= 0.2 s, throttling <= 6%. Below ~3 req/s per pod the process's idle CPU inflates CPU per request."]
+             f"p95 <= {HEALTHY_POD_P95} s, throttling <= {HEALTHY_POD_THROTTLING:.0%}. Below ~5 req/s per pod the "
+             "process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic."]
     for pod in sorted(pods, key=lambda p: p.metadata.name):
         name = pod.metadata.name
         get = lambda key: values[key].get(name)
@@ -735,15 +740,18 @@ def query_knowledge_base(metrics: dict) -> str:
     # ChromaDB's "l2" distance is the squared Euclidean distance.
     matches = [(math.sqrt(max(d, 0.0)), doc, meta) for d, doc, meta in
                zip(found["distances"][0], found["documents"][0], found["metadatas"][0])]
-    if matches[0][0] > MEMORY_SIMILAR_MAX:
+    similar = [m for m in matches if m[0] <= MEMORY_SIMILAR_MAX]
+    if not similar:
         # 2026-10-01: a stuck app was shown far-away scale-down incidents under a neutral header, and the agent
-        # reused "scale 3->1". Say it plainly.
+        # reused "scale 3->1". Say it plainly, and show only the closest one.
         lines = [f"NO similar past incident: the closest (distance {matches[0][0]:.1f}, >{MEMORY_SIMILAR_MAX:g} = a "
-                 "different situation) describe DIFFERENT problems. Do NOT reuse their actions; decide from the "
+                 "different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the "
                  "current metrics. For reference only:"]
+        matches = matches[:1]
     else:
-        lines = [f"{resolved} verified past incident(s); most similar first (distance ~0-1 = nearly the same state, "
-                 f">{MEMORY_SIMILAR_MAX:g} = a different situation):"]
+        lines = [f"{len(similar)} similar verified past incident(s) of {resolved} stored; most similar first "
+                 f"(distance ~0-1 = nearly the same state):"]
+        matches = similar
     for distance, doc, meta in matches:
         lines.append(f"  - distance {distance:.1f} | {meta.get('time', '?')} | {doc}\n"
                      f"    Action taken: {meta.get('actions')} -> verified STABLE"

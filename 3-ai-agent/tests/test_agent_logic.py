@@ -245,7 +245,8 @@ def test_memory_returns_the_waste_incident_for_a_waste_state():
 
 def test_memory_returns_the_overload_incident_for_an_overload_state():
     text = memory_for(metrics(2, 165, p95=0.5))
-    assert text.splitlines()[0].startswith("3 verified") and "scale 2->3" in text.splitlines()[2]
+    assert text.splitlines()[0].startswith("1 similar verified past incident(s) of 3 stored")
+    assert "scale 2->3" in text.splitlines()[2] and "scale 2->1" not in text   # the far one is not listed
 
 
 def test_memory_says_no_similar_incident_for_a_different_situation():
