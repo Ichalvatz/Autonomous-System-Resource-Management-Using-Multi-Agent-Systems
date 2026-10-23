@@ -4,7 +4,8 @@ import chromadb
 print("Connecting to ChromaDB...")
 chroma_client = chromadb.HttpClient(host='chromadb.aiops', port=80)
 
-collection_name = "sre_runbooks"
+# The agent's incident memory (agent_tools.COLLECTION). Phase 1's was "sre_runbooks" (git tag v8.1-campaign).
+collection_name = "incidents_nfr"
 
 # 2. Delete the existing collection
 try:

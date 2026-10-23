@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run experiments back to back: ./4-load-testing/queue.sh hpa rules llm ...
+# Run experiments back to back: ./4-load-testing/queue.sh hpa llm ...
 cd "$(dirname "$0")/.."
 for s in "$@"; do
   echo "[$(date +%H:%M:%S)] queue: starting $s" >> 4-load-testing/queue.log

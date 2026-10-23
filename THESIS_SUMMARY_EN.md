@@ -141,7 +141,7 @@ Added by Claude after the overnight and day experiments; details in `NOTES_2026-
 
 ## Status (2026-10-04, final): experiments complete
 Supersedes the 2026-10-01 numbers above where they differ; full log in `NOTES_2026-10-03.md`, one-page summary in
-`thesis_notes/results_summary.md`, all tables in `4-load-testing/comparison.md`.
+`thesis_notes/results_summary_phase1.md`, all tables in `4-load-testing/comparison.md`.
 
 - **Agent versions:** v6 replaced the code-computed hint of v5 with investigation tools (frozen 2026-10-03 14:28);
   v7 added a classify step and two code guards; **v8 (final, default)** added a third guard (full diagnosis before a

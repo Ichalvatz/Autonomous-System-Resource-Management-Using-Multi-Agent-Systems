@@ -10,9 +10,11 @@ each run's controller.log (guard refusals) and the campaign log (provenance hash
   normal load  the replica count went 1->2->3->2->1 (4 changes) and every applied action was verified STABLE;
                the NFR violation is reported, not judged (in an open-model load every strategy pays for the
                time a scale-up takes)
-  stuck        the first wake-up restarts the app and is verified STABLE; the NFRs recover
+  stuck        the first wake-up after the fault restarts the app and is verified STABLE; the NFRs recover
+               (a wake-up before the fault is listed as a false wake, with what the agent did about it)
   cpuhog       the same
-A run decided partly by the fallback model is flagged: that is a different agent.
+A run decided partly by the fallback model is flagged: that is a different agent. A wake-up in the controller log
+with no incident_log row (the agent was still running when the run ended, e.g. a stalled LLM call) is flagged too.
 (Phase 1's version, with rules / static / badconfig and the v8 comparison: git tag v8.1-campaign.)
 """
 import csv
@@ -60,6 +62,24 @@ def refusals(row):
             "claim": text.count("Refused: no action tool was executed")}
 
 
+def unlogged_wakes(row, inc):
+    """Wake-ups in the controller log with no incident_log row, each with the number of LLM warnings after it."""
+    path = os.path.join(ROOT, row.get("run_dir") or "", "controller.log")
+    if not row.get("run_dir") or not os.path.exists(path):
+        return []
+    logged = {i["woke_at"][11:] for i in inc}
+    lines = open(path, errors="replace").read().splitlines()
+    wakes = [(n, m.group(1)) for n, line in enumerate(lines)
+             if (m := re.match(r"\[(\d\d:\d\d:\d\d)\] ANOMALY DETECTED", line))]
+    return [(t, sum("[LLM]" in line for line in lines[n:])) for n, t in wakes if t not in logged]
+
+
+def fault_time(row):
+    if not row.get("fault_at_min"):
+        return None
+    return datetime.fromtimestamp(datetime.strptime(row["start"], STAMP).timestamp() + 60 * float(row["fault_at_min"]))
+
+
 def mean(values):
     nums = [float(v) for v in values if v not in ("", "never", None)]
     return f"{sum(nums) / len(nums):.0f}" if nums else "–"
@@ -84,9 +104,16 @@ def agent_checks(scenario, right, rec_col, row, inc):
         if not stable:
             notes.append("μη STABLE ενέργεια")
         return ok, stable, notes
-    first = inc[0] if inc else None
+    fault = fault_time(row)
+    before = [i for i in inc if fault and datetime.strptime(i["woke_at"], STAMP) < fault]
+    after = [i for i in inc if i not in before]
+    for i in before:
+        notes.append(f"αφύπνιση πριν το fault ({i['woke_at'][11:]}: {i['actions'] or 'καμία ενέργεια'})")
+    for t, warnings in unlogged_wakes(row, inc):
+        notes.append(f"⚠ αφύπνιση {t} χωρίς ολοκληρωμένο run του agent ({warnings} προειδοποιήσεις LLM)")
+    first = after[0] if after else None
     ok = bool(first and re.search(right, first["actions"] or "") and first["verification"] == "STABLE")
-    if first is None:
+    if first is None and not unlogged_wakes(row, inc):
         notes.append("καμία αφύπνιση")
     return ok, row.get(rec_col, "never") not in ("never", "", None), notes
 
@@ -117,7 +144,7 @@ def main():
     out += ["## Προέλευση", ""] + [f"- {line}" for line in provenance(tag)] + [""]
 
     summary = ["## Έλυσε ο agent κάθε σενάριο;", "",
-               "| Σενάριο | Σωστή ενέργεια | Runs | Σωστά στην 1η αφύπνιση | Ανέκαμψε | Μέσος χρόνος ανάκαμψης (s) | Σημειώσεις |",
+               "| Σενάριο | Σωστή ενέργεια | Runs | Σωστά στην 1η αφύπνιση (μετά το fault) | Ανέκαμψε | Μέσος χρόνος ανάκαμψης (s) | Σημειώσεις |",
                "|---|---|---|---|---|---|---|"]
     details, agent_runs, problems = [], [], []
     for scenario, csv_name, right, rec_col, title in SCENARIOS:
@@ -159,7 +186,7 @@ def main():
         agent = by_method[AGENT]
         if agent:
             checks = [agent_checks(scenario, right, rec_col, r, incidents_in(r, incidents)) for r in agent]
-            notes = sorted({n for _, _, ns in checks for n in ns})
+            notes = sorted({re.sub(r" \(.*", "", n) for _, _, ns in checks for n in ns})
             rec_times = [r["recovery_s"] for r in agent] if scenario != "baseline" else []
             summary.append(f"| {title} | {RIGHT_ACTION[scenario]} | {len(agent)} | {sum(c[0] for c in checks)}/{len(agent)} | "
                            f"{sum(c[1] for c in checks)}/{len(agent)} | {mean(rec_times) if rec_times else '–'} | "
@@ -167,7 +194,7 @@ def main():
             for r, c in zip(agent, checks):
                 agent_runs.append((title, r, c))
                 if not (c[0] and c[1]) or c[2]:
-                    problems.append(f"- {title} {r['start']}: σωστό στην 1η αφύπνιση {c[0]}, ανέκαμψε {c[1]}, "
+                    problems.append(f"- {title} {r['start']}: σωστό στην 1η αφύπνιση{' (μετά το fault)' if rec_col else ''} {c[0]}, ανέκαμψε {c[1]}, "
                                     f"{', '.join(c[2]) or '–'} (`{r.get('run_dir', '')}`)")
 
     out += summary + [""] + details
@@ -177,7 +204,11 @@ def main():
         ref_txt = (f"φραγμοί: evidence {ref['evidence']}, diagnosis {ref['diagnosis']}, claim {ref['claim']}"
                    if ref else "φραγμοί: –")
         out += [f"### {title}, {r['start']} (`{r.get('run_dir', '')}`)", "",
-                f"Σωστά στην 1η αφύπνιση: **{'ναι' if c[0] else 'όχι'}** · ανέκαμψε: **{'ναι' if c[1] else 'όχι'}** · {ref_txt}", ""]
+                f"Σωστά στην 1η αφύπνιση{' μετά το fault' if fault_time(r) else ''}: **{'ναι' if c[0] else 'όχι'}** · "
+                f"ανέκαμψε: **{'ναι' if c[1] else 'όχι'}** · {ref_txt}", ""]
+        for t, warnings in unlogged_wakes(r, incidents_in(r, incidents)):
+            out.append(f"- {t} αφύπνιση χωρίς γραμμή στο incident_log: ο agent έτρεχε ακόμα στο τέλος του run "
+                       f"({warnings} προειδοποιήσεις [LLM] στο controller.log μετά από αυτήν)")
         for i in incidents_in(r, read_csv(INCIDENTS)):
             answer = (i["final_answer"] or "").replace("\n", " ").replace("|", "/")[:220]
             out.append(f"- {i['woke_at'][11:]} `{i['signature'].replace('State -> ', '')}` → "

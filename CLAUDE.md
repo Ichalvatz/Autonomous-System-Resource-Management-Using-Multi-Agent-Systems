@@ -1,222 +1,272 @@
 # CLAUDE.md
 
-> **PHASE 2 IN PROGRESS (since 2026-10-22, branch `nfr-v9`; phase 1 = git tag `v8.1-campaign`).** After a meeting
-> with the supervisors, the system is being rebuilt around the **non-functional requirements** (NFRs). Plan and
-> decisions: `thesis_notes/design_decisions.md` A24. Running log: `thesis_notes/phase2_worklog.md`.
-> Where the sections below disagree with this box, this box is current.
-> - **NFRs:** p95 < 0.35 s and errors < 1%, measured at the **ingress-nginx** (`1-infrastructure/ingress-metrics.yaml`;
->   the controller is pinned to v1.15.1 with `--enable-metrics=true --time-buckets=` the backend's buckets).
->   PromQL in one place: `3-ai-agent/nfr_metrics.py` (throughput, error_rate, latency_p95, replicas = desired,
->   ready_replicas; rps_per_pod derived; CPU only for diagnosis and the HPA target).
-> - **Load:** open model (k6 arrival rate), request mix in `4-load-testing/k6/lib/mix.js` (30% search, 25% place,
->   15% reviews, 10% recommendations, 10% login, 10% writes) against a generated catalogue (backend
->   `SEED_DATASET=load`: 5k places, 50k reviews, 1k users). Scenario scripts are generated from the capacity
->   table by `4-load-testing/k6/make_profiles.py`: baseline, demo, stuck, cpuhog, detector_validation.
-> - **ML:** `5-ml-training/` scripts drive k6 (`k6_driver.py`); capacity = highest rate with p95 <= 0.25 s and no
->   errors (1-4 pods); **one One-Class SVM** with the pod count as an input (`3-ai-agent/health_model.py`:
->   transform, score, explain, embedding, judge_trajectory). Phase 1's pipeline and data: `5-ml-training/phase1/`.
-> - **Agent v9:** 5 tools (3 observation + scale + rolling restart; no pod restart, no rollback); verification by
->   the trajectory of the SVM score (improving -> wait, normal twice -> STABLE, worse / stuck -> UNSTABLE and an
->   immediate re-wake by the detector, at most 2 in a row); memory in ChromaDB collection `incidents_nfr` with the
->   model's feature vector as embedding (top-2 STABLE + recent 15 min in the prompt). ChromaDB volume now at
->   `/data` (persists). New `incident_log.csv`; phase 1's is `incident_log_phase1.csv`.
-> - **Comparison:** only the native HPA (`baselines/hpa.yaml`, CPU target from the capacity run, scale-down
->   stabilization 120 s), with readiness (`/ready`) and liveness (`/health`) probes on the deployment for every
->   strategy. Scenarios: baseline, stuck (now 503 after 3 s), cpuhog; badconfig removed. Results in
->   `4-load-testing/results_nfr*.csv`, `comparison_nfr.md`; campaign `full_campaign.sh` (agent vs HPA).
-> - Removed from the code (kept in git and in `thesis_notes/removed_and_archived.md`): rule_scaler.py, static
->   strategies, per-replica models, threshold verification, pod-restart and rollback tools, badconfig.
+Thesis project: **autonomous resource management of a Kubernetes workload with an LLM agent (AIOps)**, built around the
+service's **non-functional requirements (NFRs)**. A monitor scores the NFR metrics, measured at the ingress, with one
+One-Class SVM. When the SVM flags an anomaly, it wakes an LLM "SRE agent" (smolagents `CodeAgent` + Gemini via LiteLLM).
+The agent reads code-computed facts, a measured capacity table and similar past incidents from ChromaDB, investigates
+with observation tools, and then scales or restarts the backend. Code verifies every action by following the SVM score.
+The comparison is against the native Kubernetes HPA.
 
-Thesis project: **autonomous resource management of a Kubernetes workload using an LLM agent (AIOps)**.
-A monitor runs one One-Class SVM per replica count on Prometheus metrics (it replaced the Isolation Forest on 2026-09-30, see "Model choice"). When it flags an anomaly, it wakes an LLM "SRE agent"
-(smolagents `CodeAgent` + Gemini via LiteLLM). The agent reasons over the metrics, a measured capacity table and
-past incidents stored in ChromaDB, then scales or restarts the backend deployment.
+**Two phases.**
+- **Phase 2** is the current code (branch `nfr-v9`, since 2026-10-22, after a meeting with the supervisors): agent v9,
+  NFRs, request mix, one SVM, HPA-only comparison. Decisions and results: `thesis_notes/design_decisions.md` A24–A27.
+  Log: `thesis_notes/phase2_worklog.md`. One-page summary: `thesis_notes/results_summary.md`.
+- **Phase 1** is git tag `v8.1-campaign` (agent v3–v8.1, CPU-based per-replica SVMs, login-only closed-model load, rule /
+  static baselines, badconfig scenario). Documented in `design_decisions.md` A1–A23,
+  `thesis_notes/removed_and_archived.md` and `thesis_notes/results_summary_phase1.md`. Its data:
+  `5-ml-training/phase1/`, `4-load-testing/evaluation_results*.csv`, `comparison.md`, `3-ai-agent/incident_log_phase1.csv`.
 
 ## Layout (numbered folders = pipeline order)
 
 | Folder | What it is |
 |---|---|
-| `1-infrastructure/` | kind cluster config (ports 80/443), kube-prometheus-stack Helm values, ServiceMonitor for backend `/metrics`, ingresses, ChromaDB deployment+PVC |
-| `2-target-app/` | The **system under management**: "myWorld Travel" app, reused from a Software Engineering II course project. `software-backend/` (Node 18 / Express, in-memory DB by default, bcryptjs login, prom-client metrics, `/chaos/zombie`, `POST /chaos/stuck` and `POST /chaos/cpuhog` endpoints) and `software-frontend/` (React + Vite, served by nginx). The k8s manifests sit at this folder's top level. |
-| `3-ai-agent/` | The AIOps runtime: `anomaly_detector.py` (main loop) → `agent.py` (prompt + CodeAgent) → `agent_tools.py` (tools with safety guards) |
-| `4-load-testing/` | k6 scripts in `k6/`, **one per scenario** (since 2026-10-11; `run_experiment.sh` runs `k6/<SCENARIO>.js`): `k6/baseline.js` (38 min, frozen, the measured demo; was `baseline_eval.js`: 5→20→30→14→5 VUs on `/auth/login`, which should drive 1→2→3→2→1 replicas; the 3→2 step is 14 VUs, not 18, because 18 sits inside the 3-replica band), `k6/demo.js` (the same shape cut to 22 min on 2026-10-01 22:29 for hand demos; not comparable with measured runs; was `baseline.js`), `k6/stuck.js`, `k6/cpuhog.js`, `k6/badconfig.js` (the same load: 8 VUs, 16 min; the fault is injected by the harness at t = 4 min, each header says how; until 2026-10-11 one shared `fault_load.js` with the same load), `k6/detector_validation.js` + `detector_validation.sh` + `analyze_validation.py` (scripted detector test, see "Detector validation"), `run_experiment.sh` / `queue.sh` / `evaluate_run.py` / `compare_results.py` (strategy comparison, see "Evaluation harness"), `inject.sh` (hand fault injection), `archive/` (one-off queue scripts and logs of past sessions, kept as provenance; index in `archive/README.md`) |
-| `5-ml-training/` | Offline ML pipeline + artifacts (see below) |
-| root | `deploy.sh` (full cluster bootstrap), `reset_chroma.py` (wipe `sre_runbooks` collection) |
+| `1-infrastructure/` | kind cluster config (ports 80/443), kube-prometheus-stack values, ServiceMonitors (backend `/metrics`; `ingress-metrics.yaml` for ingress-nginx :10254), ingresses, ChromaDB (pinned digest, PVC at `/data`) |
+| `2-target-app/` | The **system under management**: "myWorld Travel" (from a Software Engineering II course project). `software-backend/`: Node 18 / Express, in-memory DB, bcryptjs login, prom-client metrics, `/health` (shallow), `/ready`, `POST /chaos/stuck`, `POST /chaos/cpuhog`. `software-frontend/`: React + Vite behind nginx. The k8s manifests sit at this folder's top level (`backend-deployment.yaml`: 1 core / 1 GiB, readiness and liveness probes, `SEED_DATASET=load`). |
+| `3-ai-agent/` | The runtime: `anomaly_detector.py` (main loop) → `agent.py` (facts, prompt, CodeAgent, LLM retries) → `agent_tools.py` (5 tools, guards, verification, memory). Shared modules: `nfr_metrics.py` (every PromQL query), `health_model.py` (the SVM transform, score, explanation, embedding, trajectory judgement). `memory_snapshot.py` saves / restores the memory. |
+| `4-load-testing/` | k6 scenarios in `k6/` (generated, frozen), the experiment harness, campaign scripts and reports (see "Evaluation harness") |
+| `5-ml-training/` | Capacity discovery, healthy data, training (see "ML pipeline"); artifacts; `phase1/` (archived phase-1 pipeline and data) |
+| `thesis_notes/` | Design decisions (A1–A27), worklogs, results summaries, manual testing guide, figures |
+| root | `deploy.sh` (full cluster bootstrap), `reset_chroma.py` (empty the `incidents_nfr` collection) |
 
 ## Hostnames (ingress, need `/etc/hosts` → 127.0.0.1)
-`mwtback.aiops` (backend :3001), `myworldtravel.aiops` (frontend), `chromadb.aiops` (ChromaDB :8000), `prometheus.aiops`, `grafana.aiops`.
-All Python code talks to Prometheus/ChromaDB through these hostnames. Nothing uses port-forwards.
+`mwtback.aiops` (backend :3001), `myworldtravel.aiops` (frontend), `chromadb.aiops` (ChromaDB :8000), `prometheus.aiops`,
+`grafana.aiops`. All Python code talks to Prometheus and ChromaDB through these hostnames. Nothing uses port-forwards.
 
-## The 5-metric feature contract
-Everything shares the same PromQL for these features: `avg_cpu_per_pod`, `throughput`, `latency_p95`, `active_replicas`, `cpu_throttling` (a ratio from 0 to 1).
-The queries are **copy-pasted** in `anomaly_detector.py`, `agent_tools.verify_metrics_stabilization`, `capacity_discovery.py`,
-and `collect_healthy_data.py` (the earlier `stress_profiler.py` was deleted on 2026-10-10). If you change one, change all of them.
-The model uses 4 of them, `["avg_cpu_per_pod","latency_p95","cpu_throttling","throughput"]`; `active_replicas` selects which per-replica model scores the reading. The feature list is stored in the model bundle and the detector reads it from there.
+## NFRs and the metric contract
+- **NFRs:** p95 latency < 0.35 s and errors (5xx) < 1%, as users see them, i.e. at **ingress-nginx**. Cost NFR: at most
+  3 pods (see "Pod sizing").
+- The controller is pinned to `controller-v1.15.1` (`deploy.sh` patches in `--enable-metrics=true` and `--time-buckets`
+  equal to the backend's buckets: 0.025 … 0.35 … 3, 5, 10 s).
+- **Every query lives in `3-ai-agent/nfr_metrics.py`**: throughput (every status), error_rate, latency_p95 (1 m windows,
+  `host="mwtback.aiops"`), replicas = desired (`kube_deployment_spec_replicas`), ready_replicas; rps_per_pod derived;
+  avg CPU per pod for diagnosis and the HPA target only. `fetch_reading()` returns None if a required metric is missing
+  (missing error rate = 0). `fetch_range()` is used by `evaluate_run.py`.
+- The detector, the verification, the ML scripts and the evaluation all use these functions, so a reading means the
+  same thing everywhere. (In phase 1 the queries were copy-pasted in 4 places.)
+- Per-pod diagnosis (`get_pod_breakdown`) still uses the backend's own metrics: CPU, throttling, req/s, CPU per request,
+  p95, 5xx, event-loop lag, memory.
+
+## Load
+- **Open model:** k6 arrival-rate executors. A closed model hides overload, because slow responses reduce the offered
+  load.
+- **Request mix:** one source, `k6/lib/mix.js`: 30% search, 25% place, 15% reviews, 10% recommendations, 10% login,
+  5% review post, 5% favourite post, with a token pool (`TOKENS_FILE`, created before the idle wait so no login burst
+  lands in the measured window).
+- **Data:** a generated catalogue (backend `SEED_DATASET=load`: 5015 places, 50206 reviews, 1002 users
+  `loaduser<i>@example.com` / `password123`), with in-memory indexes and search pagination.
+- **Cost:** the mix costs ~10 ms CPU per request; login (bcrypt) is 10% of the requests but ~70% of the CPU
+  (`design_decisions.md` A25).
+- **Scenarios** are generated from the capacity table by `k6/make_profiles.py`, then frozen:
+  - `baseline.js` (38 min): 42.8 → 123.5 → 210 → 105.2 → 42.8 rps, needs 1→2→3→2→1 pods;
+  - `demo.js`: the same shape, shorter, for hand demos (not comparable);
+  - `stuck.js` and `cpuhog.js`: 57 rps on 1 pod for 16 min, fault at t = 4 min;
+  - `detector_validation.js`;
+  - `constant_rate.js` / `ramp_rate.js` for the ML scripts, `endpoint_costs.js`.
 
 ## ML pipeline (`5-ml-training/`)
-Run the three steps in order, with the detector **off** and **no** k6 traffic: each script generates its own load. Keep Docker's CPU allocation fixed across runs, and run `reset_chroma.py` after retraining.
-1. `capacity_discovery.py`: for replicas 1–3 (capped, see "Pod sizing"), ramps Python-thread VUs (1 req/s each, POST /auth/login) in steps of 2 until CPU > 0.75, throttle > 8% or p95 > 1 s. Each ramp starts at the previous count's safe VUs. A breaking reading only counts if a re-measurement at the same load also breaks. Writes `capacity_table.json` and `capacity_discovery_log.csv`. Takes about 30–45 min for 3 replicas.
-2. `collect_healthy_data.py`: for each replica count, a continuous ramp (+1 VU every 30 s, a reading every 15 s) from the bottom of that count's band up to its safe VUs and back down. Bands: 1 replica starts at 1 VU (with 6 readings per VU at 1–3 VUs, where p95 is noisy); N replicas start at `OVERLAP` = 70% of (N−1)'s safe VUs, which gives 1–12, 8–24 and 17–32 VUs. The overlap is an anti-flapping deadband: N−1 scales up above its safe max, N scales down only below 70% of it. Writes `baseline_metrics_healthy.csv` (with a `vus` column). Takes about 55 min, about 200 readings.
-3. `train_health_baseline.py`: filters to SLO-healthy rows: CPU ≤ 0.95, throttling < 10%, and p95 < 0.35 s, which is the agent's own SLO, so the model never learns as healthy a state the agent treats as a violation. No transition filter: the collector waits for readiness + 60 s. Fits **one One-Class SVM per replica count** on 4 features:
-   - `log(cpu)`, `log(throughput)` → StandardScaler (clipped at 0.001)
-   - latency: `log(max(p95, 0.2)) × 4`, fixed scale
-   - throttling: `max(ratio, 0.05) × 20`, fixed scale
-   - → `OneClassSVM(rbf, nu=0.02, gamma=0.02)`
+Run the steps in order, with the detector **off** and no other traffic. Each script drives k6 itself through
+`k6_driver.py` (`make_token_pool`, `run_k6`, `scale`, `restart_and_wait`). Keep Docker's CPU allocation fixed, and run
+`reset_chroma.py` after retraining: memory embeddings live in the model's space.
+1. **`capacity_discovery.py`** (~75 min): for 1–4 pods, fresh pods, then the mix at fixed rates in 90 s steps.
+   - safe = the highest rate with p95 ≤ 0.25 s and errors ≤ 0.1% (headroom below 0.35 s for the time a scale-up takes);
+   - a breaking reading counts only if a second step at the same rate also breaks.
+   - Result (2026-10-23): 1 / 2 / 3 / 4 pods = **95 / 165 / 255 / 315 rps** safe; 0.35 s breaks at 100 / 195 / 270 / 335.
+   - Writes `capacity_table.json` (also the p95 and CPU per pod at the safe rate) and `capacity_discovery_log.csv`.
+2. **`collect_healthy_data.py`** (~55 min): per pod count, a continuous arrival-rate ramp up to the safe rate and back,
+   one reading every 15 s.
+   - Bands overlap (anti-flapping deadband): N pods start at 70% of safe(N−1), so the bands are 1 pod 1→95, 2 pods
+     66.5→165, 3 pods 115.5→255.
+   - Writes `baseline_metrics_healthy.csv` (188 readings, 0 errors).
+3. **`train_health_baseline.py`** (seconds): keeps healthy rows (p95 < 0.35 s, no errors, ≥ 1 rps, every pod ready),
+   then a grid search for **one One-Class SVM**.
+   - **Inputs:** load, `p95_weight·log(max(p95, 0.2))`, `err_weight·error_rate` and `rep_weight·replicas`
+     (`health_model.transform`).
+   - **Two forms of the load input:** log rps per pod, or log total throughput. Both are standardized.
+   - **Each candidate is judged by:**
+     - 28 probes from the measured bands: healthy, waste, after scale-down, early overload, slow, stuck, 1% errors,
+       outage, low traffic;
+     - held-out false alarms: train on the ramp-up, test on the ramp-down, and back.
+   - **Pre-declared selection rule:** all probes pass → fewest held-out wakes → largest probe margin relative to the
+     30 s score noise → fewest held-out flags.
+   - **Selected:** form **total**, γ 1.0, rep_weight 12, err_weight 100, p95 floor 0.2 × 4, ν 0.02. 28/28 probes;
+     margin / noise 1.04. `trend_eps` = 0.0147 (noise of the 3-reading average); a single reading's noise is 0.0263.
+   - Writes `health_model.pkl` (gitignored), `training_report.json` and `baseline_metrics_healthy_filtered.csv`.
+   - Details: `design_decisions.md` A26.
 
-   Runs probes derived from the measured bands: HEALTHY mid-band, WASTE (0.8× the band bottom), AFTER scale-down (the smaller count must see that load as normal: no flapping), OVERLOAD, STUCK (p95 = 5 s), p95 = 0.19 s (healthy top, must be normal), SLOW p95 = 0.4 s (must be an anomaly) and LOW traffic. Prints a held-out false-alarm estimate (train on ramp-up, test on ramp-down and back; pessimistic, about 2× the real rate). Writes `health_model.pkl` (a dict `{"model_type", "features", "models": {1: …, 2: …, 3: …}}`) and `*_filtered.csv`.
-- `train.py` and `save.py` (the first Isolation Forest scripts) were deleted on 2026-09-30.
-- `*.pkl` files are gitignored, so a fresh clone has no model. The detector loads `./5-ml-training/health_model.pkl` and refuses any other format. `5-ml-training/isolation_forest_baseline.pkl` (the last Isolation Forest, 2026-09-30 18:51: one model for all replica counts, 5 raw features incl. `active_replicas`) is not used at runtime but kept as evidence: it scores the demo's two waste states (2 pods at 5 rps, 3 pods at 12.6 rps) as normal. The root Aug 9 one was deleted on 2026-10-10.
+The score is the SVM's `decision_function` (≥ 0 healthy). It is steep near the boundary and saturates far from it (~−0.54).
+One reading is noisy (a healthy 2–3 pod state sits ~0.01–0.06 above 0), so trajectories are judged on a 30 s moving average.
 
 ## Runtime flow
-`anomaly_detector.run_monitor()` polls every 10 s. It skips a reading if any metric is missing, if `active_replicas` changed less than 90 s ago (`REPLICA_SETTLE_SECONDS`; the collector likewise waits for readiness + 60 s after a replica change, so no training reading mixes pod counts), or if throughput is below `MIN_THROUGHPUT_RPS` (0.8, just under the 1-VU training data). Otherwise it scores the reading with the model for the current `active_replicas` (a replica count with no model, e.g. 4, counts as an anomaly).
-The agent is only called after `ANOMALY_STREAK_REQUIRED` (3) anomalous readings in a row. Any skip or normal reading resets the streak. The call to `agent.trigger_ai_agent(metrics_json)` blocks. Afterwards a 60 s cooldown deadline (`AGENT_COOLDOWN_SECONDS`) blocks new triggers while monitoring continues. Ctrl+C prints a summary.
-`--dry-run` never imports `agent` (no LLM key needed, no cluster changes). It counts the times it would have woken the agent and logs every evaluated reading (metrics, prediction, `decision_function` score) to `5-ml-training/dry_run_readings.csv` (an existing file is moved aside with its timestamp, never overwritten). SIGTERM is handled like Ctrl+C (the experiment scripts stop controllers with SIGTERM, because background jobs of a non-interactive shell ignore SIGINT). Use it to measure the false-alarm rate on healthy traffic before running real experiments. An exception around `trigger_ai_agent` is caught and counted ("Agent runs that raised"), and monitoring continues (added 2026-10-11; never happened in a measured run). **Blind spot:** requests are counted when they finish, so a fully hung app (≳ 9 s per request at 8 VUs) reads as low traffic and a crashed one as missing metrics: both are skipped and never wake the agent (`thesis_notes/design_decisions.md` A21).
-**The agent = prompt v8, the only version in the code** (since 2026-10-10). Since 2026-10-11 the code is **v8.1**: the same prompt byte for byte, with corrected descriptions (docstrings, which the LLM reads) for 4 of the 7 tools; the measured v8 runs used the old ones, so v8.1 is not measured yet (`thesis_notes/design_decisions.md` A20; v3–v7 are in git at commit `a1fd3d5`, history and how to rerun them: `thesis_notes/removed_and_archived.md`). Step 1 CLASSIFY on code-computed facts (`agent._computed_facts`: minimum replica count from the capacity table, CPU per request as a multiple of the healthy 0.073): (A) capacity → scale to that minimum ("you MUST scale DOWN" when over-provisioned), no investigation; (B) anything else → look at all three observation tools, then act on the cause: a change shortly before the problem → rollback; one pod misbehaving → restart that pod (uneven CPU under load is normal imbalance); evidence of a bad process state (ERROR lines, a runaway job, event-loop lag or CPU per request several times healthy) → rolling restart; a short SLO breach without evidence may be a transient → no action. The prompt has no "scale up MANDATORY" (v4) and no "> 2× → restart" rule (v5); a unit test checks this. It also shows **"YOUR RECENT ACTIONS"**: every agent run of the last 15 min with its verification verdict (`agent.RECENT_ACTIONS`, in-process on purpose: a failure depends on context and expires, so it is not stored in ChromaDB).
-**The LLM decides and acts; code does everything around it (changed 2026-09-30).** `trigger_ai_agent` looks up the closest past incidents in ChromaDB and puts them in the prompt. The LLM has exactly **7 tools** (listed at the top of `agent_tools.py`, in this order): observe `get_pod_breakdown` (per pod: CPU, throttling, req/s, CPU per request, p95, 5xx, event-loop lag, memory/limit, restarts, age, revision), `get_deployment_history` (recent revisions and what changed: image/env/limits/restart only), `get_kubernetes_logs` (last 200 lines per pod, keeps the last 10 WARN/ERROR/5xx/OOM; pod selector `app=aiops-backend` fixed 2026-10-11, same output); act `scale_kubernetes_deployment`, `restart_kubernetes_deployment` (rolling), `restart_kubernetes_pod` (one pod; refused if < 2 pods ready), `rollback_kubernetes_deployment(revision=0)` (JSON-patch replace of the pod template, like `kubectl rollout undo`). `add_base_tools=False`, `max_steps=10`; measured v8 runs: a capacity incident took 1–3 LLM calls, a fault 5–6 (three observations, act, answer). After the run, **even if the LLM crashed after acting**, code runs `verify_metrics_stabilization` and, if STABLE, saves signature + metrics + recorded actions + the LLM's root cause to ChromaDB.
-- **Verification** (changed 2026-10-01): waits until the rollout has converged (updated == available == desired replicas, observed generation current; counts alone pass too early for a restart), then 50 s more, and queries **40 s rate windows** (not the detector's 1 m), so the window covers only ~10–50 s after the action: no requests from before it and no new-pod startup burst. (The old fixed 20 s on 1 m windows mostly measured pre-action data and passed almost anything; 45 s on 1 m windows judged a successful restart UNSTABLE. 30 s windows sometimes return empty: cAdvisor can have < 2 samples.) These are the only queries that deviate from the 1 m feature contract. p95 must be < 0.35 s (since 2026-10-01 evening: a fault that more pods only dilute, e.g. p95 4.4 s → 3 s, must not count as fixed; no earlier STABLE verdict relied on the old "or improved" clause). CPU < 0.75 and throttling < 10% each pass if met **or** improved by ≥10% vs pre-action. Throttling uses the training filter's healthy limit (10%), not the agent's 5% early-warning target: a single post-action window is bursty (a restart that fixed the app read 6.7% at CPU 0.52) and the healthy training data reach 6.2% (so a scale-up during a still-rising ramp passes). About 60–70 s per incident.
-- **Rollback:** if a scale-**down** is not STABLE, `agent._rollback_failed_scale_down` restores the previous count (logged as `rollback to N` in `actions`). A failed scale-up is left in place; the detector wakes the agent again.
-- **Memory retrieval is metric-based, not embedding-based** (changed 2026-10-01): same replica count only, nearest by scaled distance over log rps, CPU, throttling and log p95 (stored as metadata with every incident; entries without them are ignored); the top 2 go into the prompt. On 2026-09-30 text embeddings put overload and waste at nearly the same distance (0.03–0.05), so a scale-up incident was the "closest" match for a waste state. If even the best match is > 3 (`MEMORY_SIMILAR_MAX`), the text says "NO similar past incident ... Do NOT reuse their actions" (a stuck app once reused a far-away "scale 3->1"). 9 entries saved by a stray detector during the invalid 00:06 HPA run were deleted on 2026-10-01 (backup: `4-load-testing/archive/memory_snapshots/chroma_backup_2026-10-01_1100.json`). **ChromaDB data is lost on every ChromaDB restart** (found 2026-10-09: the `chromadb/chroma:latest` image writes to `/data`, the PVC is mounted at `/chroma/chroma`); memory was empty on 2026-10-09.
-Why: in the first live run the LLM did verification and saving itself, and a Gemini 503 right after the 2→3 scale crashed the run, so the action was never verified or remembered.
-Success is decided by `agent_tools.run_outcome`, which the tools fill in (the actions they applied and the latest verification verdict). The LLM's final text is never parsed. `save_resolution_to_chroma` refuses to save unless the verdict is STABLE.
-ChromaDB is connected lazily and retried on each use (a one-shot connect at import once failed silently while ChromaDB was starting and disabled memory for a whole run).
-LLM calls go through `RetryingLiteLLMModel`: transient errors (429/503/5xx/timeouts, and responses without text, which Gemini sometimes returns) retry after 5/15/30 s, then the fallback model is tried: `gemini/gemini-2.5-flash` by default since 2026-10-04 04:40 (all measured runs had no fallback; `AIOPS_FALLBACK_MODEL=<model>` or `=off`). Every agent run is appended to `3-ai-agent/incident_log.csv` (metrics, memory hit, actions, verdict, saved, error, LLM calls/retries/fallbacks, seconds): the source for MTTR and success-rate numbers.
-`capacity_table.json` holds VUs (used by `collect_healthy_data.py`) and rps (`max_safe_rps` / `breaking_rps`, used in the agent prompt).
-Tool guards: namespace and deployment are hard-coded (`default` / `aiops-backend-deployment`); replicas 1–3 (`MAX_REPLICAS`, host CPU limit); max ±2 replicas per call; cooldowns of 30 s (scale) and 60 s (restart, pod restart, rollback), stored in module globals.
-**Behaviour guards** (three, in `agent_tools.py`, wired via smolagents `step_callbacks` + `final_answer_checks`, active only during an agent run; `AIOPS_ACT_GUARD=off` disables them for an ablation): (1) evidence before action: an action or final answer in the same step as an observation is refused; (2) no claimed action without a tool call: a final answer not starting with "No action taken" is refused while no action was recorded; (3) diagnosis before a disruptive action: restart, pod restart and rollback are refused until all three observation tools were used (scaling is not affected). Each one was added after the LLM broke the rule in a measured run while it was only a prompt instruction (v6: pre-committed to a scale-up before seeing its observation, claimed a scale-up it never executed; v7: restarted on badconfig after only the per-pod view). Tests replay those three incidents through a real CodeAgent (`tests/test_final_agent.py`).
-**Results of the final agent (v8, 2026-10-03/04):** 6/6 scenario runs right at the first wake-up (demo ×2: 4/4 actions, 0 s SLO violation, 71.0/71.7 replica-min; cpuhog restart 130 s; stuck restart 120 s; badconfig ×2 rollback 160/110 s). How each version led to the next (v3 → v8) and why: `thesis_notes/removed_and_archived.md` §5 and `thesis_notes/design_decisions.md` A11, A14–A19.
+**Detector** (`anomaly_detector.run_monitor`, every 10 s):
+- **Skips** a reading if a metric is missing, if the replica count changed less than 90 s ago (`REPLICA_SETTLE_SECONDS`),
+  or if throughput < 1 rps (`MIN_THROUGHPUT_RPS`).
+- **Outages are anomalies, not low traffic:** when no pod is ready, the ingress answers fast 503s, and throughput counts
+  every status.
+- **Wakes the agent** after 3 anomalous readings in a row (`ANOMALY_STREAK_REQUIRED`); then a 60 s cooldown
+  (`AGENT_COOLDOWN_SECONDS`).
+- **The JSON the agent gets** holds the reading, the score, its explanation (`health_model.explain`: which metrics lie
+  outside their healthy range, in physical units) and the **load trend** (least-squares slope of throughput over the last
+  60 s, rps/min).
+- **Re-wake:** if the agent's verification says UNSTABLE (worse or not improving), the next anomalous reading wakes it
+  again at once (no streak, cooldown or settle), at most `MAX_REWAKES` = 2 times in a row. A normal reading cancels it.
+- **`--dry-run`** never imports the agent. It logs every evaluated reading to `5-ml-training/dry_run_readings.csv` (an
+  existing file is moved aside, never overwritten).
+- SIGTERM is handled like Ctrl+C (prints a summary).
+- **Blind spot:** a request is counted when it finishes. A process that never answers is seen only when nginx times out.
 
-## Pod sizing: 1 core per backend pod (decided 2026-09-28)
-The backend pod keeps `cpu: "1"` for both request and limit. **Don't change it** without redoing capacity discovery, data collection and training.
+**Agent v9** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict"}`):
+- **Computed facts** (`agent._computed_facts`):
+  - the score and its explanation; ready vs desired pods;
+  - load, load per pod and the trend (steady / RISING / falling);
+  - the **minimum pod count** = smallest N with safe(N) ≥ max(rps + max(0, trend) × 1.5 min, rps / 0.85), i.e. 15%
+    headroom plus the load the trend reaches before new pods serve;
+  - how the load compares with the current pods' capacity: ABOVE / CLOSE (≥ 85%) / well within.
+- **Prompt v9:**
+  - NFR objectives, the capacity table (1–3 pods), the facts, "YOUR RECENT ACTIONS" (the last 15 min with their
+    verdicts, in-process: `agent.RECENT_ACTIONS`) and the incident memory.
+  - Step 1 classifies: (A) capacity, when the minimum ≠ current and the pods are ready: scale to the minimum, no
+    investigation, and scale down when over-provisioned; (B) anything else.
+  - In (B) the agent looks at all three observation tools, then acts on the cause: restart on evidence of a bad process
+    state (ERROR lines or a stuck / runaway job in the logs, unready pods, event-loop lag or CPU per request several
+    times healthy); scale if it is capacity after all. A recent deployment change → "No action taken … needs a human
+    decision", because there is no undo tool. A short breach without evidence → no action.
+- **5 tools** (top of `agent_tools.py`): `get_pod_breakdown`, `get_deployment_history`, `get_kubernetes_logs`,
+  `scale_kubernetes_deployment`, `restart_kubernetes_deployment` (rolling).
+  - Guards: namespace and deployment hard-coded; replicas 1–3 (`MAX_REPLICAS`); at most ±2 per call; cooldowns 30 s
+    (scale) and 60 s (restart).
+  - `add_base_tools=False`, `max_steps=10`.
+  - Pod restart and rollback were removed in phase 2 (the user's decision).
+- **Three behaviour guards** (smolagents `step_callbacks` + `final_answer_checks`, off with `AIOPS_ACT_GUARD=off`):
+  1. no action or final answer in the same step as an observation;
+  2. no claimed action without a tool call (a final answer must start "No action taken" if nothing ran);
+  3. no restart before all three observation tools ran.
 
-**Why 1 core gives correct data:**
-- **It matches Node.js.** Node runs JavaScript on a single thread, so one process can't use more than about 1 core. A 1-core pod therefore measures the app's real limit, not an artificial cap.
-- **It keeps the throttling metric meaningful.**
-  - A login (bcrypt, cost 10) uses about 70 ms of CPU; measured: about 0.065 core-seconds per request.
-  - Linux enforces CPU limits in 100 ms windows (CFS periods). With a 1-core limit, the pod may use 100 ms of CPU per window, so a single login finishes without pausing.
-  - Throttling therefore only rises when requests really pile up. Measured: about 1–5% up to the safe load, rising to 5–7% near the breaking point.
-  - That makes `cpu_throttling` a valid overload signal for the anomaly model and the agent.
-- **Smaller pods would break that.** With 500m (50 ms per window), almost every login would be paused mid-request. That's roughly 10% throttled windows per request/second, even when the pod is nearly idle. The 8% breaking point, the 10% training filter and the agent's 5% SLO would all fire at about 1 rps, and logins would take about twice as long.
-- **The CPU thresholds assume 1 core.** They are absolute (0.75 for the breaking point and the agent SLO, 0.95 for the training filter, and 1.0 in the synthetic tests). A smaller pod could never reach 0.75, so discovery would never find a breaking point.
+  Each was added after the LLM broke the rule in a measured phase-1 run. `tests/test_final_agent.py` replays those
+  incidents through a real CodeAgent.
+- **Verification** (`agent_tools._check_stabilization`, run by code after the LLM, even if it crashed after acting):
+  - waits for the rollout (≤ 90 s), then reads the detector's features every 10 s and scores them;
+  - `health_model.judge_trajectory` on a 3-reading (30 s) moving average:
+    - **STABLE** when the average is ≥ 0 and ≥ 2 of the last 3 readings are normal;
+    - before the 1 m windows hold only post-action data (60 s): only STABLE or WAIT;
+    - after that, the average uses post-action readings only. A full average below pre-action − ε →
+      **UNSTABLE: worse**; no gain over 3 readings → **UNSTABLE: not improving**; else WAIT;
+  - gives up after 240 s.
+  - A failed scale-down is undone by code (`agent._rollback_failed_scale_down`: restores the pod count, not a version).
+    Any other UNSTABLE asks for a re-wake.
+  - Success is decided by `agent_tools.run_outcome`, never by parsing the LLM's text.
+- **Memory** (ChromaDB collection `incidents_nfr`, `embedding_function=None`):
+  - the embedding is the model's transformed feature vector (`health_model.embedding`);
+  - every outcome is saved: `status` resolved or failed, with metrics, score before / after, actions, verdict,
+    diagnosis and recovery time;
+  - retrieval (`query_knowledge_base`) returns the top-2 **resolved** incidents within distance 1.5
+    (`MEMORY_SIMILAR_MAX`); otherwise the prompt says there is no similar incident;
+  - `AIOPS_MEMORY=off` disables lookup and save;
+  - ChromaDB is connected lazily and retried. The volume is at `/data`, so memory survives restarts (in phase 1 it was
+    lost on every ChromaDB restart).
+- **LLM:** primary `gemini/gemini-3.1-flash-lite`; fallback `gemini/gemini-2.5-flash` (`AIOPS_FALLBACK_MODEL=<model>|off`).
+  - `RetryingLiteLLMModel` retries transient errors and empty responses after 5 / 15 / 30 s, then tries the fallback.
+  - **No per-call timeout of our own** (litellm's default is 6000 s): a stalled provider call can block an incident
+    (`design_decisions.md` A27).
+- **`3-ai-agent/incident_log.csv`:** one row per agent run (reading, score, memory hit, actions, verdict, recovery,
+  re-wake, LLM calls / retries / fallback, seconds, final answer). It is the source of the per-incident numbers. A run cut
+  by SIGTERM leaves no row; `campaign_report.py` finds such wake-ups in the run's `controller.log`.
 
-**The cost: at most 3 useful replicas on this laptop, so the cap is applied** (`MAX_REPLICAS = 3`, `REPLICA_RANGE = [1, 2, 3]`, and `capacity_table.json` trimmed to rows 1–3; `capacity_discovery_log.csv` still holds the full 1–6 trace as evidence). The 2026-09-28 capacity run on a MacBook Air (Docker/kind has 8 CPUs, 4 of them performance cores) found:
+## Pod sizing: 1 core per backend pod
+- **Request = limit = 1 core.** Node runs JavaScript on one thread, so a 1-core pod measures the app's real limit.
+- **Login cost:** ~71 ms CPU (bcrypt). It fits in one 100 ms CFS period, so throttling rises only when requests really
+  pile up.
+- **Don't change the size** without redoing capacity, data collection and training.
+- **Ceiling of 3 pods** (`MAX_REPLICAS`, the capacity table the agent sees is cut to 1–3). With the phase-2 mix, 4 pods
+  still add capacity (315 rps), so 3 is a cost NFR, not a hardware limit any more. Above ~315 rps the laptop itself
+  collapses (k6, ingress and cluster share it).
+- **HPA target:** CPU 60% (`4-load-testing/baselines/hpa.yaml`: 1–3 pods, scale-down stabilization 120 s). With the
+  default 10% tolerance it scales up at ~0.66 core ≈ 80 rps per pod, below every count's safe load. 2 pods (82.5 rps per
+  pod) bind (A25).
 
-| Replicas | Max safe load | p95 latency at that load |
+## Model choice (why a One-Class SVM)
+- **Phase 1 replaced an Isolation Forest** (2026-09-30). An IF scores any value beyond the training range like the edge
+  point, so it cannot see one-directional drift (waste, stuck); evidence in A2/A3 and `thesis_notes/figures/detector_evidence.py`.
+- **Phase 2 replaced the per-replica models with one SVM** that takes the pod count as an input, as the supervisors asked.
+  The two forms (load per pod / total) were compared under a pre-declared rule (A26).
+- **Live validation** (`detector_validation.sh`, 2026-10-23): 4/4 overload and waste phases caught (52–75 s), 0 false
+  wakes in normal phases (A27).
+
+## Evaluation harness (`4-load-testing/`)
+- **`run_experiment.sh <llm|hpa> [notes]`:**
+  - clean reset: rolling restart, 1 replica, rollout history reset, token pool, 120 s idle;
+  - starts ONE strategy, runs `k6/<SCENARIO>.js` (`SCENARIO=baseline|stuck|cpuhog`; the fault is injected at t = 4 min),
+    stops it, scores it;
+  - writes `eval_[<scenario>_]<strategy>_<time>/`: controller.log, k6.log, `k6_summary.json`, `series.json`,
+    `events.txt`, `pods_at_end.txt`, `power.log` (AC or battery every 30 s), window and score;
+  - appends one row to `results_nfr.csv` / `results_nfr_stuck.csv` / `results_nfr_cpuhog.csv`;
+  - env: `AIOPS_MEMORY`, `AIOPS_ACT_GUARD`, `LABEL` (default `llm-v9` / `hpa`; `*-INVALID` rows are excluded).
+  - Never run two strategies at once (`queue.sh` runs them back to back).
+- **`evaluate_run.py`** scores a window at the ingress:
+  - `nfr_violation_s` (p95 > 0.35 s or errors > 1%), `errors_pct`;
+  - p95 mean / p99, `replica_minutes` (cost), under / over-provisioned and `correct_prov_pct` (vs the capacity table);
+  - scale actions with timestamps, unready seconds, liveness restarts, `on_battery_s`, k6 client p95 / failed / dropped;
+  - for faults, `recovery_s` (NFRs hold for 60 s);
+  - for agent runs, the incidents from `incident_log.csv`.
+- **`full_campaign.sh [TAG]`:** the comparison in one go.
+  - `NORMAL_RUNS` × baseline and `FAULT_RUNS` × each fault per method, agent and HPA alternating.
+  - Memory is emptied at the start; it is on for normal load, off for faults.
+  - Every run waits for AC power; an agent run waits until `llm_ready.py` gets 3/3 answers from the primary model.
+  - sha256 of code, model and scenarios are logged.
+  - At the end it runs `compare_results.py TAG` (→ `comparison_nfr.md` + timelines, **this campaign's runs only**) and
+    `campaign_report.py TAG` (→ `<TAG>.md`: per agent run, right action at the first wake-up after the fault, recovery,
+    fallback use, guard refusals, wake-ups before the fault, wake-ups without a finished agent run, provenance check).
+  - Stop: `pkill -f full_campaign.sh; pkill -TERM -f run_experiment.sh`.
+- **`detector_validation.sh` + `analyze_validation.py`:** scripted dry-run validation, phases A–I.
+- **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
+- **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
+
+## Results of the phase-2 campaign (`campaign-2026-10-23`, 4 + 4 runs per scenario; A27, `results_summary.md`)
+
+| | HPA | Agent v9 |
 |---|---|---|
-| 1 | 11.1 rps | 0.10 s |
-| 2 | 20.9 rps | 0.24 s |
-| 3 | 27.5 rps | 0.22 s |
-| 4 | 29.0 rps | 0.73 s |
-| 5 | 40.6 rps | 0.94 s |
+| Normal load: NFR violation | 0 s | 108 ± 25 s (almost all at the first scale-up) |
+| Normal load: cost | 76.3 replica-min | 71.5 (−6.3%, permutation p = 0.014) |
+| Normal load: correct provisioning | 78% | 83% |
+| Stuck: recovery | never (0/4) | 4/4, restart, 138 s |
+| Cpuhog: recovery | never (0/4), scaled to 2–3 pods | 3/4, restart, 113 s; the 4th was lost to a stalled LLM provider |
 
-The laptop stays healthy until the backend uses about 2.3 cores in total. Beyond that, the machine is the bottleneck, not the pods:
-- **More pods made it slower.** At the same 32 VUs, 3 replicas had 0.22 s p95 latency and 4 replicas had 0.30 s.
-- **Pods had spare CPU while requests were slow.** At 5 replicas / 66 VUs, pods used only 0.70 of their core with 4% throttling, yet p95 latency was 0.94 s. The pods had CPU budget left but were waiting for the host to schedule them.
-
-Data from 4 or more replicas therefore measures laptop contention, not the app, and it would teach the model that slow is normal. The agent's SLO says p95 above 0.35 s means scale up.
-
-Running more replicas needs more host CPU (a bigger machine or a multi-node cluster), not smaller pods. Memory is oversized: pods peak at about 126 MiB against 1 GiB reserved. It could be lowered safely, but hasn't been.
-
-## Model choice: One-Class SVM, not Isolation Forest (decided 2026-09-30)
-Isolation Forest was used until 2026-09-30. It was replaced because of a structural limit, not a tuning problem.
-
-**The limit.** An Isolation Forest cuts each feature at random values **between the min and max of the training data**. A point beyond the healthy range always falls on the same side as the edge point, so it follows the same path in every tree and gets **exactly the edge point's score**, however far out it is. The score says *that* a point is past the edge, never *how far*. Measured on the 2026-09-28 data (3-replica model): 21.9 rps +0.110, and 20, 18, 16.5, 12 and 8 rps all +0.058. Latency is the same: p95 0.2 s and 5 s scored identically.
-- It only reliably flags anomalies that move **several** features at once. Overload does (CPU, throttling, latency and throughput all rise).
-- It misses **one-directional drift**: over-provisioning (only CPU and throughput drop), which is the whole scale-down path, and stuck code (only latency rises).
-- A single model for all replica counts is worse still: "2 pods at 15% CPU, 5 rps" is healthy 1-pod data in 4 of the 5 features, so it looks normal. Hence one model per replica count.
-- Tuning doesn't help. `contamination` only moves the threshold, and points with identical scores can't be separated by any threshold. `n_estimators`, `max_samples` and `max_features` don't change the edge rule. StandardScaler has no effect on an Isolation Forest (verified: identical scores).
-
-**The replacement.** A One-Class SVM also trains on healthy data only, but it scores by RBF distance to the healthy data (`Σ αᵢ·exp(−γ‖x−xᵢ‖²) − ρ`). Far from all healthy readings the score always falls below 0, so beyond-the-band points are flagged. `nu` plays the role of `contamination`; `gamma` sets how tight the boundary is.
-
-**Evidence (simulated continuous-ramp data, per-replica models, 5–8 runs).**
-
-| | Waste 40% below band | Demo scale-downs | Stuck p95 = 5 s | Healthy readings flagged |
-|---|---|---|---|---|
-| Isolation Forest | 2/10 | 2/10 | 1/15 | 3% |
-| One-Class SVM (final config) | all | all | all | ~7% on new-day data, ~no runs of 3 in a row |
-
-- **Log features:** load bands are ratio-wide (2 pods: 7→22 rps). In linear units a 20% shortfall below the 2-pod band was only about 0.3 std and was missed. With `log(cpu, latency, throughput)`, 0/84 probe failures.
-- **`gamma`:** 0.1 memorized the training points (23% held-out false alarms in simulation). On the real data 0.02 was the best trade-off.
-- **Latency and throttling floors (found on the real 2026-09-30 data, not in simulation).** Real p95 sits on histogram-bucket plateaus (~0.075 / ~0.099 / ~0.17 s), and which plateau it's on drifts over time independent of load. At 2 pods, ramp-up p95 had median 0.099 s and ramp-down 0.074 s; at 3 pods it was the opposite. Standardized per replica count, a healthy plateau switch looked like a big jump: **49.5% held-out false alarms**. Fix: every p95 under 0.2 s counts as the same value, and above that a fixed weight applies (0.4 s is clearly anomalous, 5 s is extreme). Same idea for throttling at the agent's 5% SLO. Result: 10.8% held-out (pessimistic), with all 20 probes passing.
-- **Rejected:** fixed "domain" scaling (log2, latency/2, throttling/0.05) gave more false alarms. Elliptic Envelope and LOF missed waste.
-- **Known limit:** early overload (CPU just above 0.75 with normal latency and throttling) can look like the top of the healthy band. Real overload in the demo (20 VUs on 1 pod, 30 on 2) saturates CPU, latency and throttling together and is caught.
-- **One Isolation Forest per replica count doesn't fix it either** (tested on the real 2026-09-30 data, then replaying live validation run 2 through it). It removes the mixing problem but not the edge rule.
-  - Plain: 5/20 probes failed (2-pod waste, 2-pod stuck 5 s, 2-pod slow 0.4 s, plus healthy 0.19 s flagged), and it missed live phase H (the demo's 2→1 scale-down).
-  - With the latency/throttling floors: 7/20 failed, because latency became constant in training, leaving the forest no range to cut. It missed stuck and slow at every replica count, missed phase H, and woke falsely in healthy phases C and E.
-  - Same data, One-Class SVM: 0/20 probes failed, and every live phase came out correct.
-- The project is all-in on One-Class SVM; the Isolation Forest code was removed. The numbers above are the thesis evidence.
-- **Re-checked on the real data 2026-10-10** (`thesis_notes/figures/detector_evidence.py`, read-only, ~30 s; write-up in `thesis_notes/design_decisions.md` A2/A3): the deployed model is exactly what code + data produce; the simulation table above and the Elliptic Envelope/LOF rejection are not reproducible (no script kept); on the real data a linear cpu/rps variant also passes all probes and `gamma=0.005` is as good as 0.02, so log and 0.02 are design choices, not forced. Mechanism: in novelty mode the IF scores any out-of-range value exactly like the healthy edge (clamping), so its verdict depends on how crowded the edge is, not the distance; the bottom of each band is crowded, hence waste reads healthy. OCSVM limit: throttling alone is flagged only from ~15%.
-
-## Detector validation (2026-09-30, real traffic)
-`4-load-testing/detector_validation.sh` (~34 min) runs k6 (`k6/detector_validation.js`) through every state of the demo, sets the replica count by hand at each phase boundary, and runs `anomaly_detector.py --dry-run` alongside (no LLM, no agent). This tests scale-down states that a plain dry run can't reach. `python 4-load-testing/analyze_validation.py 4-load-testing/detector_validation_readings_run2.csv` (the default input, `5-ml-training/dry_run_readings.csv`, is written by the next dry run) prints one row per phase: readings, flagged, wake-ups, time to first wake-up, and SLO breaches (p95 > 0.35 s).
-
-| Phase | State | Expected | Run 1 (busy host) | Run 2 (quiet host) |
-|---|---|---|---|---|
-| A | 1 pod, 5 VUs | normal | ✅ | ✅ |
-| B | 1 pod, 20 VUs | overload | ✅ wake after 54 s | ✅ 53 s |
-| C | 2 pods, 20 VUs | normal | ⚠️ 2 wakes, real SLO breach (p95 0.6–0.85 s) | ✅ |
-| D | 2 pods, 30 VUs | overload | ✅ 25 s | ✅ 54 s (p95 still 0.145 s: caught before users feel it) |
-| E | 3 pods, 30 VUs | normal | ⚠️ 1 wake, real SLO breach (p95 0.36 s) | ✅ |
-| F | 3 pods, 14 VUs | waste | ✅ 77 s | ✅ 76 s |
-| G | 2 pods, 14 VUs | normal (no flap) | ✅ | ✅ |
-| H | 2 pods, 5 VUs | waste | ✅ 69 s | ✅ 68 s |
-| I | 1 pod, 5 VUs | normal | ✅ | ✅* |
-
-- **Result:** every overload and waste phase was caught (after 53–77 s). There was no flapping after a scale-down. In both runs, readings in "normal" phases were flagged only where p95 really exceeded 0.35 s (run 1, phase C: 13 flagged, 13 breaches). k6 reported 100% successful requests.
-- *The run-2 wake-up counted in phase I came 7 s after the scale to 1. kube-state-metrics still reported 2 replicas, so that reading was still the phase-H waste state and flagging it was correct.
-- **Host load matters.** Run 1 had Safari, VS Code and Bitdefender running (Docker VM at 160–215% CPU). CPU per request rose from about 0.067 to about 0.084 core-s, and 2 pods at 20 VUs really broke the SLO. For experiments, keep only Docker and VS Code open and let the laptop idle a few minutes between long runs. Report this as a threat to validity.
-
-## Evaluation harness and baselines (added 2026-10-01)
-- `4-load-testing/run_experiment.sh <strategy>`: clean reset (rolling restart, 1 replica or 3 for static-3, 120 s idle; until 2026-10-22 only fault runs restarted, so a normal-load run after a fault run whose strategy never restarts inherited the faulty pod: the campaign's 21:48 HPA run, relabelled `hpa-INVALID`) → start ONE strategy → the scenario's k6 script (`k6/baseline.js`, 38 min, by default) → stop → score. Strategies: `llm` (detector + agent), `rules` (`3-ai-agent/rule_scaler.py`), `hpa` (`4-load-testing/baselines/hpa.yaml`, CPU 70%, 1–3, needs metrics-server), `static-1`, `static-3`. Output in `4-load-testing/eval_<strategy>_<time>/`.
-- Env switches: `SCENARIO=stuck` / `SCENARIO=cpuhog` / `SCENARIO=badconfig` (fault runs; results in `evaluation_results_<scenario>.csv`), `AIOPS_MEMORY=off` (no memory lookup/save: RAG ablation), `AIOPS_ACT_GUARD=off` (no behaviour guards), `LABEL=...` (result label). Default labels: `llm-v8.1` for the agent (since 2026-10-11; the measured v8 runs are `llm-v8`), `rules-v2` when `RULES_RESTART=on`. Labels of older runs in the CSVs: `llm` = prompt v4 (the 2026-10-01 runs), `llm-v3`, `llm-v5` … `llm-v7` = those prompts, `llm-agent-v1/v2` = older flows, `*-INVALID` = excluded.
-- `4-load-testing/queue.sh hpa rules llm ...` runs several back to back (3 min idle between). Never run two strategies at once: each one scales the same deployment.
-- `4-load-testing/full_campaign.sh [TAG]` (added 2026-10-21): the whole comparison in one go, ~13 h: the agent `LLM_RUNS` (3) × 4 scenarios with the v8 protocol (memory on for the normal load, off for faults), hpa / rules / rules-v2 × 4 scenarios, static-1 and static-3 on the normal load; agent and baseline runs alternate. Every run waits for AC power; an agent run starts only when `llm_ready.py` gets 3 answers in a row from the primary model (it returned 503 "high demand" for hours on 2026-10-21). The notes column of every run is the TAG; at the end it runs `compare_results.py` and `campaign_report.py TAG` (→ `4-load-testing/<TAG>.md`: per agent run, right action at the first wake-up, recovery, fallback use, guard refusals; code hashes checked against the start). `campaign_rerun.sh TAG scenario:method ...` waits for the campaign to end, repeats invalid runs with the same TAG and regenerates both reports (the campaign is found by PID: `pgrep -f full_campaign.sh` also matches any shell whose command line contains the name). Stop: `pkill -f full_campaign.sh; pkill -TERM -f run_experiment.sh`.
-- **Prometheus keeps 10 days** (`retention.time=10d`): the history of every run before 2026-10-11 is gone. Since 2026-10-21 `evaluate_run.py` saves each run's series to `<run_dir>/series.json` (and a `run_dir` column in the CSVs), and `compare_results.py` draws from it, skipping runs without data. The full figures up to 2026-10-04 are in `4-load-testing/archive/timelines_until_2026-10-04/`.
-- `4-load-testing/evaluate_run.py` scores any window from Prometheus history (10 s step) and appends to `4-load-testing/evaluation_results.csv`: `slo_violation_s` (p95 > 0.35 s), `pressure_s` (CPU > 0.75 or throttling > 5%), p95 mean/p99, `replica_minutes` (cost), under/over-provisioned seconds and `correct_prov_pct` (vs the capacity table's safe rps), `scale_actions`, and for LLM runs incidents / STABLE / LLM calls / mean agent seconds from `incident_log.csv`.
-- **Rule-based baseline** = the agent's 3 tiers hard-coded, with the same metrics, capacity table, scale tool (same guards) and gates (90 s settle, 0.8 rps gate, 3 in a row, 60 s cooldown). Scale-down below 70% of (N−1)'s safe rps (the collector's deadband). Any difference vs the LLM is the decision maker alone.
-- `4-load-testing/archive/night_run.sh [N]`: N × LLM runs with one long-lived detector (first overnight run 2026-09-30, stopped after run 1 in favour of the comparison queue).
-- **Results of the 2026-10-01 overnight comparison** (`4-load-testing/OVERNIGHT_REPORT_2026-10-01.md`, `comparison.md`, `comparison_timelines.png`): every strategy except static-1 had 0 s SLO violation. LLM v3 (n=3): 71.6 replica-min, 86% correct provisioning, 393 s pressure. HPA (n=2): 79.5, 69%, 260 s. Rules (n=2): 78.2, 77%, 120 s. static-3: 114.5. static-1: 38.2 but 550 s SLO violation. So the agent is the cheapest SLO-safe strategy (−10% vs HPA, −37% vs static-3) but reacts slowest; 16/16 new-flow actions verified STABLE. The 00:06 HPA run is `hpa-INVALID` (a leftover detector also scaled).
-- **Stuck-fault results (2026-10-01):** LLM prompt v4 recovered in 90–110 s (4/4, restart, STABLE; memory off: same); HPA, rules and static-1 never recovered (710 s violation); rules went to 3 pods (37.4 replica-min). Prompt v3 restarted in 2/3 runs (once scaled up first, recovery 610 s).
-- `compare_results.py` also prints exact significance tests (permutation test on replica-minutes, Fisher exact on fault recovery) and, per LLM fault run, the agent's actions with their verdicts (from `incident_log.csv`). `evaluate_run.append_row` rewrites the CSV with a union header when a row brings new columns (plain appends shifted columns).
-- **CPU-hog fault (blind test, added 2026-10-01 evening):** `POST /chaos/cpuhog` starts a never-ending background job that blocks the event loop 600 ms at a time with random 100–400 ms gaps (a fixed period let closed-loop VUs phase-lock into the gaps and p95 drifted under the SLO). At 8 VUs on 1 pod: CPU ~0.9, throttling ~18%, server p95 ~0.48 s, throughput drops to ~4.2 rps. It looks like overload at a third of the capacity rps; only a restart fixes it. Designed after prompt v4 was frozen; v4 was not changed for it. Queue: `4-load-testing/archive/cpuhog_queue.sh`.
-- **Cpuhog results (v4):** 2/2 runs failed: 1→2→3 for "CPU saturation", then 3→1 "over-provisioned" (UNSTABLE, rolled back) repeatedly; never read logs or restarted. Rules oscillated 1→2→3→1 and never recovered either. Cause: the app's latency histogram does not time requests queued behind a blocked event loop, so with 2 of 3 pods hogged the server p95 looks healthy (k6 sees ~0.9 s). For this fault use `cpu_recovery_s` and the k6 columns, not server-p95 `recovery_s`. Signals that separate it: CPU per request (healthy median 0.073 core-s, max 0.10; overload 0.066; cpuhog 0.21–0.33) and `nodejs_eventloop_lag_p99_seconds` (already scraped; healthy/overload ≤ 0.23 s, cpuhog 0.8–1.3 s).
-- **Prompt v5** (2026-10-01 evening, removed from the code 2026-10-10): added a code-computed "CPU cost per request = N× healthy" section. Tested by `4-load-testing/archive/v5_queue.sh` (label `llm-v5`: cpuhog ×2, stuck ×1, baseline ×1).
-- Memory stores only verified successes, so a rolled-back failure leaves no trace and the agent repeated the same failed 3→1 three times in one run. Fixed in v6 (2026-10-03) and kept in the final agent: the prompt shows "YOUR RECENT ACTIONS" with their verdicts.
-- **2026-10-03 additions:** `rules-v2` = `RULES_RESTART=on python 3-ai-agent/rule_scaler.py`: the rule baseline plus the restart rules an engineer would write after seeing the two faults (R1 stuck: p95 > 0.35 s with CPU/pod < 0.5 and throttling < 5%; R2 runaway: CPU per request > 2× 0.073), checked before the scaling rules. `SCENARIO=badconfig`: at t = 4 min the harness deploys `FEATURE_LOGIN_AUDIT=true` (every login then runs a synchronous PBKDF2, 1.5M iterations: ~0.35 s CPU per login, so no replica count meets the p95 objective): a bad *configuration* change, where restarts and new pods do not help and only a rollback does; the blind test for v6 (designed after the freeze; predictions in `NOTES_2026-10-03.md`). `run_experiment.sh` removes the flag before every run. Queue: `4-load-testing/archive/v6_queue.sh` (labels `llm-v6`, `rules-v2`; v6 fault runs use `AIOPS_MEMORY=off`).
-- Unit tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (83 tests: the detector loop (`test_detector.py`: streak, skips, cooldown, settle, dry-run log, an error around the agent), tool guards, the tool descriptions, verification verdicts, memory retrieval, rollback, rule decisions, the 7 tools, recent actions, rules-v2 signatures, computed facts, the prompt's rules, the three behaviour guards incl. three scripted CodeAgent replays of measured incidents; all external systems mocked).
+- **Agent decisions:** all 16 scale actions and all 7 fault restarts were right at the first wake-up and verified STABLE;
+  0 re-wakes.
+- **False wakes:** one, before a fault (p95 0.31 s), which the agent correctly declined.
+- **Why the agent has NFR violation on normal load:** it reacts at the anomaly boundary, plus LLM time. The HPA scales
+  ahead with headroom and pays for it in cost.
+- **Limits:** LLM provider dependency, shallow liveness by design, n = 4, one machine.
 
 ## Running
 ```bash
 ./deploy.sh                                   # recreates kind cluster "aiops-cluster" + everything
-source .venv/bin/activate                     # Python 3.13; pip install -r requirements.txt (smolagents, litellm, chromadb, kubernetes, scikit-learn, pandas, joblib)
-export GEMINI_API_KEY=...                     # root .env exists but is NOT auto-loaded by the Python code
-python 3-ai-agent/anomaly_detector.py --dry-run   # validate a new model first: no agent calls
-python 3-ai-agent/anomaly_detector.py         # paths are relative to the script since 2026-10-11 (before: had to run from repo root)
-k6 run 4-load-testing/k6/demo.js             # in another terminal (22 min hand demo; k6/baseline.js = the measured 38 min)
+source .venv/bin/activate                     # Python 3.13; pip install -r requirements.txt
+export GEMINI_API_KEY=...                     # the root .env is NOT auto-loaded by the Python code (run_experiment.sh reads it)
+python 3-ai-agent/anomaly_detector.py --dry-run   # validate a model first: no agent calls
+python 3-ai-agent/anomaly_detector.py         # live
+k6 run 4-load-testing/k6/demo.js              # in another terminal
+SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-Backend tests: `cd 2-target-app/software-backend && npm test` (Jest, ESM). Frontend E2E: Cypress.
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (86: detector loop, tools and guards, facts and prompt, score
+  trajectory, memory, CodeAgent replays; everything external mocked).
+- Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812).
+- After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.
 
 ## Conventions / notes
 - Comments and log messages mix Greek and English. That's fine; the user is Greek.
 - Never read or print `.env` values (they hold HF / Gemini / OpenRouter keys).
-- `THESIS_SUMMARY_EN.md` holds the research framing and a TODO list (baselines, MTTR, evaluation methodology).
+- The code keeps only the final version. Removed things are recorded in `thesis_notes/removed_and_archived.md`, decisions
+  in `design_decisions.md`.
+- `THESIS_SUMMARY_EN.md` holds the research framing of phase 1.
 
-## Latency histogram buckets (changed 2026-09-28)
-`middleware/metrics.js` now uses fine buckets (0.025 … 0.3 s in small steps, then 0.4, 0.5, 0.75, 1, 1.5, 2 and 5 s).
-The old buckets (0.05, 0.1, 0.3, …) made `latency_p95` jump from about 0.1 s to about 0.2 s as soon as a few logins took more than 100 ms. That happens often, because a login costs about 70 ms of CPU. `histogram_quantile` interpolates linearly inside the 0.1–0.3 s bucket, so the reported value doubled.
-Old training data sat at exactly 0.098 s, and after standardization any small shift looked like an extreme outlier. That caused false anomalies at low traffic.
-Verified after the change: with about 89% of requests under 100 ms, p95 reads 0.101 s (before, a comparable load read about 0.2 s).
-Latency values in `capacity_discovery_log.csv` were measured with the old buckets. The capacity table is still valid because all breaking points for 1–3 replicas were CPU-driven. Any data collected before this change must not be mixed with new data.
-After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.
-
-## Known issues / gotchas (as of 2026-09-28)
-- **Use `POST /chaos/stuck` instead of the zombie scenario** (added 2026-10-01): it puts one backend process into a "leaked DB connection pool" state (every request waits 3 s, no CPU, `[ERROR] DB connection pool exhausted` log lines) until that process restarts. New pods are healthy, so scaling dilutes but never fixes it. Inject per pod: `kubectl exec <pod> -- wget -qO- --post-data='' http://127.0.0.1:3001/chaos/stuck`. Experiment: `SCENARIO=stuck ./4-load-testing/run_experiment.sh <strategy>` (fault at t = 4 min, results in `evaluation_results_stuck.csv` with `recovery_s`).
-- **The zombie scenario never reaches the agent** (the user has deprioritized it). Its k6 scripts sent about 0.2 rps, below the 0.8 rps gate, and were deleted on 2026-10-10.
-- **`/chaos/zombie` doesn't freeze the app.** It is a non-blocking `setTimeout(10s)`, so other requests are still served and the effect clears on its own. It inflates p95 but doesn't cause a real deadlock, so a restart isn't actually needed.
-- **Replica metric lag:** `kube_deployment_status_replicas_available` updates a few seconds after a scale, so the first reading after a scale can still show the old count (see validation phase I).
-- **`capacity_table.json` rps values are a bit low at the top.** The 2026-09-28 healthy data measured 3 replicas at 32 VUs doing 29.3 rps (CPU 0.61, p95 0.09 s), while the table says safe = 27.5 rps and breaking = 29.0 (measured before the bucket change, under more host load). The agent uses these rps values; the collector only uses the VUs.
-- `MAX_SCALE_DELTA=2` can block jumps that the capacity table says are needed (e.g. 1→4).
-- Ingress `rewrite-target: /` is fine: as of 2026-09-28, POST /auth/login returns a real token and Prometheus shows `route="/login"`.
-- Node CPU: Docker/kind has 8 CPUs. With 6 backend replicas (1 core requested each), about 7.65 of 8 cores are requested, which fits but leaves little headroom. The host saturating at high replica counts is expected.
-- Fixed 2026-10-07: the stray `2-target-app/software-frontend/agent_memory/chroma.sqlite3` is no longer tracked (local copy kept, `*.sqlite3` is gitignored), and the backend has a `.dockerignore` (`node_modules`, `coverage`), so the host's `node_modules` no longer overwrite the image's own `npm install`. All measured runs used images built before this; not rebuilt since (no extraneous host packages, so the next build should behave the same).
-- Rate limiting (fixed 2026-10-03): `middleware/rateLimiter.js` has real windows again and `isAuthRateLimitEnabled()` (on unless `AUTH_RATE_LIMIT_ENABLED=false`); `backend-deployment.yaml` sets it to `false` (k6 sends every login from one IP, and in-flight requests count against the limit). Backend Jest: 802/802 pass (Jest has `bail: 1`, so the old 2 failures also hid 4–8 suites).
-- `services/authService.js` has the `FEATURE_LOGIN_AUDIT` flag (off by default) used only by the badconfig experiment.
+## Known issues / gotchas
+- **The in-memory DB is per pod:** writes (reviews, favourites) are not shared between pods. They are kept few (10% of the
+  mix), and this is a threat to validity.
+- **Replica metric lag:** kube-state-metrics shows a scale a few seconds late, so the first reading after a change can
+  show the old count.
+- **Node keep-alive:** must stay above nginx's 60 s (`server.js`: 65 s), or nginx sends POSTs to closed connections (502).
+- **Rate limiting** is disabled in the deployment (`AUTH_RATE_LIMIT_ENABLED=false`): k6 sends every login from one IP.
+- **`/chaos/zombie`** (a non-blocking 10 s delay) is a leftover and is not used; use `stuck` / `cpuhog`.
+- **Battery:** runs on battery are slower. `power.log` and `on_battery_s` flag them, and such runs are relabelled
+  `*-INVALID` and repeated.
+- **Host load** matters: keep only Docker and the terminal open during measurements.

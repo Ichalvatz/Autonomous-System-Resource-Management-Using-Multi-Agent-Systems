@@ -1,5 +1,7 @@
 """
-Save or restore the incident memory (ChromaDB collection "sre_runbooks") as JSON.
+Save or restore the incident memory (ChromaDB collection agent_tools.COLLECTION, "incidents_nfr" since phase 2;
+phase 1's was "sre_runbooks") as JSON, with the embeddings: since phase 2 they are the health model's feature
+vectors, which ChromaDB cannot recompute.
 
   python 3-ai-agent/memory_snapshot.py save    <file.json>
   python 3-ai-agent/memory_snapshot.py restore <file.json>   # replaces the WHOLE collection with the file
@@ -17,8 +19,9 @@ import agent_tools  # noqa: E402  (same ChromaDB connection as the agent)
 
 def save(path):
     c = agent_tools._get_collection()
-    r = c.get(include=["documents", "metadatas"])
-    rows = [{"id": i, "document": d, "metadata": m} for i, d, m in zip(r["ids"], r["documents"], r["metadatas"])]
+    r = c.get(include=["documents", "metadatas", "embeddings"])
+    rows = [{"id": i, "document": d, "metadata": m, "embedding": [float(x) for x in e]}
+            for i, d, m, e in zip(r["ids"], r["documents"], r["metadatas"], r["embeddings"])]
     with open(path, "w") as f:
         json.dump(rows, f, indent=1, ensure_ascii=False)
     print(f"saved {len(rows)} entries to {path}")
@@ -34,7 +37,7 @@ def restore(path):
     for i in range(0, len(rows), 50):
         batch = rows[i:i + 50]
         c.add(ids=[r["id"] for r in batch], documents=[r["document"] for r in batch],
-              metadatas=[r["metadata"] for r in batch])
+              metadatas=[r["metadata"] for r in batch], embeddings=[r["embedding"] for r in batch])
     after = c.get()["ids"]
     assert sorted(after) == sorted(r["id"] for r in rows), "restore mismatch"
     print(f"restored {len(after)} entries from {path} (removed {len(existing)})")

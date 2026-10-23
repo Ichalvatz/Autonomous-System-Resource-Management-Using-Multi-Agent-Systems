@@ -30,3 +30,71 @@ incident memory emptied (8 incidents from before the campaign)
 [2026-10-23 09:14:49] end   baseline llm (exit 0)
 [2026-10-23 09:17:49] on battery: waiting for AC power
 [2026-10-23 09:18:57] follow-up queued until the campaign ends: baseline llm (repeat of the 08:34 run, partly on battery)
+[2026-10-23 10:30:52] AC power back
+[2026-10-23 10:30:52] start baseline hpa
+[2026-10-23 11:11:32] end   baseline hpa (exit 0)
+[11:15:04] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 11:15:04] start stuck llm (memory off)
+[2026-10-23 11:33:43] end   stuck llm (exit 0)
+[2026-10-23 11:36:43] start stuck hpa
+[2026-10-23 11:55:27] end   stuck hpa (exit 0)
+[11:59:07] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 3)
+[2026-10-23 11:59:07] start cpuhog hpa
+[2026-10-23 12:17:46] end   cpuhog hpa (exit 0)
+[12:21:37] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 12:21:37] start cpuhog llm (memory off)
+[2026-10-23 12:40:17] end   cpuhog llm (exit 0)
+[2026-10-23 12:43:17] start baseline hpa
+[2026-10-23 13:23:57] end   baseline hpa (exit 0)
+[13:27:33] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 13:27:34] start baseline llm (memory on)
+[2026-10-23 14:08:13] end   baseline llm (exit 0)
+[2026-10-23 14:11:13] start stuck hpa
+[2026-10-23 14:29:52] end   stuck hpa (exit 0)
+[14:33:25] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 14:33:25] start stuck llm (memory off)
+[2026-10-23 14:52:09] end   stuck llm (exit 0)
+[2026-10-23 14:55:09] start cpuhog hpa
+[2026-10-23 15:13:49] end   cpuhog hpa (exit 0)
+[15:17:21] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-23 15:17:21] start baseline hpa
+[2026-10-23 15:58:04] end   baseline hpa (exit 0)
+[16:01:32] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 16:01:32] start cpuhog llm (memory off)
+[2026-10-23 16:20:16] end   cpuhog llm (exit 0)
+[2026-10-23 16:23:16] start stuck hpa
+[2026-10-23 16:41:55] end   stuck hpa (exit 0)
+[16:45:35] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 2)
+[2026-10-23 16:45:35] start cpuhog hpa
+[2026-10-23 17:04:14] end   cpuhog hpa (exit 0)
+[17:07:46] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-23 17:07:46] start baseline hpa
+[2026-10-23 17:48:25] end   baseline hpa (exit 0)
+[17:52:05] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 17:52:06] start baseline llm (memory on)
+[2026-10-23 18:32:45] end   baseline llm (exit 0)
+[18:36:17] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-23 18:36:17] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:42:01] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 3)
+[2026-10-23 18:42:01] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:47:32] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 18:47:32] start stuck llm (memory off)
+[2026-10-23 19:06:11] end   stuck llm (exit 0)
+[19:09:49] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 2)
+[2026-10-23 19:09:49] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:15:08] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 19:15:08] start cpuhog llm (memory off)
+[2026-10-23 19:33:48] end   cpuhog llm (exit 0)
+[19:37:03] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 19:37:03] start baseline llm (memory on)
+[2026-10-23 20:17:43] end   baseline llm (exit 0)
+[2026-10-23 20:20:43] all runs done: 12/12 agent, 12/12 baseline
+[2026-10-23 20:20:46] comparison_nfr.md and timelines regenerated
+[2026-10-23 20:20:46] report: 4-load-testing/campaign-2026-10-23.md
+[2026-10-23 20:20:46] campaign done
+[20:24:24] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 20:24:25] start baseline llm (memory on) (follow-up)
+[2026-10-23 21:05:04] end   baseline llm (follow-up, exit 0)
+[2026-10-23 21:05:07] comparison_nfr.md and timelines regenerated
+[2026-10-23 21:05:07] report: 4-load-testing/campaign-2026-10-23.md
+[2026-10-23 21:05:07] follow-up done

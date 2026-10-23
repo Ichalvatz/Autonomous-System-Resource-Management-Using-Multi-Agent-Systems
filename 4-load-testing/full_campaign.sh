@@ -16,7 +16,7 @@
 # from the smoke runs leaks in. Agent and HPA runs alternate, so both are sampled across the whole night; an
 # agent run starts only when llm_ready.py gets 3 answers in a row from the primary model.
 # Every run waits for AC power first: on battery macOS slows the CPU and the numbers are not comparable.
-# At the end: compare_results.py (comparison_nfr.md + timelines) and campaign_report.py (<TAG>.md).
+# At the end: compare_results.py TAG (comparison_nfr.md + timelines, this campaign's runs only) and campaign_report.py (<TAG>.md).
 # Time: ~46 min per normal-load run, ~27 min per fault run: ~13 h with the defaults.
 # The whole body is one { ... } block: bash parses it completely before running, so editing this file while
 # it runs cannot break the running copy.
@@ -105,7 +105,7 @@ while [ $ai -lt ${#AGENT[@]} ] || [ $bi -lt ${#BASE[@]} ]; do
 done
 
 log "all runs done: $ai/${#AGENT[@]} agent, $bi/${#BASE[@]} baseline"
-$PY 4-load-testing/compare_results.py > 4-load-testing/compare_results_latest.log 2>&1 \
+$PY 4-load-testing/compare_results.py "$TAG" > 4-load-testing/compare_results_latest.log 2>&1 \
   && log "comparison_nfr.md and timelines regenerated" || log "compare_results.py failed (see compare_results_latest.log)"
 $PY 4-load-testing/campaign_report.py "$TAG" > "4-load-testing/${TAG}.md" 2>> "$LOG" \
   && log "report: 4-load-testing/${TAG}.md" || log "campaign_report.py failed"
