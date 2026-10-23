@@ -1,0 +1,27 @@
+[2026-10-23 02:34:25] campaign smoke-2026-10-23: NORMAL_RUNS=1 FAULT_RUNS=1 MAX_WAIT_H=8
+[2026-10-23 02:34:25] git HEAD 22b64a1, uncommitted files: 1
+[2026-10-23 02:34:25] backend image sha256:d35b51f7b762a62d34ecbe6bd8a2ab1f3c8f3b9e7dfe3d13f1166d4f69109d3a
+263e231e6f7e7ece72278ab56fe7b4b7a8d5d1808790052329dddcbdfe46f0ac  3-ai-agent/agent.py
+4e73d15ef79cef2b2da0d392a93e57ca062af831a91c09b1dd9777c8070e625c  3-ai-agent/agent_tools.py
+449121e7243c263b9e318eaf5f893a540c99565b3226a0f8fd2dc53040e71501  3-ai-agent/anomaly_detector.py
+635e8a06e8f906f0f03a7408a8354850c43be9f6750a90112a776e3d5de3770b  3-ai-agent/health_model.py
+1e2d70c9a574d47cb59b0fd4835907785b10403fccf3e14014648354de2b595c  3-ai-agent/nfr_metrics.py
+12009eef20616b611d92a7c0ef5f24018260866a1c2a113d2a6b6f0d1efa7735  5-ml-training/health_model.pkl
+3a4d2b7f841f7ffcb092d56c58c7ad7babadf7c9806fe7a81567cfb580b79d5c  5-ml-training/capacity_table.json
+6827e444d53164679845490f8a24cf5fa1a7c728958bd085e53f760beb662db1  4-load-testing/baselines/hpa.yaml
+6696ab52d853dc01863e4fececb9bf6f25107898492ae8ce18e22257334b22c0  2-target-app/backend-deployment.yaml
+ac5520b4dcd61776688aa5ba0b921d28d0022b3a3c18a4016f8995b12e8fddc5  4-load-testing/k6/lib/mix.js
+518893bc7c1293733f423d35fc495fa68cf7c5bc72507197968a8718c887f32f  4-load-testing/k6/baseline.js
+4314daf7e3a8b4c3aadd3d2b973a14adbf8435e10bacd7e7446b955752cd4c07  4-load-testing/k6/stuck.js
+877cd3ada28cfe3ff60d90c840e162de603646ba0da41f213d684d2926e01e21  4-load-testing/k6/cpuhog.js
+incident memory: empty at the start
+[02:35:04] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 02:35:04] start stuck llm (memory off)
+[2026-10-23 02:53:43] end   stuck llm (exit 0)
+[2026-10-23 02:56:43] start stuck hpa
+[2026-10-23 03:15:27] end   stuck hpa (exit 0)
+[03:18:59] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-23 03:18:59] start cpuhog hpa
+[2026-10-23 03:37:37] end   cpuhog hpa (exit 0)
+[03:41:09] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 2)
+[2026-10-23 03:41:10] start baseline hpa

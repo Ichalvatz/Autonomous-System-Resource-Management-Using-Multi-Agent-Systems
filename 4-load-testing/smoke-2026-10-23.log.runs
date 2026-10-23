@@ -1,0 +1,125 @@
+[02:35:07] scenario=stuck strategy=llm: reset to 1 replica(s)
+[02:35:07] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on LABEL=llm-v9
+[02:35:15] rollout history reset: 1 ReplicaSet(s) left
+[02:37:20] k6 stuck.js started
+[02:53:22] k6 finished (exit 0)
+                       label: llm-v9
+                       start: 2026-10-23 02:37:20
+                         end: 2026-10-23 02:53:22
+                duration_min: 16.0
+             nfr_violation_s: 120
+             slo_violation_s: 70
+                     error_s: 110
+                  errors_pct: 7.41
+                    p95_mean: 0.396
+                     p95_p99: 4.642
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 50
+           liveness_restarts: 0
+                 k6_requests: 54741
+                    k6_p95_s: 0.133
+               k6_failed_pct: 7.23
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 5
+                agent_s_mean: 28.7
+               agent_actions: 02:42 restart (STABLE)
+                       notes: smoke-2026-10-23
+                     run_dir: 4-load-testing/eval_stuck_llm_20261023_0235
+                fault_at_min: 4.0
+                  recovery_s: 130
+ nfr_violation_after_fault_s: 110
+    max_replicas_after_fault: 1
+[02:53:43] done
+[02:56:46] scenario=stuck strategy=hpa: reset to 1 replica(s)
+[02:56:46] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=hpa
+[02:56:59] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[02:59:04] k6 stuck.js started
+[03:15:06] k6 finished (exit 0)
+                       label: hpa
+                       start: 2026-10-23 02:59:04
+                         end: 2026-10-23 03:15:06
+                duration_min: 16.0
+             nfr_violation_s: 720
+             slo_violation_s: 60
+                     error_s: 720
+                  errors_pct: 74.47
+                    p95_mean: 0.327
+                     p95_p99: 4.652
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 700
+           liveness_restarts: 0
+                 k6_requests: 54741
+                    k6_p95_s: 0.074
+               k6_failed_pct: 75.09
+                  k6_dropped: 0
+                   incidents: 
+                      stable: 
+                     rewakes: 
+                   llm_calls: 
+                agent_s_mean: 
+               agent_actions: 
+                       notes: smoke-2026-10-23
+                     run_dir: 4-load-testing/eval_stuck_hpa_20261023_0256
+                fault_at_min: 4.0
+                  recovery_s: never
+ nfr_violation_after_fault_s: 720
+    max_replicas_after_fault: 1
+[03:15:26] done
+[03:19:02] scenario=cpuhog strategy=hpa: reset to 1 replica(s)
+[03:19:02] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=hpa
+[03:19:09] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[03:21:15] k6 cpuhog.js started
+[03:37:16] k6 finished (exit 0)
+                       label: hpa
+                       start: 2026-10-23 03:21:15
+                         end: 2026-10-23 03:37:16
+                duration_min: 16.0
+             nfr_violation_s: 720
+             slo_violation_s: 720
+                     error_s: 50
+                  errors_pct: 0.39
+                    p95_mean: 0.603
+                     p95_p99: 1.491
+             replica_minutes: 27.8
+                under_prov_s: 0
+                 over_prov_s: 700
+            correct_prov_pct: 27.1
+               scale_actions: 1
+             replica_changes: 04:30 1->2
+                   unready_s: 0
+           liveness_restarts: 0
+                 k6_requests: 54740
+                    k6_p95_s: 0.668
+               k6_failed_pct: 0.41
+                  k6_dropped: 0
+                   incidents: 
+                      stable: 
+                     rewakes: 
+                   llm_calls: 
+                agent_s_mean: 
+               agent_actions: 
+                       notes: smoke-2026-10-23
+                     run_dir: 4-load-testing/eval_cpuhog_hpa_20261023_0318
+                fault_at_min: 4.0
+                  recovery_s: never
+ nfr_violation_after_fault_s: 720
+    max_replicas_after_fault: 2
+[03:37:37] done
+[03:41:13] scenario=baseline strategy=hpa: reset to 1 replica(s)
+[03:41:13] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=hpa
+[03:41:20] rollout history reset: 1 ReplicaSet(s) left
