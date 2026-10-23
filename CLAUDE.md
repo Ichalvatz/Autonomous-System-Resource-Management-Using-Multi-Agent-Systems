@@ -25,7 +25,7 @@ The comparison is against the native Kubernetes HPA.
 | `3-ai-agent/` | The runtime: `anomaly_detector.py` (main loop) → `agent.py` (facts, prompt, CodeAgent, LLM retries) → `agent_tools.py` (5 tools, guards, verification, memory). Shared modules: `nfr_metrics.py` (every PromQL query), `health_model.py` (the SVM transform, score, explanation, embedding, trajectory judgement). `memory_snapshot.py` saves / restores the memory. |
 | `4-load-testing/` | k6 scenarios in `k6/` (generated, frozen), the experiment harness, campaign scripts and reports (see "Evaluation harness") |
 | `5-ml-training/` | Capacity discovery, healthy data, training (see "ML pipeline"); artifacts; `phase1/` (archived phase-1 pipeline and data) |
-| `thesis_notes/` | Design decisions (A1–A27), worklogs, results summaries, manual testing guide, figures |
+| `thesis_notes/` | `system_overview.md` (the whole picture: before / after / now), design decisions (A1–A27), worklogs, results summaries, study guide, defense Q&A (phase-1 versions as `*_phase1.md`), manual testing guide, figures |
 | root | `deploy.sh` (full cluster bootstrap), `reset_chroma.py` (empty the `incidents_nfr` collection) |
 
 ## Hostnames (ingress, need `/etc/hosts` → 127.0.0.1)

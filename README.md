@@ -29,63 +29,74 @@ Traditional management systems rely on static rules and predefined thresholds. I
 
 ## How it works (implementation)
 
+The system is built around the service's **non-functional requirements** (NFRs): p95 latency < 0.35 s and errors < 1%,
+measured at the ingress as users see them, with at most 3 pods (phase 2, branch `nfr-v9`, since 2026-10-22; phase 1, the
+CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
+
 ```
-Prometheus ──(5 metrics / 10 s)──▶ anomaly_detector.py ──(3 anomalous readings in a row)──▶ agent.py
-  (CPU/pod, rps, p95, throttling,      One-Class SVM per            prompt = metrics + capacity table
-   replicas)                           replica count                + 2 nearest verified past incidents
-                                                                              │ LLM (Gemini, smolagents)
+k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ backend pods (1–3, readiness + liveness probes)
+                                                   │ NFR metrics          │ per-pod metrics, logs
+                                                   ▼                      ▼
+                                                Prometheus ──(every 10 s)──▶ anomaly_detector.py
+                                                                  ONE One-Class SVM (load, p95, errors, pods)
+                                                                              │ 3 anomalous readings in a row
                                                                               ▼
-                                       ChromaDB ◀── save if STABLE ── verify (code) ◀── scale / restart / read logs
-                                                                     rollback failed scale-downs   (guarded tools)
+              ChromaDB ◀── save ── verify: follow the SVM score ◀── agent.py (Gemini, smolagents CodeAgent)
+            (model-space            (STABLE / UNSTABLE → re-wake)     facts + capacity + 2 similar incidents
+             embeddings)                                             tools: pod breakdown, history, logs; scale, restart
 ```
 
-**Agent versions.** The code contains only the final version, **v8**. The earlier ones are part of the results (how each failure led to the next version) and live in git at commit `a1fd3d5`; what was removed and how to rerun an old version: `thesis_notes/removed_and_archived.md`.
+- **Detector:** one One-Class SVM trained on healthy traffic only; the pod count is one of its inputs. It wakes the agent
+  after 30 s of anomaly, and again at once if the verification says the state got worse.
+- **Agent v9:** code computes the facts (minimum pod count with headroom and the load trend). The LLM classifies capacity
+  vs something else, investigates with three observation tools, and acts: scale or a rolling restart. Three
+  code-enforced guards apply: evidence before action, no claimed action without a tool call, full diagnosis before a
+  restart.
+- **Verification:** by code, from the trajectory of the SVM score.
+- **Memory:** ChromaDB with the model's feature vector as embedding.
+- **Comparison:** the native Kubernetes HPA (CPU 60%, from the same capacity measurement), with the same probes.
+- **Scenarios:**
+  - normal load (1→2→3→2→1 pods);
+  - `stuck` (leaked DB pool: 503s, the pod leaves the Service; only a restart fixes it);
+  - `cpuhog` (a runaway job blocks the event loop; only a restart fixes it).
 
-| Version | Tools | What the prompt adds | Status |
-|---|---|---|---|
-| v4 | logs, scale, rolling restart | "find the bottleneck first" | measured 2026-10-01 |
-| v5 | same | a code-computed "CPU cost per request = N× healthy" hint | measured 2026-10-01 |
-| v6 | **per-pod view, deployment history, logs; scale, rolling restart, restart one pod, rollback** | investigate → act on the cause; its own recent actions and their verdicts; no fault-specific hint | frozen 2026-10-03, blind-tested |
-| v7 | same as v6 | classify first (code-computed facts: minimum replicas, CPU per request): capacity → v4's scaling tiers; anything else → v6's investigation; two code-enforced guards (evidence before action, no claimed action without a tool call) | 2026-10-03 |
-| **v8 (final, the only one in the code)** | same as v6 | v7 + a third guard, *diagnosis before a disruptive action* (restart / pod restart / rollback only after all three observation tools) + evidence-based restart (check what changed first; symptom-only warnings are not evidence) | 6/6 scenario runs right at the first wake-up (2026-10-03/04) |
-
-**Scenarios** (`SCENARIO`): `baseline` (normal 40-min demo load), `stuck` (leaked DB pool: restart fixes it),
-`cpuhog` (runaway background job: restart fixes it), `badconfig` (a bad configuration deployed: only a rollback fixes it).
-**Baselines:** Kubernetes HPA, rules (the agent's scaling tiers as thresholds), rules v2 (`RULES_RESTART=on`: plus
-restart rules written after seeing the stuck and cpuhog faults), static 1 / 3 replicas.
+**Results (campaign-2026-10-23, 4 + 4 runs per scenario):**
+- **Normal load:** the agent is 6.3% cheaper (71.5 vs 76.3 replica-min, p = 0.014) but has 108 s of NFR violation at the
+  first scale-up; the HPA has 0 s.
+- **Faults:** the agent recovered in 7/8 runs (stuck 4/4 in 138 s, cpuhog 3/4 in 113 s; the 4th was lost to a stalled LLM
+  provider). The HPA recovered in 0/8.
+- Details: `thesis_notes/results_summary.md` and `4-load-testing/comparison_nfr.md`.
 
 | Folder | Contents |
 |---|---|
-| `1-infrastructure/` | kind cluster, kube-prometheus-stack values, ServiceMonitor, ingresses, ChromaDB |
-| `2-target-app/` | The managed system: Node.js backend (with `/chaos/stuck` and `/chaos/cpuhog` fault injection) and React frontend |
-| `3-ai-agent/` | Detector, agent, guarded tools, rule-based baseline, unit tests |
-| `4-load-testing/` | k6 scenarios, experiment harness (`run_experiment.sh`), scoring (`evaluate_run.py`), results (`comparison.md`) |
-| `5-ml-training/` | Capacity discovery, healthy-data collection, One-Class SVM training |
+| `1-infrastructure/` | kind cluster, kube-prometheus-stack values, ServiceMonitors (backend, ingress-nginx), ingresses, ChromaDB |
+| `2-target-app/` | The managed system: Node.js backend (generated catalogue, `/ready`, `/chaos/stuck`, `/chaos/cpuhog`) and React frontend |
+| `3-ai-agent/` | NFR metrics, health model, detector, agent, guarded tools, unit tests |
+| `4-load-testing/` | k6 request mix and scenarios, experiment harness (`run_experiment.sh`), scoring, campaign scripts and reports |
+| `5-ml-training/` | NFR capacity discovery, healthy-data collection, One-Class SVM training (`phase1/`: the phase-1 pipeline) |
 
 ## Quick start
 
 ```bash
-./deploy.sh                                        # kind cluster + monitoring + app + ChromaDB
+./deploy.sh                                        # kind cluster + monitoring + ingress metrics + app + ChromaDB
 source .venv/bin/activate && export GEMINI_API_KEY=...
 python 3-ai-agent/anomaly_detector.py --dry-run    # detector only, no LLM, no cluster changes
-python 3-ai-agent/anomaly_detector.py              # detector + agent, final version v8 (run from the repo root)
-./4-load-testing/run_experiment.sh llm             # one scored experiment (also: rules, hpa, static-1, static-3)
-SCENARIO=stuck ./4-load-testing/run_experiment.sh llm    # fault experiment (also SCENARIO=cpuhog, badconfig)
-AIOPS_MEMORY=off SCENARIO=badconfig ./4-load-testing/run_experiment.sh llm   # memory off, as in the measured fault runs
-RULES_RESTART=on SCENARIO=cpuhog LABEL=rules-v2 ./4-load-testing/run_experiment.sh rules
-python 4-load-testing/compare_results.py           # tables, statistics and timeline figures
+python 3-ai-agent/anomaly_detector.py              # detector + agent v9
+./4-load-testing/run_experiment.sh llm             # one scored experiment on the normal load (also: hpa)
+SCENARIO=stuck ./4-load-testing/run_experiment.sh llm    # fault experiment (also SCENARIO=cpuhog)
+./4-load-testing/full_campaign.sh my-campaign      # the whole agent-vs-HPA comparison (~14 h)
+python 4-load-testing/compare_results.py my-campaign     # tables, statistics and timeline figures
 .venv/bin/python3 -m pytest 3-ai-agent/tests -q    # unit tests (all external systems mocked)
 ```
 
-Results are in `4-load-testing/comparison.md`; design decisions and their evidence in `CLAUDE.md` and
-`thesis_notes/design_decisions.md`.
-
-**Documentation (Greek):**
-- `thesis_notes/study_guide.md`: the whole system from theory to code (Kubernetes, Prometheus/PromQL, One-Class SVM,
-  the LLM agent and its guards, scenarios, baselines, evaluation and statistics, code map, glossary).
-- `thesis_notes/manual_testing.md`: how to run and check every scenario by hand, with exact commands.
-- `thesis_notes/defense_qa.md`: likely examiner questions with honest answers and evidence.
-- `NOTES_2026-10-03.md`: the log of the v6/v7/v8 work (every change, result and mistake).
+**Documentation (Greek, `thesis_notes/`):**
+- `system_overview.md`: the whole picture in one place: what we had, what changed and why, how it works now, results.
+- `study_guide.md`: the system from theory to code (Kubernetes, probes, Prometheus, NFRs, One-Class SVM, the agent and its
+  guards, verification, memory, scenarios, HPA, evaluation and statistics, code map, glossary).
+- `defense_qa.md`: likely examiner questions with honest answers and evidence.
+- `design_decisions.md`: every decision with its evidence (A24–A27: phase 2); `phase2_worklog.md`: the phase-2 log.
+- `manual_testing.md`: how to run and check every scenario by hand.
+- Phase 1: `results_summary_phase1.md`, `study_guide_phase1.md`, `defense_qa_phase1.md`.
 
 **Python environment:** `python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
 
