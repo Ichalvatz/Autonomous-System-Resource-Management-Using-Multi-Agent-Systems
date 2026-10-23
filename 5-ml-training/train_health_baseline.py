@@ -11,7 +11,8 @@ The transform and the score live in 3-ai-agent/health_model.py (shared with the 
 the memory). Its weights are chosen here by a small grid search, judged by
   1. probes derived from the measured bands (the situations the detector must get right; all must pass),
   2. held-out false alarms: train on the ramp-up readings, score the ramp-down ones, and back (pessimistic),
-for both forms of the load input: rps per pod (the default) and total throughput (the comparison asked for).
+for both forms of the load input: rps per pod and total throughput; the pre-declared selection rule picks the form
+too (2026-10-23: "total", design_decisions.md A26).
 Also calibrates trend_eps, the score noise between consecutive healthy readings, for the verification.
 
   python 5-ml-training/train_health_baseline.py            (seconds; read-only except the outputs)

@@ -5,8 +5,8 @@ memory (its embedding space) and the training script, so they all see a reading 
 
 Inputs (nfr_metrics.py) and their transform (the parameters live in the bundle, written by
 5-ml-training/train_health_baseline.py):
-  rps_per_pod  log, standardized (mean/std of the training data). form "total" uses log(throughput) instead:
-               kept for the offline comparison of the two forms.
+  load         form "per_pod": log(rps per pod); form "total": log(throughput). Either standardized (mean/std of
+               the training data). The bundle says which; the selection rule chose "total" (design_decisions.md A26).
   latency_p95  p95_weight * log(max(p95, p95_floor)): every p95 below the floor counts the same (histogram
                plateaus, as in phase 1), above it a fixed weight.
   error_rate   err_weight * error_rate: healthy data have no errors, so the weight sets how far 1% is.
