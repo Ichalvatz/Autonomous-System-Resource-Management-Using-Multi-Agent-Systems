@@ -162,7 +162,7 @@ def main():
         "replica_minutes": round(replica_seconds / 60, 1),
         "under_prov_s": under, "over_prov_s": over,
         "correct_prov_pct": round(100 * correct / judged, 1) if judged else "",
-        "scale_actions": len(changes), "replica_changes": " | ".join(changes),
+        "scale_actions": len(changes), "replica_changes": ", ".join(changes),
         "unready_s": unready, "liveness_restarts": int(restarts) if restarts is not None else "",
         **k6_summary(args.run_dir),
         "incidents": "", "stable": "", "rewakes": "", "llm_calls": "", "agent_s_mean": "", "agent_actions": "",
@@ -192,7 +192,7 @@ def main():
             row["rewakes"] = sum(r.get("rewake") == "True" for r in inc)
             row["llm_calls"] = sum(int(r["llm_calls"] or 0) for r in inc)
             row["agent_s_mean"] = round(sum(float(r["agent_seconds"]) for r in inc) / len(inc), 1)
-            row["agent_actions"] = " | ".join(f"{r['woke_at'][11:16]} {r['actions'] or 'none'}"
+            row["agent_actions"] = "; ".join(f"{r['woke_at'][11:16]} {r['actions'] or 'none'}"
                                               f"{' (' + r['verification'] + ')' if r['verification'] else ''}"
                                               for r in inc)
 

@@ -77,7 +77,7 @@ def agent_checks(scenario, right, rec_col, row, inc):
         notes.append("ξαναξύπνημα")
     if scenario == "baseline":
         stable = all(i["verification"] == "STABLE" for i in acted)
-        path = [c.split(" ")[1] for c in (row.get("replica_changes") or "").split(" | ") if c]
+        path = [c.strip().split(" ")[1] for c in (row.get("replica_changes") or "").replace(" | ", ", ").split(", ") if c]
         ok = stable and path == ["1->2", "2->3", "3->2", "2->1"]
         if not stable:
             notes.append("μη STABLE ενέργεια")
@@ -135,14 +135,15 @@ def main():
                                    f"{' / '.join(r['errors_pct'] for r in rs)} | "
                                    f"{' / '.join(r['replica_minutes'] for r in rs)} | "
                                    f"{' / '.join(r['correct_prov_pct'] for r in rs)} | "
-                                   f"{' ‖ '.join(r.get('replica_changes') or '–' for r in rs)} | "
+                                   f"{' ‖ '.join((r.get('replica_changes') or '–').replace(' | ', ', ') for r in rs)} | "
                                    f"{' / '.join(r.get('liveness_restarts', '') for r in rs)} |")
         else:
             details += ["| Μέθοδος | Runs | Ανάκαμψη (s) | Παραβίαση NFR μετά το fault (s) | Σφάλματα (%) | Max pods | replica-min | Liveness restarts | Ενέργειες |",
                         "|---|---|---|---|---|---|---|---|---|"]
             for m, rs in by_method.items():
                 if rs:
-                    acts = " ‖ ".join((r.get("agent_actions") or r.get("replica_changes") or "καμία") for r in rs)
+                    acts = " ‖ ".join((r.get("agent_actions") or r.get("replica_changes") or "καμία").replace(" | ", "; ")
+                                      for r in rs)
                     details.append(f"| {m} | {len(rs)} | {' / '.join(r['recovery_s'] for r in rs)} | "
                                    f"{' / '.join(r['nfr_violation_after_fault_s'] for r in rs)} | "
                                    f"{' / '.join(r['errors_pct'] for r in rs)} | "

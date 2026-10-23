@@ -1,202 +1,92 @@
-# Scaling strategy comparison (k6/baseline.js, 5→20→30→14→5 VUs)
+# Agent v9 vs Kubernetes HPA (phase 2: NFRs at the ingress, request mix, open-model load)
 
-Generated 2026-10-22 10:20 from `evaluation_results.csv` (30 runs).
+Generated 2026-10-23 05:31. Both strategies on the same deployment with the same readiness and liveness probes. Lower is better except correct provisioning.
 
-| Metric | static-1 (n=2) | static-3 (n=2) | hpa (n=4) | rules (n=4) | rules-v2 (n=2) | llm-v3 (n=3) | llm (n=2) | llm-v5 (n=1) | llm-v6 (n=1) | llm-v7 (n=2) | llm-v8 (n=2) | llm-v8.1 (n=3) | llm-agent-v1 (n=1) | llm-agent-v2 (n=1) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| SLO violation (s, p95 > 0.35 s) | 565 ± 21 | 0 ± 0 | 0 ± 0 | 0 ± 0 | 0 ± 0 | 0 ± 0 | 0 ± 0 | 0 | 0 | 20 ± 28 | 0 ± 0 | 0 ± 0 | 0 | 0 |
-| Pressure (s, CPU > 0.75 or throttling > 5%) | 1.46e+03 ± 1.1e+02 | 0 ± 0 | 170 ± 1.3e+02 | 115 ± 5.8 | 115 ± 21 | 393 ± 45 | 195 ± 21 | 350 | 330 | 195 ± 21 | 230 ± 42 | 183 ± 40 | 240 | 240 |
-| p95 mean (s) | 0.284 ± 0.00071 | 0.114 ± 0.0071 | 0.111 ± 0.0034 | 0.112 ± 0.0032 | 0.117 ± 0.0028 | 0.109 ± 0.0021 | 0.114 ± 0.0021 | 0.114 | 0.122 | 0.131 ± 0.028 | 0.117 ± 0.014 | 0.119 ± 0.0035 | 0.138 | 0.129 |
-| Replica-minutes (cost) | 38.2 ± 0 | 114 ± 0 | 79.5 ± 0.19 | 76.4 ± 2.7 | 72.5 ± 0.35 | 71.6 ± 0.17 | 71.5 ± 0 | 73.8 | 69.3 | 71.4 ± 0.85 | 71.3 ± 0.49 | 72 ± 0.87 | 68.8 | 74 |
-| Correct provisioning (%) | 38.8 ± 0.49 | 22.3 ± 0 | 69 ± 0.85 | 80.3 ± 5.7 | 88.6 ± 0.28 | 85.9 ± 0.98 | 85.2 ± 1.9 | 80.4 | 75.9 | 83 ± 1.3 | 82.2 ± 4.5 | 81.7 ± 2.9 | 83.3 | 86.6 |
-| Under-provisioned (s) | 1.38e+03 ± 7.1 | 0 ± 0 | 52.5 ± 9.6 | 20 ± 23 | 45 ± 21 | 103 ± 15 | 110 ± 28 | 100 | 280 | 145 ± 35 | 155 ± 64 | 140 ± 20 | 120 | 20 |
-| Over-provisioned (s) | 0 ± 0 | 1.74e+03 ± 0 | 642 ± 15 | 422 ± 1.4e+02 | 210 ± 14 | 213 ± 5.8 | 220 ± 14 | 340 | 260 | 235 ± 7.1 | 245 ± 35 | 270 ± 56 | 230 | 280 |
-| Scale actions | 0 ± 0 | 0 ± 0 | 4 ± 0 | 4 ± 0 | 4 ± 0 | 4 ± 0 | 4 ± 0 | 4 | 4 | 4 ± 0 | 4 ± 0 | 4 ± 0 | 4 | 4 |
-| LLM calls | – | – | – | – | – | 9 ± 1.7 | 8.5 ± 0.71 | 13 | 22 | 12.5 ± 4.9 | 9.5 ± 0.71 | 16.7 ± 4 | – | 8 |
+# Normal load (k6/baseline.js: 1 -> 2 -> 3 -> 2 -> 1 pods needed)
 
-Lower is better except correct provisioning. `llm` rows with notes mentioning an older agent version are
-kept for history; see the notes column in the CSV.
+2 runs from `results_nfr.csv`.
 
-# Stuck-dependency fault (k6/stuck.js, 8 VUs; POST /chaos/stuck at t = 4 min)
+| Metric | hpa (n=1) | llm-v9 (n=1) |
+|---|---|---|
+| NFR violation (s; p95 > 0.35 s or errors > 1%) | 30 | 110 |
+|   of which p95 > 0.35 s (s) | 30 | 110 |
+|   of which errors > 1% (s) | 0 | 0 |
+| Failed requests (%) | 0 | 0 |
+| p95 mean (s, ingress) | 0.127 | 0.151 |
+| p95 over the run (s, k6 client) | 0.135 | 0.171 |
+| Requests k6 could not start (dropped) | 0 | 0 |
+| Replica-minutes (cost) | 75.7 | 70.8 |
+| Correct provisioning (%) | 79.7 | 85 |
+| Under-provisioned (s) | 0 | 90 |
+| Over-provisioned (s) | 460 | 250 |
+| Scale actions | 4 | 4 |
+| Pods not ready (s) | 0 | 0 |
+| Liveness restarts | 0 | 0 |
+| Agent wake-ups | – | 6 |
+|   verified STABLE | – | 4 |
+|   re-wakes | – | 0 |
+| LLM calls | – | 19 |
 
-25 runs from `evaluation_results_stuck.csv`. Only a restart fixes the fault; adding replicas dilutes it.
+# Stuck dependency (POST /chaos/stuck at t = 4 min)
 
-| Metric | static-1 (n=1) | hpa (n=3) | rules (n=3) | rules-v2 (n=2) | llm-v3 (n=3) | llm-nomem (n=2) | llm (n=4) | llm-v5 (n=1) | llm-v6 (n=1) | llm-v7 (n=1) | llm-v8 (n=1) | llm-v8.1 (n=3) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Recovery after fault (s; p95 < 0.35 s held 60 s) | never (1/1) | never (3/3) | never (3/3) | 90 ± 0 | 270 ± 2.9e+02 | 100 ± 0 | 100 ± 8.2 | 120 | 110 | 280 | 120 | 183 ± 93 |
-| Fault gone after (s; CPU per request ≤ 0.10 held 60 s) | – | 0 | 0 | 0 ± 0 | – | – | – | 0 | 0 | 0 | 0 | 0 ± 0 |
-| SLO violation after fault (s) | 710 | 710 ± 0 | 710 ± 0 | 70 ± 0 | 250 ± 2.9e+02 | 80 ± 0 | 82.5 ± 5 | 100 | 90 | 290 | 100 | 167 ± 91 |
-| Max replicas after fault | 1 | 1 ± 0 | 3 ± 0 | 2 ± 0 | 1.67 ± 1.2 | 1 ± 0 | 1 ± 0 | 1 | 1 | 2 | 1 | 1 ± 0 |
-| User-side p95 over the whole run (s, k6) | 3.11 | 3.14 ± 0.029 | 3.11 ± 0.015 | 0.223 ± 0.00071 | 1.17 ± 1.7 | 0.172 ± 0.0021 | 0.177 ± 0.0041 | 0.178 | 0.191 | 3.1 | 0.171 | 1.17 ± 1.7 |
-| Logins completed (k6; closed loop: fewer = users slowed) | 3120 | 3.13e+03 ± 24 | 4.01e+03 ± 3.9e+02 | 6.62e+03 ± 11 | 5.95e+03 ± 1.1e+03 | 6.61e+03 ± 18 | 6.61e+03 ± 59 | 6487 | 6462 | 5594 | 6551 | 6.09e+03 ± 5e+02 |
-| Replica-minutes (cost) | 16.2 | 16.2 ± 0 | 38.6 ± 2.2 | 19.2 ± 1.4 | 21.5 ± 9.1 | 16.2 ± 0 | 16.2 ± 0 | 16.2 | 16.2 | 20.2 | 16.2 | 16.2 ± 0 |
-| Scale actions | 0 | 0 ± 0 | 3.33 ± 1.2 | 3 ± 1.4 | 1.67 ± 2.9 | 0 ± 0 | 0 ± 0 | 0 | 0 | 1 | 0 | 0 ± 0 |
-| Agent incidents | – | – | – | – | 2 ± 1.7 | 1 ± 0 | 1 ± 0 | 1 | 1 | 3 | 1 | 1 ± 0 |
-| Verified STABLE | – | – | – | – | 0.333 ± 0.58 | 1 ± 0 | 1 ± 0 | 1 | 1 | 2 | 1 | 1 ± 0 |
-| LLM calls | – | – | – | – | 7.33 ± 6.7 | 2.5 ± 0.71 | 2.75 ± 0.5 | 5 | 8 | 17 | 6 | 9 ± 6.9 |
+2 runs from `results_nfr_stuck.csv`. Every request of the old process waits 3 s for a leaked DB connection, then fails (503); its /ready fails, so the readiness probe takes it out of service. New pods are healthy: only a restart fixes the old process.
 
-Agent actions per run (each agent wake-up, with its verification verdict):
+| Metric | hpa (n=1) | llm-v9 (n=1) |
+|---|---|---|
+| Recovery after the fault (s; NFRs met for 60 s) | never (1/1) | 130 |
+| NFR violation after the fault (s) | 720 | 110 |
+| Failed requests (%) | 74.47 | 7.41 |
+| p95 over the run (s, k6 client) | 0.074 | 0.133 |
+| Max replicas after the fault | 1 | 1 |
+| Replica-minutes (cost) | 16.2 | 16.2 |
+| Pods not ready (s) | 700 | 50 |
+| Liveness restarts | 0 | 0 |
+| Agent wake-ups | – | 1 |
+|   verified STABLE | – | 1 |
+|   re-wakes | – | 0 |
+| LLM calls | – | 5 |
 
-- llm-v3 10-01 08:07: recovery 100 s; restart (UNSTABLE)
-- llm-v3 10-01 09:32: recovery 100 s; restart (UNSTABLE)
-- llm-v3 10-01 10:37: recovery 610 s; scale 1->2 (UNSTABLE) | scale 2->3 (UNSTABLE) | scale 3->1; rollback to 3 () | restart (STABLE)
-- llm 10-01 10:59: recovery 90 s; restart (STABLE)
-- llm 10-01 11:21: recovery 100 s; restart (STABLE)
-- llm 10-01 12:27: recovery 100 s; restart (STABLE)
-- llm 10-01 12:49: recovery 110 s; restart (STABLE)
-- llm-nomem 10-01 13:55: recovery 100 s; restart (STABLE)
-- llm-nomem 10-01 14:17: recovery 100 s; restart (STABLE)
-- llm-v5 10-01 20:31: recovery 120 s; restart (STABLE)
-- llm-v6 10-03 16:12: recovery 110 s; restart (STABLE)
-- llm-v7 10-03 20:00: recovery 280 s; none () | restart (STABLE) | scale 1->2 (STABLE)
-- llm-v8 10-03 23:25: recovery 120 s; restart (STABLE)
-- llm-v8.1 10-22 02:58: recovery 140 s; restart (STABLE)
-- llm-v8.1 10-22 05:44: recovery 290 s; restart (STABLE)
-- llm-v8.1 10-22 07:45: recovery 120 s; restart (STABLE)
+Agent wake-ups per run (time, actions, verification):
 
-Rule-based actions per run (from the controller log):
+- 10-23 02:37: recovery 130 s; 02:42 restart (STABLE)
 
-- rules-v2 10-03 17:33: recovery 90 s; 17:37:38 restart R1 | 17:39:59 scale->2 | 17:41:59 scale->1
-- rules-v2 10-21 22:35: recovery 90 s; 22:40:19 restart R1 | 22:41:29 scale->2 | 22:43:30 scale->1 | 22:46:00 scale->2 | 22:48:01 scale->1
-- rules 10-22 01:08: recovery never s; 01:11:06 scale->2 | 01:13:26 scale->3
+HPA replica changes per run (mm:ss from the start):
 
-# Runaway background job (k6/cpuhog.js, 8 VUs; POST /chaos/cpuhog at t = 4 min)
+- 10-23 02:59: recovery never s; nan; liveness restarts 0
 
-23 runs from `evaluation_results_cpuhog.csv`. Blind test: designed after prompt v4 was frozen. Looks like CPU overload (CPU ~0.9, throttling ~18%) at a third of the capacity rps; only a restart fixes it. **The server-side p95 rows are not meaningful here**: the app's histogram does not time requests queued behind a blocked event loop, so once the hogged pods get few requests the server p95 looks healthy while users wait. Judge by "Fault gone after" and the k6 rows.
+# Runaway background job (POST /chaos/cpuhog at t = 4 min)
 
-| Metric | hpa (n=2) | rules (n=2) | rules-v2 (n=2) | llm (n=2) | llm-v5 (n=2) | llm-v6 (n=2) | llm-v7 (n=2) | llm-v8 (n=1) | llm-v8.1 (n=3) | llm-v4-mem (n=2) | llm-v4-mem-indep (n=3) |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Recovery after fault (s; p95 < 0.35 s held 60 s) | 45 ± 64 | 110 ± 28 | 110 ± 0 | 54.5 ± 77 | 105 ± 7.1 | 55 ± 78 | 60 ± 85 | 130 | 133 ± 35 | 95 ± 21 | 100 ± 0 |
-| Fault gone after (s; CPU per request ≤ 0.10 held 60 s) | never (2/2) | never (2/2) | 125 ± 21 | never (2/2) | 115 ± 7.1 | 360 ± 3.5e+02 | 115 ± 21 | 130 | 137 ± 31 | 115 ± 21 | 107 ± 15 |
-| SLO violation after fault (s) | 20 ± 28 | 160 ± 42 | 70 ± 14 | 280 ± 57 | 85 ± 7.1 | 80 ± 28 | 40 ± 57 | 90 | 96.7 ± 35 | 60 ± 0 | 70 ± 10 |
-| Max replicas after fault | 2 ± 0 | 2.5 ± 0.71 | 2 ± 0 | 3 ± 0 | 1 ± 0 | 1.5 ± 0.71 | 1 ± 0 | 1 | 1 ± 0 | 1 ± 0 | 1 ± 0 |
-| User-side p95 over the whole run (s, k6) | 0.747 ± 0.011 | 0.917 ± 0.076 | 0.31 ± 0.045 | 0.961 ± 0.011 | 0.251 ± 0.028 | 0.524 ± 0.38 | 0.413 ± 0.25 | 0.75 | 0.618 ± 0.37 | 0.437 ± 0.23 | 0.28 ± 0.023 |
-| Logins completed (k6; closed loop: fewer = users slowed) | 6.1e+03 ± 15 | 5.72e+03 ± 2.5e+02 | 6.67e+03 ± 64 | 5.78e+03 ± 2.7e+02 | 6.63e+03 ± 48 | 6.35e+03 ± 2.8e+02 | 6.69e+03 ± 28 | 6539 | 6.56e+03 ± 1.9e+02 | 6.61e+03 ± 66 | 6.61e+03 ± 11 |
-| Replica-minutes (cost) | 27.5 ± 0 | 26.4 ± 5.4 | 20.4 ± 0.21 | 30.6 ± 1.6 | 16.2 ± 0 | 21.2 ± 7.1 | 16.2 ± 0 | 16.2 | 16.2 ± 0 | 16.2 ± 0 | 16.2 ± 0 |
-| Scale actions | 1 ± 0 | 7 ± 1.4 | 4 ± 0 | 8.5 ± 0.71 | 0 ± 0 | 0.5 ± 0.71 | 0 ± 0 | 0 | 0 ± 0 | 0 ± 0 | 0 ± 0 |
-| Agent incidents | – | – | – | 5 ± 0 | 1 ± 0 | 3 ± 2.8 | 1 ± 0 | 1 | 1 ± 0 | 1 ± 0 | 1 ± 0 |
-| Verified STABLE | – | – | – | 2 ± 0 | 1 ± 0 | 1.5 ± 0.71 | 1 ± 0 | 1 | 1 ± 0 | 1 ± 0 | 1 ± 0 |
-| LLM calls | – | – | – | 13 ± 1.4 | 5 ± 0 | 10.5 ± 4.9 | 5 ± 0 | 5 | 6 ± 1 | 3.5 ± 2.1 | 3.67 ± 0.58 |
+2 runs from `results_nfr_cpuhog.csv`. A never-ending job blocks the event loop 600 ms at a time: it looks like CPU overload at a fraction of the capacity; only a restart stops it. Measured at the ingress, the queueing behind the blocked loop is visible.
 
-Agent actions per run (each agent wake-up, with its verification verdict):
+| Metric | hpa (n=1) | llm-v9 (n=1) |
+|---|---|---|
+| Recovery after the fault (s; NFRs met for 60 s) | never (1/1) | 300 |
+| NFR violation after the fault (s) | 720 | 280 |
+| Failed requests (%) | 0.39 | 2.79 |
+| p95 over the run (s, k6 client) | 0.668 | 1.206 |
+| Max replicas after the fault | 2 | 1 |
+| Replica-minutes (cost) | 27.8 | 16.2 |
+| Pods not ready (s) | 0 | 20 |
+| Liveness restarts | 0 | 0 |
+| Agent wake-ups | – | 1 |
+|   verified STABLE | – | 1 |
+|   re-wakes | – | 0 |
+| LLM calls | – | 18 |
 
-- llm 10-01 18:31: recovery 0 s; scale 1->2 (STABLE) | scale 2->3 (STABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE)
-- llm 10-01 19:10: recovery 109 s; scale 1->2 (STABLE) | scale 2->3 (STABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE)
-- llm-v5 10-01 19:50: recovery 100 s; restart (STABLE)
-- llm-v5 10-01 20:11: recovery 110 s; restart (STABLE)
-- llm-v4-mem 10-01 22:56: recovery 80 s; restart (STABLE)
-- llm-v4-mem 10-01 23:16: recovery 110 s; restart (STABLE)
-- llm-v4-mem-indep 10-02 00:02: recovery 100 s; restart (STABLE)
-- llm-v4-mem-indep 10-02 00:21: recovery 100 s; restart (STABLE)
-- llm-v4-mem-indep 10-02 00:41: recovery 100 s; restart (STABLE)
-- llm-v6 10-03 15:31: recovery 110 s; restart (STABLE)
-- llm-v7 10-03 19:20: recovery 0 s; restart (STABLE)
-- llm-v7 10-03 21:23: recovery 120 s; restart (STABLE)
-- llm-v6 10-03 21:43: recovery 0 s; none () | scale 1->2 (STABLE) | none () | none () | restart pod aiops-backend-deployment-85b9689959-qqzx6 (STABLE)
-- llm-v8 10-03 23:04: recovery 130 s; restart (STABLE)
-- llm-v8.1 10-22 04:05: recovery 170 s; restart (STABLE)
-- llm-v8.1 10-22 06:17: recovery 130 s; restart (STABLE)
-- llm-v8.1 10-22 08:07: recovery 100 s; restart (STABLE)
+Agent wake-ups per run (time, actions, verification):
 
-Rule-based actions per run (from the controller log):
+- 10-23 04:27: recovery 300 s; 04:32 restart (STABLE)
 
-- rules-v2 10-03 16:52: recovery 110 s; 16:53:42 scale->2 | 16:55:43 scale->1 | 16:57:43 restart R2 | 16:58:44 scale->2 | 17:00:44 scale->1
-- rules 10-21 21:29: recovery 90 s; 21:33:38 scale->2 | 21:35:39 scale->1 | 21:37:39 scale->2 | 21:39:59 scale->1 | 21:42:00 scale->2 | 21:44:00 scale->1
-- rules-v2 10-22 00:24: recovery 110 s; 00:30:02 restart R2 | 00:31:02 scale->2 | 00:33:12 scale->1 | 00:37:23 scale->2 | 00:39:24 scale->1
+HPA replica changes per run (mm:ss from the start):
 
-# Bad configuration change (k6/badconfig.js, 8 VUs; FEATURE_LOGIN_AUDIT=true deployed at t = 4 min)
-
-18 runs from `evaluation_results_badconfig.csv`. Blind test for prompt v6: designed after v6 was frozen (2026-10-03 14:28). Every login runs a synchronous PBKDF2 (1.5M iterations, ~0.35 s of CPU per login), so CPU per request rises ~5x in EVERY pod and no replica count meets the p95 objective. The bad state lives in the deployment's configuration: restarts and new pods do not help, only a rollback does. Server-side p95 is meaningful here (the extra work runs inside the handler).
-
-| Metric | hpa (n=2) | rules (n=2) | rules-v2 (n=2) | llm (n=1) | llm-v5 (n=1) | llm-v6 (n=3) | llm-v7 (n=2) | llm-v8 (n=2) | llm-v8.1 (n=3) |
-|---|---|---|---|---|---|---|---|---|---|
-| Recovery after fault (s; p95 < 0.35 s held 60 s) | never (2/2) | never (2/2) | never (2/2) | never (1/1) | never (1/1) | 117 ± 12 | 185 ± 1.1e+02 | 135 ± 35 | 153 ± 15 |
-| Fault gone after (s; CPU per request ≤ 0.10 held 60 s) | never (2/2) | never (2/2) | never (2/2) | never (1/1) | never (1/1) | 110 ± 17 | 180 ± 99 | 130 ± 42 | 146 ± 20 |
-| SLO violation after fault (s) | 700 ± 0 | 705 ± 7.1 | 705 ± 7.1 | 700 | 700 | 86.7 ± 12 | 155 ± 1.1e+02 | 115 ± 35 | 127 ± 12 |
-| Max replicas after fault | 3 ± 0 | 3 ± 0 | 1.5 ± 0.71 | 3 | 2 | 1 ± 0 | 1 ± 0 | 1 ± 0 | 1 ± 0 |
-| User-side p95 over the whole run (s, k6) | 0.407 ± 0.042 | 0.769 ± 0.17 | 1.76 ± 0 | 1.64 | 1.66 | 0.22 ± 0.0038 | 0.917 ± 1 | 0.523 ± 0.49 | 0.58 ± 0.46 |
-| Logins completed (k6; closed loop: fewer = users slowed) | 5.86e+03 ± 39 | 5.49e+03 ± 2.4e+02 | 3.89e+03 ± 49 | 5436 | 5191 | 6.61e+03 ± 15 | 6.35e+03 ± 3.4e+02 | 6.54e+03 ± 1.6e+02 | 6.42e+03 ± 24 |
-| Replica-minutes (cost) | 38.8 ± 0.35 | 37.1 ± 0.92 | 17.2 ± 1.4 | 33 | 24.8 | 16.2 ± 0 | 16.2 ± 0 | 16.2 ± 0 | 16.2 ± 0 |
-| Scale actions | 2 ± 0 | 3 ± 1.4 | 1 ± 1.4 | 4 | 1 | 0 ± 0 | 0 ± 0 | 0 ± 0 | 0 ± 0 |
-| Agent incidents | – | – | – | 4 | 4 | 1 ± 0 | 1.5 ± 0.71 | 1 ± 0 | 1 ± 0 |
-| Verified STABLE | – | – | – | 0 | 0 | 0.667 ± 0.58 | 1 ± 0 | 1 ± 0 | 1 ± 0 |
-| LLM calls | – | – | – | 12 | 9 | 2.67 ± 1.2 | 5.5 ± 2.1 | 6 ± 1.4 | 6.67 ± 1.5 |
-
-Agent actions per run (each agent wake-up, with its verification verdict):
-
-- llm-v6 10-03 15:11: recovery 110 s; rollback to revision 70 (STABLE)
-- llm-v6 10-03 17:12: recovery 110 s; rollback to revision 98 (UNVERIFIABLE)
-- llm-v7 10-03 19:40: recovery 110 s; rollback to revision 108 (STABLE)
-- llm-v7 10-03 21:03: recovery 260 s; restart (UNSTABLE) | rollback to revision 114 (STABLE)
-- llm-v8 10-03 22:02: recovery 160 s; rollback to revision 121 (STABLE)
-- llm-v8 10-03 23:45: recovery 110 s; rollback to revision 128 (STABLE)
-- llm-v6 10-04 00:47: recovery 130 s; rollback to revision 131 (STABLE)
-- llm-v5 10-04 01:07: recovery never s; restart (UNSTABLE) | scale 1->2 (UNSTABLE) | restart (UNSTABLE) | restart (UNSTABLE)
-- llm 10-04 01:28: recovery never s; scale 1->2 (UNSTABLE) | scale 2->3 (UNSTABLE) | restart (UNSTABLE) | scale 3->1; rollback to 3 (UNSTABLE)
-- llm-v8.1 10-22 04:27: recovery 140 s; rollback to revision 185 (STABLE)
-- llm-v8.1 10-22 06:39: recovery 150 s; rollback to revision 193 (STABLE)
-- llm-v8.1 10-22 08:29: recovery 169 s; rollback to revision 201 (STABLE)
-
-Rule-based actions per run (from the controller log):
-
-- rules-v2 10-03 15:51: recovery never s; 15:53:52 scale->2 | 15:55:52 scale->1 | 15:57:53 restart R2 | 15:58:53 restart R2 | 15:59:53 restart R2 | 16:00:53 restart R2 | 16:01:53 restart R2 | 16:02:54 restart R2 | 16:03:54 restart R2 | 16:04:54 restart R2 | 16:05:54 restart R2 | 16:06:54 restart R2 | 16:07:55 restart R2
-- rules 10-03 18:19: recovery never s; 18:24:14 scale->2 | 18:26:14 scale->3
-- rules-v2 10-21 20:45: recovery never s; 20:50:44 restart R2 | 20:51:44 restart R2 | 20:52:44 restart R2 | 20:53:44 restart R2 | 20:54:45 restart R2 | 20:55:45 restart R2 | 20:56:45 restart R2 | 20:57:45 restart R2 | 20:58:45 restart R2 | 20:59:45 restart R2 | 21:00:56 restart R2
-- rules 10-21 23:19: recovery never s; 23:20:38 scale->2 | 23:22:38 scale->1 | 23:24:38 scale->2 | 23:26:39 scale->3
+- 10-23 03:21: recovery never s; 04:30 1->2; liveness restarts 0
 
 # Statistics (exact tests; small n)
 
-- Scaling, replica-minutes, LLM v8 (n=2, mean 71.3) < hpa (n=4, mean 79.5): one-sided exact permutation p = 0.067
-- Scaling, replica-minutes, LLM v8 (n=2, mean 71.3) < rules+rules-v2 (n=6, mean 75.1): one-sided exact permutation p = 0.036
-- Scaling, replica-minutes, LLM v8.1 (final) (n=3, mean 72.0) < hpa (n=4, mean 79.5): one-sided exact permutation p = 0.029
-- Scaling, replica-minutes, LLM v8.1 (final) (n=3, mean 72.0) < rules+rules-v2 (n=6, mean 75.1): one-sided exact permutation p = 0.048
-- Scaling, replica-minutes, LLM v8+v8.1 (n=5, mean 71.7) < hpa (n=4, mean 79.5): one-sided exact permutation p = 0.008
-- Scaling, replica-minutes, LLM v8+v8.1 (n=5, mean 71.7) < rules+rules-v2 (n=6, mean 75.1): one-sided exact permutation p = 0.009
-- Scaling, replica-minutes, LLM v3+v4+v7+v8+v8.1 (n=12, mean 71.6) < hpa (n=4, mean 79.5): one-sided exact permutation p = 0.001
-- Scaling, replica-minutes, LLM v3+v4+v7+v8+v8.1 (n=12, mean 71.6) < rules+rules-v2 (n=6, mean 75.1): one-sided exact permutation p = 0.000
-- Scaling, replica-minutes, LLM v3+v4 (n=5, mean 71.6) < hpa (n=4, mean 79.5): one-sided exact permutation p = 0.008
-- Scaling, replica-minutes, LLM v3+v4 (n=5, mean 71.6) < rules (n=4, mean 76.4): one-sided exact permutation p = 0.008
-- Scaling, replica-minutes, LLM v3+v4 (n=5, mean 71.6) < static-3 (n=2, mean 114.5): one-sided exact permutation p = 0.048
-- Stuck-dependency fault (recovery_s): recovered, all LLM versions 16/16 vs baselines 2/9: one-sided Fisher exact p = 0.0001
-  - tool-using agents (v6+v7+v8+v8.1) 6/6 vs all baselines 2/9: Fisher p = 0.0056
-  - llm-v6 1/1 vs rules-v2 2/2: Fisher p = 1.000
-  - llm-v6 1/1 vs rules 0/3: Fisher p = 0.250
-  - llm-v6 1/1 vs hpa 0/3: Fisher p = 0.250
-  - llm-v6 1/1 vs static-1 0/1: Fisher p = 0.500
-  - llm-v8 1/1 vs rules-v2 2/2: Fisher p = 1.000
-  - llm-v8 1/1 vs rules 0/3: Fisher p = 0.250
-  - llm-v8 1/1 vs hpa 0/3: Fisher p = 0.250
-  - llm-v8 1/1 vs static-1 0/1: Fisher p = 0.500
-  - llm-v8.1 3/3 vs rules-v2 2/2: Fisher p = 1.000
-  - llm-v8.1 3/3 vs rules 0/3: Fisher p = 0.050
-  - llm-v8.1 3/3 vs hpa 0/3: Fisher p = 0.050
-  - llm-v8.1 3/3 vs static-1 0/1: Fisher p = 0.250
-- Runaway background job (cpu_recovery_s): recovered, all LLM versions 15/17 vs baselines 2/6: one-sided Fisher exact p = 0.0212
-  - tool-using agents (v6+v7+v8+v8.1) 8/8 vs all baselines 2/6: Fisher p = 0.0150
-  - llm-v6 2/2 vs rules-v2 2/2: Fisher p = 1.000
-  - llm-v6 2/2 vs rules 0/2: Fisher p = 0.167
-  - llm-v6 2/2 vs hpa 0/2: Fisher p = 0.167
-  - llm-v8 1/1 vs rules-v2 2/2: Fisher p = 1.000
-  - llm-v8 1/1 vs rules 0/2: Fisher p = 0.333
-  - llm-v8 1/1 vs hpa 0/2: Fisher p = 0.333
-  - llm-v8.1 3/3 vs rules-v2 2/2: Fisher p = 1.000
-  - llm-v8.1 3/3 vs rules 0/2: Fisher p = 0.100
-  - llm-v8.1 3/3 vs hpa 0/2: Fisher p = 0.100
-- Bad configuration change (cpu_recovery_s): recovered, all LLM versions 10/12 vs baselines 0/6: one-sided Fisher exact p = 0.0015
-  - tool-using agents (v6+v7+v8+v8.1) 10/10 vs all baselines 0/6: Fisher p = 0.0001
-  - llm-v6 3/3 vs rules-v2 0/2: Fisher p = 0.100
-  - llm-v6 3/3 vs rules 0/2: Fisher p = 0.100
-  - llm-v6 3/3 vs hpa 0/2: Fisher p = 0.100
-  - llm-v8 2/2 vs rules-v2 0/2: Fisher p = 0.167
-  - llm-v8 2/2 vs rules 0/2: Fisher p = 0.167
-  - llm-v8 2/2 vs hpa 0/2: Fisher p = 0.167
-  - llm-v8.1 3/3 vs rules-v2 0/2: Fisher p = 0.100
-  - llm-v8.1 3/3 vs rules 0/2: Fisher p = 0.100
-  - llm-v8.1 3/3 vs hpa 0/2: Fisher p = 0.100
+- stuck: recovered, agent 1/1 vs hpa 0/1: one-sided Fisher exact p = 0.5000
+- cpuhog: recovered, agent 1/1 vs hpa 0/1: one-sided Fisher exact p = 0.5000
+- Faults pooled: agent 2/2 vs hpa 0/2: Fisher p = 0.16667
 
-Pooling LLM v3 and v4 on the scaling load is justified by their identical results there (71.5-71.8 replica-min); on the fault runs every LLM version is pooled against every baseline.
-
-timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_timelines.png
-fault timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_stuck_timelines.png
-fault timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_cpuhog_timelines.png
-fault timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_badconfig_timelines.png
+timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_nfr_timelines.png
+fault timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_nfr_stuck_timelines.png
+fault timelines: /Users/ioannischalvatzis/Documents/LLM_AGENT/4-load-testing/comparison_nfr_cpuhog_timelines.png
