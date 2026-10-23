@@ -91,24 +91,28 @@ def judge_trajectory(scores, pre_score, eps, window_full_at, stuck_readings=3, s
     the change between two single readings is as large as the margin of a healthy state above 0, so one
     reading cannot say "better" or "worse" (design_decisions.md A26). eps is the noise of that moving average
     between consecutive healthy readings (95th percentile, calibrated in training).
-    window_full_at: index of the first reading whose 1 m rate windows hold only post-action data; before it a
-    rising score may still be the old data leaving the window, so only STABLE or WAIT are possible.
+    window_full_at: index of the first reading whose 1 m rate windows hold only post-action data. Before it a
+    rising score may still be the old data leaving the window, so only STABLE or WAIT are possible; after it the
+    average is taken over post-action readings only (smoke run 2026-10-23 06:32: an average that still held two
+    pre-action readings called a scale-up that had just worked "worse than before"), and a failure needs a full
+    post-action average (`smooth` readings).
     Returns "STABLE", "WAIT" or "UNSTABLE: <reason>":
-      STABLE    the moving average is >= 0 and at least 2 of the last 3 readings are normal;
+      STABLE    the average is >= 0 and at least 2 of the last 3 readings are normal;
       UNSTABLE  worse than before the action (average < pre_score - eps), or not improving: the average has not
                 risen by more than eps over the last `stuck_readings` readings while still anomalous;
       WAIT      anomalous but improving, near the boundary, or too early to tell.
     """
-    ma = moving_average(scores, smooth)
+    post = scores[window_full_at:]
+    ma = moving_average(post if post else scores, smooth)
     last3 = scores[-3:]
-    if ma[-1] >= 0 and sum(s >= 0 for s in last3) >= min(2, len(last3)) and len(scores) >= 2:
+    if ma[-1] >= 0 and len(scores) >= 2 and sum(s >= 0 for s in last3) >= min(2, len(last3)):
         return "STABLE"
-    post = ma[window_full_at:]
-    if not post or ma[-1] >= -eps:
+    if len(post) < smooth or ma[-1] >= -eps:
         return "WAIT"
-    if post[-1] < pre_score - eps:
-        return f"UNSTABLE: worse than before the action (score {post[-1]:+.3f} < {pre_score:+.3f}, 30 s average)"
-    if len(post) > stuck_readings and post[-1] - post[-1 - stuck_readings] <= eps:
-        return (f"UNSTABLE: not improving (score {post[-1 - stuck_readings]:+.3f} -> {post[-1]:+.3f} "
+    full = ma[smooth - 1:]          # averages made of post-action readings only
+    if full[-1] < pre_score - eps:
+        return f"UNSTABLE: worse than before the action (score {full[-1]:+.3f} < {pre_score:+.3f}, 30 s average)"
+    if len(full) > stuck_readings and full[-1] - full[-1 - stuck_readings] <= eps:
+        return (f"UNSTABLE: not improving (score {full[-1 - stuck_readings]:+.3f} -> {full[-1]:+.3f} "
                 f"over the last {stuck_readings * 10} s, 30 s average)")
     return "WAIT"

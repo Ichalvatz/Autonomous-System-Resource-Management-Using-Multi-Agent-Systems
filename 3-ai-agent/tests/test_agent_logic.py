@@ -188,9 +188,15 @@ def test_verify_without_any_usable_reading_is_unverifiable():
     ([-0.5, 0.1, 0.2, 0.2], -0.5, 0, "STABLE"),
     ([0.1, -0.01, 0.1], -0.5, 0, "STABLE"),           # one noisy dip below 0 does not undo a healthy state
     ([-0.03, -0.04, -0.03, -0.04, -0.03], -0.5, 0, "WAIT"),   # within the noise of 0: neither stable nor failed
+    # smoke run 2026-10-23 06:32: a scale-up that worked, the first post-action reading already healthy; the
+    # average must not mix in the readings of the old window (it called this "worse than before")
+    ([-0.537] * 6 + [0.061], -0.30, 6, "WAIT"),
+    ([-0.537] * 6 + [0.061, 0.06], -0.30, 6, "STABLE"),
+    ([-0.537] * 6 + [-0.6, -0.6], -0.30, 6, "WAIT"),          # a failure needs a full 30 s of post-action data
+    ([-0.537] * 6 + [-0.6, -0.6, -0.6], -0.30, 6, "UNSTABLE: worse"),
     ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 5, "WAIT"),    # window not yet post-action only
-    ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 0, "UNSTABLE: not improving"),
-    ([-0.2, -0.4], -0.2, 0, "UNSTABLE: worse"),
+    ([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 0, "UNSTABLE: not improving"),
+    ([-0.2, -0.4, -0.4, -0.4], -0.2, 0, "UNSTABLE: worse"),
     ([-0.9, -0.7, -0.5, -0.3], -0.9, 0, "WAIT"),
 ])
 def test_judge_trajectory(scores, pre, full_at, expected):
