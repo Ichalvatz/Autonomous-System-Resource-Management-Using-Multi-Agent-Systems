@@ -86,6 +86,12 @@ kubectl rollout status $DEPLOY --timeout=180s >/dev/null
 kubectl patch $DEPLOY -p '{"spec":{"revisionHistoryLimit":0}}' >/dev/null; sleep 5
 kubectl patch $DEPLOY -p '{"spec":{"revisionHistoryLimit":10}}' >/dev/null
 log "rollout history reset: $(kubectl get rs -l app=aiops-backend --no-headers 2>/dev/null | wc -l | tr -d ' ') ReplicaSet(s) left"
+# The k6 token pool is logged in here, before the idle wait, not in k6's setup(): 20 logins at once at the very
+# start of the load put p95 at ~0.45 s in a nearly empty 1 m window and woke the agent for nothing (smoke run
+# 2026-10-23 04:50). Same pool mechanism as the ML scripts (5-ml-training/k6_driver.py).
+TOKENS="$PWD/5-ml-training/k6_tokens.json"
+(cd 5-ml-training && ../$PY -c "import k6_driver; k6_driver.make_token_pool()") >> "$OUT/experiment.log" 2>&1 \
+  && log "k6 token pool ready" || { log "could not log the token pool in"; exit 1; }
 sleep 120   # past the detector's 90 s settle window, host idle
 
 case "$STRATEGY" in
@@ -112,7 +118,7 @@ if [ "$SCENARIO" != "baseline" ]; then
   ) & INJECT_PID=$!
 fi
 log "k6 $(basename $K6_SCRIPT) started"
-k6 run --summary-export "$OUT/k6_summary.json" $K6_SCRIPT > "$OUT/k6.log" 2>&1
+k6 run --summary-export "$OUT/k6_summary.json" -e TOKENS_FILE="$TOKENS" $K6_SCRIPT > "$OUT/k6.log" 2>&1
 log "k6 finished (exit $?)"
 date "+%Y-%m-%d %H:%M:%S" >> "$OUT/window.txt"
 [ "$STRATEGY" = "hpa" ] && kubectl get hpa aiops-backend-hpa >> "$OUT/controller.log" 2>&1

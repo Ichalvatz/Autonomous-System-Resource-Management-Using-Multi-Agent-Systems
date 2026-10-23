@@ -123,3 +123,81 @@ horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
 [03:41:13] scenario=baseline strategy=hpa: reset to 1 replica(s)
 [03:41:13] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=hpa
 [03:41:20] rollout history reset: 1 ReplicaSet(s) left
+horizontalpodautoscaler.autoscaling/aiops-backend-hpa created
+[03:43:26] k6 baseline.js started
+[04:21:27] k6 finished (exit 0)
+                       label: hpa
+                       start: 2026-10-23 03:43:26
+                         end: 2026-10-23 04:21:27
+                duration_min: 38.0
+             nfr_violation_s: 30
+             slo_violation_s: 30
+                     error_s: 0
+                  errors_pct: 0.0
+                    p95_mean: 0.127
+                     p95_p99: 0.327
+             replica_minutes: 75.7
+                under_prov_s: 0
+                 over_prov_s: 460
+            correct_prov_pct: 79.7
+               scale_actions: 4
+             replica_changes: 07:30 1->2 | 15:20 2->3 | 26:00 3->2 | 34:20 2->1
+                   unready_s: 0
+           liveness_restarts: 0
+                 k6_requests: 243979
+                    k6_p95_s: 0.135
+               k6_failed_pct: 0.11
+                  k6_dropped: 0
+                   incidents: 
+                      stable: 
+                     rewakes: 
+                   llm_calls: 
+                agent_s_mean: 
+               agent_actions: 
+                       notes: smoke-2026-10-23
+                     run_dir: 4-load-testing/eval_hpa_20261023_0341
+[04:21:48] done
+[04:25:29] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[04:25:29] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on LABEL=llm-v9
+[04:25:37] rollout history reset: 1 ReplicaSet(s) left
+[04:27:42] k6 cpuhog.js started
+[04:43:44] k6 finished (exit 0)
+                       label: llm-v9
+                       start: 2026-10-23 04:27:42
+                         end: 2026-10-23 04:43:44
+                duration_min: 16.0
+             nfr_violation_s: 280
+             slo_violation_s: 280
+                     error_s: 240
+                  errors_pct: 2.79
+                    p95_mean: 0.57
+                     p95_p99: 1.903
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 20
+           liveness_restarts: 0
+                 k6_requests: 54740
+                    k6_p95_s: 1.206
+               k6_failed_pct: 2.74
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 18
+                agent_s_mean: 198.4
+               agent_actions: 04:32 restart (STABLE)
+                       notes: smoke-2026-10-23
+                     run_dir: 4-load-testing/eval_cpuhog_llm_20261023_0425
+                fault_at_min: 4.0
+                  recovery_s: 300
+ nfr_violation_after_fault_s: 280
+    max_replicas_after_fault: 1
+[04:44:05] done
+[04:47:36] scenario=baseline strategy=llm: reset to 1 replica(s)
+[04:47:36] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=llm-v9
+[04:47:43] rollout history reset: 1 ReplicaSet(s) left
+[04:49:48] k6 baseline.js started

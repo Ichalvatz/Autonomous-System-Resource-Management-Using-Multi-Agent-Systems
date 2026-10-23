@@ -555,14 +555,27 @@ def test_deployment_history_after_a_rollback(fake_cluster):
 
 # ---------------------------------------------------------------- computed facts (v9)
 
-def test_facts_say_whether_the_load_explains_the_state():
+def test_facts_size_with_headroom_and_the_load_trend():
     import agent
-    with mock.patch.object(agent, "SAFE_RPS", {1: 80.0, 2: 155.0, 3: 220.0}):
+    with mock.patch.object(agent, "SAFE_RPS", {1: 95.0, 2: 165.0, 3: 255.0}):
         over = agent._computed_facts(metrics(1, 120, score=-0.3, p95=0.5))
-        stuck = agent._computed_facts({**metrics(1, 40, p95=3.0, score=-1.1, ready=0),
-                                       "explanation": ["p95 latency 3.00 s is above the healthy maximum 0.25 s"]})
-        waste = agent._computed_facts(metrics(3, 60, score=-0.1))
-    assert "Minimum pod count whose measured capacity covers this load: 2" in over and "ABOVE that capacity" in over
-    assert "WITHIN that capacity" in stuck and "Only 0 of 1 pod(s) are ready" in stuck
-    assert "Health score -1.10" in stuck and "p95 latency 3.00 s" in stuck
-    assert "covers this load: 1" in waste
+        ramp = agent._computed_facts({**metrics(2, 158, p95=0.24, score=-0.2), "load_trend_rps_per_min": 22.0})
+        steady = agent._computed_facts({**metrics(2, 120, score=-0.1), "load_trend_rps_per_min": 0.5})
+        stuck = agent._computed_facts({**metrics(1, 57, p95=3.0, score=-0.54, ready=0),
+                                       "explanation": ["p95 latency 3.00 s is above the healthy maximum 0.35 s"]})
+        waste = agent._computed_facts({**metrics(3, 105, score=-0.06), "load_trend_rps_per_min": -15.0})
+    assert "15% headroom: 2. Current: 1." in over and "ABOVE that capacity" in over
+    # the smoke run of 2026-10-23 05:04: 158 rps on 2 pods (96% of 165) and rising: a capacity case, not a transient
+    assert "RISING +22.0 rps per minute" in ramp and "the 191 rps the trend reaches in 90 s" in ramp
+    assert ": 3. Current: 2." in ramp and "CLOSE to that capacity (96% of it)" in ramp
+    assert "steady" in steady and ": 2. Current: 2." in steady and "well within that capacity (73% of it)" in steady
+    assert "Only 0 of 1 pod(s) are ready" in stuck and "Health score -0.54" in stuck and ": 1. Current: 1." in stuck
+    assert ": 2. Current: 3." in waste and "falling" in waste      # a falling load is not anticipated
+
+
+def test_prompt_classifies_by_the_minimum_pod_count():
+    import agent
+    p = agent.AGENT_PROMPT
+    assert "the minimum pod count in the facts differs from the current count" in p
+    assert "The minimum is HIGHER than now" in p and "you MUST scale DOWN" in p
+    assert "at least one more than now" not in p

@@ -254,14 +254,31 @@ def _recent_actions_text(now=None):
     return "\n".join(lines)
 
 
+# Sizing rule of the facts (2026-10-23, after a smoke run in which "within capacity" at 96% of it and rising led the
+# agent to call a ramp a transient): the minimum pod count must serve the load with HEADROOM (15%: the HPA's 60%
+# target with its 10% tolerance scales at ~84% of the safe load too), and also the load the current trend reaches in
+# REACTION_MINUTES, the time until new pods serve. A falling load is not anticipated (scale-downs stay conservative).
+HEADROOM = 0.85
+REACTION_MINUTES = 1.5
+
+
+def _minimum_pods(rps, trend):
+    projected = rps + max(0.0, trend or 0.0) * REACTION_MINUTES
+    target = max(projected, rps / HEADROOM)
+    covering = [n for n in sorted(SAFE_RPS) if SAFE_RPS[n] >= target]
+    return (covering[0] if covering else max(SAFE_RPS)), projected, bool(covering)
+
+
 def _computed_facts(metrics):
     """Arithmetic and model output the LLM should not redo itself, as plain facts: the health score and which
-    metrics are outside their healthy range (health_model.explain), the minimum pod count whose measured capacity
-    covers the load, and whether the current pods can serve this load within the objectives. No rule says what
-    to do: the prompt only uses them to tell "explained by the load" from "something else"."""
+    metrics are outside their healthy range (health_model.explain), the load and its trend, the minimum pod count
+    that serves it with headroom (and the load the trend reaches by the time new pods serve), and how the load
+    compares with what the current pods serve. No rule says what to do: the prompt uses them to tell a capacity
+    mismatch from something else."""
     rps = float(metrics.get("throughput") or 0.0)
     reps = int(round(float(metrics.get("replicas") or 0)))
     ready = metrics.get("ready_replicas")
+    trend = metrics.get("load_trend_rps_per_min")
     lines = []
     if metrics.get("score") is not None:
         why = metrics.get("explanation") or []
@@ -270,19 +287,30 @@ def _computed_facts(metrics):
                                                                        if why else ""))
     if ready is not None and int(round(ready)) < reps:
         lines.append(f"- Only {int(round(ready))} of {reps} pod(s) are ready (the readiness probe of the others fails).")
-    if SAFE_RPS:
-        covering = [n for n in sorted(SAFE_RPS) if SAFE_RPS[n] >= rps]
-        need = covering[0] if covering else max(SAFE_RPS)
-        beyond = "" if covering else " (the maximum allowed: the load exceeds every measured safe limit)"
-        lines.append(f"- Load: {rps:.1f} rps on {reps} pod(s) ({rps / max(reps, 1):.1f} per pod). Minimum pod count "
-                     f"whose measured capacity covers this load: {need}{beyond}.")
-        if reps in SAFE_RPS:
-            within = rps <= SAFE_RPS[reps]
-            lines.append(f"- {reps} pod(s) serve up to ~{SAFE_RPS[reps]:g} rps within the objectives: the load is "
-                         + ("WITHIN that capacity, so the load alone does not explain bad latency or errors."
-                            if within else "ABOVE that capacity."))
+    if not SAFE_RPS:
+        return "\n".join(lines + ["- Capacity reference unavailable."])
+    if trend is None:
+        trend_text = "unknown (too few readings)"
+    elif abs(trend) < 0.05 * max(rps, 1.0):
+        trend_text = f"steady ({trend:+.1f} rps per minute)"
     else:
-        lines.append("- Capacity reference unavailable.")
+        trend_text = f"{'RISING' if trend > 0 else 'falling'} {trend:+.1f} rps per minute"
+    need, projected, covered = _minimum_pods(rps, trend)
+    lines.append(f"- Load: {rps:.1f} rps on {reps} pod(s) ({rps / max(reps, 1):.1f} per pod); trend over the last "
+                 f"minute: {trend_text}.")
+    beyond = "" if covered else " (the maximum allowed: the load exceeds every measured safe limit)"
+    trend_note = (f", and the {projected:.0f} rps the trend reaches in {REACTION_MINUTES * 60:.0f} s (the time until "
+                  "new pods serve)") if projected > rps + 0.5 else ""
+    lines.append(f"- Minimum pod count that serves this load with {100 * (1 - HEADROOM):.0f}% headroom{trend_note}: "
+                 f"{need}{beyond}. Current: {reps}.")
+    if reps in SAFE_RPS:
+        share = rps / SAFE_RPS[reps]
+        relation = ("ABOVE that capacity" if share > 1 else
+                    f"CLOSE to that capacity ({share:.0%} of it): latency rises near the limit, that is what capacity "
+                    "looks like" if share >= HEADROOM else
+                    f"well within that capacity ({share:.0%} of it), so the load alone does not explain bad latency "
+                    "or errors")
+        lines.append(f"- {reps} pod(s) serve up to ~{SAFE_RPS[reps]:g} rps within the objectives: the load is {relation}.")
     return "\n".join(lines)
 
 
@@ -326,13 +354,12 @@ Measured by load testing with the normal request mix: the load each pod count se
 First decide which kind of problem this is, then act on it.
 
 Step 1 - CLASSIFY, using the computed facts.
-  (A) CAPACITY: the load explains the state: the load is above what the current pods serve within the objectives (under-provisioned), or well below what fewer pods would serve (over-provisioned), and latency and errors are no worse than that load causes. Go to Step 2A; no investigation is needed.
-  (B) SOMETHING ELSE: latency or errors are bad while the load is within what the current pods serve, or pods are not ready, OR you are not sure. Go to Step 2B.
+  (A) CAPACITY: the minimum pod count in the facts differs from the current count (it already includes headroom and the load trend), and the pods are ready. Go to Step 2A; no investigation is needed.
+  (B) SOMETHING ELSE: the minimum pod count equals the current count but latency or errors are bad, or pods are not ready, OR you are not sure. Go to Step 2B.
 
 Step 2A - CAPACITY:
-  - Under-provisioned: scale UP with `scale_kubernetes_deployment(replicas=N)` to the minimum pod count in the facts, and at least one more than now.
-  - Over-provisioned (objectives met and the load is well below what the current pods serve): you MUST scale DOWN to save resources, to the minimum pod count in the facts.
-  - The current pod count already equals that minimum and the objectives are met: no action.
+  - The minimum is HIGHER than now (the load, or the load it is rising to, is more than the current pods serve with headroom): scale UP with `scale_kubernetes_deployment(replicas=N)` to that minimum.
+  - The minimum is LOWER than now and the objectives are met: you MUST scale DOWN to save resources, to that minimum.
 
 Step 2B - INVESTIGATE, then act on the cause. Look at ALL THREE observation tools, one per step (the system refuses a restart until you have):
   - `get_pod_breakdown()`: per pod: CPU, throttling, request rate, CPU cost per request, p95, 5xx rate, event-loop lag, memory, restarts, age, revision, ready or not.

@@ -4,6 +4,7 @@ import json
 import os
 import signal
 import time
+from collections import deque
 from datetime import datetime
 
 import health_model
@@ -30,6 +31,10 @@ AGENT_COOLDOWN_SECONDS = 60
 # again at once (no streak, no cooldown, no settle: the verification already watched the settled metrics),
 # at most this many times in a row; then the normal streak and cooldown apply again.
 MAX_REWAKES = 2
+# The load trend handed to the agent (2026-10-23, the user's "slope" idea): least-squares slope of the throughput
+# over the last TREND_WINDOW_SECONDS of readings, in rps per minute. The agent's facts use it to size a scale-up
+# for the load the trend reaches by the time new pods serve.
+TREND_WINDOW_SECONDS = 60
 # The columns of the dry-run CSV (the NFR reading; CPU per pod for reference only, not a model input).
 LOGGED_METRICS = ["throughput", "rps_per_pod", "latency_p95", "error_rate", "replicas", "ready_replicas",
                   "avg_cpu_per_pod"]
@@ -77,6 +82,18 @@ def load_model():
     except ValueError as e:
         print(f"Error: {e}")
     return None
+
+
+def load_trend(history):
+    """rps per minute over the (monotonic time, throughput) pairs, or None with fewer than 4 readings."""
+    if len(history) < 4:
+        return None
+    t0 = history[0][0]
+    xs = [(t - t0) / 60 for t, _ in history]
+    ys = [y for _, y in history]
+    mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+    var = sum((x - mx) ** 2 for x in xs)
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / var if var else None
 
 
 def evaluate(bundle, reading):
@@ -132,6 +149,7 @@ def run_monitor(dry_run=False):
     cooldown_until = 0.0
     rewake_pending = False
     rewakes_in_a_row = 0
+    history = deque()   # (monotonic time, throughput) of the last TREND_WINDOW_SECONDS
 
     try:
         while True:
@@ -146,6 +164,10 @@ def run_monitor(dry_run=False):
             replicas = reading["replicas"]
             throughput = reading["throughput"]
             timestamp = datetime.now().strftime("%H:%M:%S")
+            now = time.monotonic()
+            history.append((now, throughput))
+            while history and now - history[0][0] > TREND_WINDOW_SECONDS:
+                history.popleft()
 
             # Stabilization gate: skip readings while a replica change settles (not on a re-wake: the
             # verification already watched the metrics after the change).
@@ -233,7 +255,9 @@ def run_monitor(dry_run=False):
             if dry_run:
                 print("🧪 [DRY RUN] The agent would be woken up now — not calling it.")
             else:
-                metrics_json = json.dumps({**reading, "score": round(score, 4), "explanation": explanation})
+                trend = load_trend(history)
+                metrics_json = json.dumps({**reading, "score": round(score, 4), "explanation": explanation,
+                                           "load_trend_rps_per_min": round(trend, 1) if trend is not None else None})
                 print("Αναμονή ολοκλήρωσης ενεργειών από τον Agent...")
                 try:
                     resolved, rewake, verdict = _outcome(trigger_ai_agent(metrics_json))

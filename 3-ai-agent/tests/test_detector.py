@@ -155,3 +155,16 @@ def test_dry_run_logs_every_evaluated_reading_and_never_imports_the_agent(tmp_pa
 def test_paths_do_not_depend_on_the_working_directory():
     for path in (ad.MODEL_FILENAME, ad.DRY_RUN_CSV):
         assert os.path.isabs(path) and os.path.dirname(path) == os.path.join(ad.REPO_ROOT, "5-ml-training")
+
+
+def test_load_trend_is_the_slope_over_the_last_minute():
+    assert ad.load_trend([(0, 100), (10, 100)]) is None                       # too few readings
+    assert ad.load_trend([(t, 100 + t / 3) for t in range(0, 60, 10)]) == pytest.approx(20.0)   # +20 rps/min
+    assert ad.load_trend([(t, 50.0) for t in range(0, 60, 10)]) == pytest.approx(0.0)
+
+
+def test_the_agent_gets_the_load_trend():
+    ramp = [reading(p95=1.0, rps=100 + 5 * i) for i in range(6)]          # +5 rps every 10 s = +30 rps/min
+    trigger = run([N, N, N] + ramp)
+    sent = json.loads(trigger.call_args.args[0])
+    assert sent["load_trend_rps_per_min"] > 0
