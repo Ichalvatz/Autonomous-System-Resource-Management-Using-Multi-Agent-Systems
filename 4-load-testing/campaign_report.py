@@ -75,6 +75,8 @@ def agent_checks(scenario, right, rec_col, row, inc):
         notes.append("⚠ agent error")
     if any(i.get("rewake") == "True" for i in inc):
         notes.append("ξαναξύπνημα")
+    if row.get("on_battery_s") not in (None, "", "0"):
+        notes.append(f"⚠ μπαταρία {row['on_battery_s']} s")
     if scenario == "baseline":
         stable = all(i["verification"] == "STABLE" for i in acted)
         path = [c.strip().split(" ")[1] for c in (row.get("replica_changes") or "").replace(" | ", ", ").split(", ") if c]
@@ -125,6 +127,8 @@ def main():
         by_method = {m: [r for r in rows if r["label"] == m] for m in METHODS}
         problems += [f"- Άκυρο, εκτός πινάκων: {title} {r['label']} {r['start']} ({r.get('run_dir', '')})"
                      for r in rows if "INVALID" in r["label"]]
+        problems += [f"- ⚠ Μπαταρία {r['on_battery_s']} s στο run: {title} {r['label']} {r['start']} ({r.get('run_dir', '')})"
+                     for r in rows if r.get("on_battery_s") not in (None, "", "0") and "INVALID" not in r["label"]]
         details += [f"## {title}", ""]
         if scenario == "baseline":
             details += ["| Μέθοδος | Runs | Παραβίαση NFR (s) | Σφάλματα (%) | replica-min | Σωστή προμήθεια (%) | Αλλαγές pods | Liveness restarts |",

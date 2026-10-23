@@ -68,6 +68,11 @@ cleanup(){
 trap cleanup EXIT
 trap "exit 130" INT TERM
 caffeinate -dimsu -w $$ &
+# Power source every 30 s (added 2026-10-23 after a run that was partly on battery): evaluate_run.py counts the
+# battery time, and the campaign report flags such runs. The protocol requires AC power for every run.
+( while kill -0 $$ 2>/dev/null; do
+    echo "$(date +%H:%M:%S) $(pmset -g batt | head -1 | grep -q 'AC Power' && echo AC || echo BATTERY)"; sleep 30
+  done ) >> "$OUT/power.log" 2>/dev/null &
 
 stop_all_controllers
 START_REPLICAS=1

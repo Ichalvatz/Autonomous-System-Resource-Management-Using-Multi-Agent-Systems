@@ -1,0 +1,6 @@
+Excluded from the results (2026-10-23 09:20): the laptop ran on battery for part of this run
+(pmset log: battery 08:34:28-08:39:00, i.e. the reset and the first ~2 min of load, and again from 09:10:42,
+the last ~4 min of the final 1-pod hold). The protocol requires AC power for every run (on battery macOS may
+slow the CPU, so the numbers are not comparable). Both stretches were low-load phases and the result looked
+clean (0 s NFR violation, 71.7 replica-min, 4/4 actions STABLE), but it is excluded anyway and repeated at the
+end of the campaign (campaign_followup.sh). Label in results_nfr.csv: llm-v9-INVALID.

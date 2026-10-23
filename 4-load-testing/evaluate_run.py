@@ -81,6 +81,21 @@ def valid(v):
     return v is not None and v == v
 
 
+def battery_seconds(run_dir, start, end):
+    """Seconds of the run window on battery, from the run's power.log (30 s samples; '' if there is no log)."""
+    path = os.path.join(run_dir or "", "power.log")
+    if not run_dir or not os.path.exists(path):
+        return ""
+    day = datetime.fromtimestamp(start).strftime("%Y-%m-%d")
+    n = 0
+    for line in open(path):
+        parts = line.split()
+        if len(parts) == 2 and parts[1] == "BATTERY":
+            t = datetime.strptime(f"{day} {parts[0]}", "%Y-%m-%d %H:%M:%S").timestamp()
+            n += start <= t <= end
+    return 30 * n
+
+
 def k6_summary(run_dir):
     path = os.path.join(run_dir or "", "k6_summary.json")
     if not run_dir or not os.path.exists(path):
@@ -164,6 +179,7 @@ def main():
         "correct_prov_pct": round(100 * correct / judged, 1) if judged else "",
         "scale_actions": len(changes), "replica_changes": ", ".join(changes),
         "unready_s": unready, "liveness_restarts": int(restarts) if restarts is not None else "",
+        "on_battery_s": battery_seconds(args.run_dir, start, end),
         **k6_summary(args.run_dir),
         "incidents": "", "stable": "", "rewakes": "", "llm_calls": "", "agent_s_mean": "", "agent_actions": "",
         "notes": args.notes,

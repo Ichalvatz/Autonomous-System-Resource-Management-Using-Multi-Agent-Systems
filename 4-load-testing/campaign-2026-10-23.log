@@ -1,0 +1,32 @@
+[2026-10-23 07:06:03] campaign campaign-2026-10-23: NORMAL_RUNS=4 FAULT_RUNS=4 MAX_WAIT_H=8
+[2026-10-23 07:06:03] git HEAD b15687c, uncommitted files: 1
+[2026-10-23 07:06:03] backend image sha256:d35b51f7b762a62d34ecbe6bd8a2ab1f3c8f3b9e7dfe3d13f1166d4f69109d3a
+1f2df0406ae5eed82e7892cf73967f199a61cce9b222d513981720b3950e8e4a  3-ai-agent/agent.py
+4e73d15ef79cef2b2da0d392a93e57ca062af831a91c09b1dd9777c8070e625c  3-ai-agent/agent_tools.py
+2b73132a3511cb9fb46326a2207bc923bfd945298eb1216e30551b8bb71aaeff  3-ai-agent/anomaly_detector.py
+d2419bbb865716099a532b2608d195e2ba75c857be699f8ca9a0c68907226463  3-ai-agent/health_model.py
+1e2d70c9a574d47cb59b0fd4835907785b10403fccf3e14014648354de2b595c  3-ai-agent/nfr_metrics.py
+12009eef20616b611d92a7c0ef5f24018260866a1c2a113d2a6b6f0d1efa7735  5-ml-training/health_model.pkl
+3a4d2b7f841f7ffcb092d56c58c7ad7babadf7c9806fe7a81567cfb580b79d5c  5-ml-training/capacity_table.json
+6827e444d53164679845490f8a24cf5fa1a7c728958bd085e53f760beb662db1  4-load-testing/baselines/hpa.yaml
+6696ab52d853dc01863e4fececb9bf6f25107898492ae8ce18e22257334b22c0  2-target-app/backend-deployment.yaml
+ac5520b4dcd61776688aa5ba0b921d28d0022b3a3c18a4016f8995b12e8fddc5  4-load-testing/k6/lib/mix.js
+518893bc7c1293733f423d35fc495fa68cf7c5bc72507197968a8718c887f32f  4-load-testing/k6/baseline.js
+4314daf7e3a8b4c3aadd3d2b973a14adbf8435e10bacd7e7446b955752cd4c07  4-load-testing/k6/stuck.js
+877cd3ada28cfe3ff60d90c840e162de603646ba0da41f213d684d2926e01e21  4-load-testing/k6/cpuhog.js
+incident memory emptied (8 incidents from before the campaign)
+[07:06:24] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 07:06:24] start stuck llm (memory off)
+[2026-10-23 07:25:04] end   stuck llm (exit 0)
+[2026-10-23 07:28:04] start stuck hpa
+[2026-10-23 07:46:43] end   stuck hpa (exit 0)
+[07:50:22] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 07:50:22] start cpuhog llm (memory off)
+[2026-10-23 08:09:01] end   cpuhog llm (exit 0)
+[2026-10-23 08:12:01] start cpuhog hpa
+[2026-10-23 08:30:41] end   cpuhog hpa (exit 0)
+[08:34:05] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-23 08:34:05] start baseline llm (memory on)
+[2026-10-23 09:14:49] end   baseline llm (exit 0)
+[2026-10-23 09:17:49] on battery: waiting for AC power
+[2026-10-23 09:18:57] follow-up queued until the campaign ends: baseline llm (repeat of the 08:34 run, partly on battery)
