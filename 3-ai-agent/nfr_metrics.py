@@ -14,11 +14,24 @@ backend's own histogram does not time requests that wait behind a blocked event 
   avg_cpu_per_pod  CPU cores per ready pod: diagnostics, the HPA target and the agent's pod view only; it is
                  NOT a model input (the detector watches symptoms, not causes).
 Derived: rps_per_pod = throughput / replicas.
+
+The NFR values live here too (agent v10, 2026-10-26, design_decisions.md A28): the capacity discovery, the training,
+the agent, the evaluation and the reports import them, so a new objective (or a new application) is one change here
+plus the three ML scripts.
 """
 import math
 import time
 
 import requests
+
+# The non-functional requirements, as users see them at the ingress.
+NFR_P95 = 0.35          # p95 latency objective, seconds
+NFR_ERRORS = 0.01       # share of requests that may fail (5xx)
+MAX_PODS = 3            # cost: at most this many backend pods
+# "Safe": the headroom below the objectives for the time a reaction takes (detection, agent, a new pod). The capacity
+# table is measured at this level, and the health model's healthy data are the readings within it.
+SAFE_P95 = 0.25
+SAFE_ERRORS = 0.001
 
 PROMETHEUS_URL = "http://prometheus.aiops"
 HOST = 'host="mwtback.aiops"'
