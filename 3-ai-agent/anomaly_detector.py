@@ -74,7 +74,7 @@ def print_summary(stats, started_at, dry_run):
 
 
 def load_model():
-    """The phase-2 bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py)."""
+    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v10 since 2026-10-26)."""
     try:
         return health_model.load(MODEL_FILENAME)
     except FileNotFoundError:
@@ -97,7 +97,8 @@ def load_trend(history):
 
 
 def evaluate(bundle, reading):
-    """(prediction, score) of one reading: -1 = anomaly, 1 = normal; score = the SVM's decision_function."""
+    """(prediction, score) of one reading: -1 = anomaly, 1 = normal; score = health_model.score (the SVM's own
+    decision, read as a distance: same sign as its decision_function)."""
     score = health_model.score(bundle, reading)
     return (-1 if score < 0 else 1), score
 
@@ -114,7 +115,7 @@ def run_monitor(dry_run=False):
     bundle = load_model()
     if bundle is None:
         return
-    print(f"Model: {bundle['model_type']} ({bundle['params']['form']}), features {bundle['features']}, "
+    print(f"Model: {bundle['model_type']} (gamma {bundle['gamma']}), features {bundle['features']}, "
           f"trained {bundle.get('trained_at', '?')} on {bundle.get('n_train', '?')} readings")
 
     if dry_run:
@@ -196,13 +197,14 @@ def run_monitor(dry_run=False):
                 continue
 
             # One model for every replica count: the count is an input, and each count keeps its own
-            # healthy band (below it = over-provisioned, above it = overloaded; latency or errors = broken).
+            # healthy band (below it = over-provisioned, above it = overloaded; latency above the safe level or
+            # errors = broken). The score is the v10 one: 0..1 healthy, below 0 the distance from healthy (A28).
             prediction, score = evaluate(bundle, reading)
             stats["evaluated"] += 1
             print(
                 f"rps: {throughput:.1f} ({reading['rps_per_pod']:.1f}/pod), p95: {reading['latency_p95']:.3f}s, "
                 f"errors: {100 * reading['error_rate']:.1f}%, replicas: {replicas:.0f} "
-                f"(ready {reading.get('ready_replicas') or 0:.0f}), prediction: {prediction} (score {score:+.4f})"
+                f"(ready {reading.get('ready_replicas') or 0:.0f}), prediction: {prediction} (score {score:+.3f})"
             )
 
             if prediction == -1:

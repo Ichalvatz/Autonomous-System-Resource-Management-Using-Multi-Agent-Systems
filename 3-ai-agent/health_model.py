@@ -2,16 +2,18 @@
 The health model of agent v10 (thesis phase 2, 2026-10-26; design_decisions.md A28): ONE One-Class SVM over the NFR
 metrics (load, latency, errors, pod count) that alone decides at run time. The NFRs (nfr_metrics.py) are built into
 the model instead of rules around it:
-  - healthy training data = the readings within the safe level (p95 <= SAFE_P95, errors <= SAFE_ERRORS), each one also
-    with lower latencies ("faster is never worse"; 5-ml-training/train_health_baseline.py);
-  - the inputs are in NFR units (transform);
+  - healthy training data = the readings within the safe level (p95 <= SAFE_P95, errors <= SAFE_ERRORS;
+    5-ml-training/train_health_baseline.py);
+  - the inputs are in NFR units (transform), and every p95 at or below the safe level counts the same, so a faster
+    state is never judged worse (A28.1: a model that also learned "normal latency for this load" below it was not
+    monotone at the edges of the bands and failed its acceptance tests);
   - the acceptance probes require p95 = NFR_P95 and NFR_ERRORS of errors to be anomalies at every pod count.
 Shared by the detector, the verification of an action, the incident memory (its embedding space), the agent's facts
 (the minimum pod count) and the training script, so they all see a reading the same way.
 
 Inputs (weights from the training grid, in the bundle):
   x0 = w_load * (log(throughput) - mean) / std
-  x1 = w_lat  * log(max(p95, floor) / NFR_P95)     floor = the lowest healthy p95 measured; 0 = at the objective
+  x1 = w_lat  * log(max(p95, floor) / NFR_P95)     floor = SAFE_P95; 0 = at the objective
   x2 = w_err  * error_rate / NFR_ERRORS            1 = at the objective
   x3 = w_rep  * replicas
 The score is the SVM's own decision function d = sum_i a_i * exp(-gamma * |x - x_i|^2) - rho, read as a distance:

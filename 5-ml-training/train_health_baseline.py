@@ -2,13 +2,15 @@
 """
 Health model, agent v10 (2026-10-26, design_decisions.md A28): ONE One-Class SVM on the NFR metrics (load, latency,
 errors, pod count) that alone decides at run time, with the NFRs (3-ai-agent/nfr_metrics.py) built into the data, the
-input scale and the acceptance tests. Replaces v9's model (A26; git tag v9-campaign).
+input scale and the acceptance tests. Replaces v9's model (A26; git tag v9-campaign). A28.1: latency counts only above
+the safe level (the method declared first, a learned "normal latency for this load" with lower-latency copies, failed
+the monotonicity and held-out criteria).
 
 Input: baseline_metrics_healthy.csv (collect_healthy_data.py), unchanged since 2026-10-23.
   1. Healthy = p95 <= SAFE_P95 (0.25 s, the safe level of the capacity table), errors <= SAFE_ERRORS, >= MIN_RPS, every
      pod ready.
-  2. "Faster is never worse": each healthy reading is also given with COPIES lower latencies, in equal log steps down to
-     the floor (the lowest healthy p95 measured), at the same load and pod count. Training sets only.
+  2. The latency floor is SAFE_P95: every p95 at or below the safe level counts the same, for every load and pod count,
+     so a faster state is never judged worse (monotone by construction).
   3. The transform and the score live in 3-ai-agent/health_model.py (inputs in NFR units, score read as a distance).
   4. A grid over gamma and the input weights; each candidate judged by
        - probes from the measured bands, including p95 = NFR_P95 and NFR_ERRORS at every pod count (all must pass);
@@ -18,7 +20,7 @@ Input: baseline_metrics_healthy.csv (collect_healthy_data.py), unchanged since 2
      with the selection rule declared in A28 before this script ran.
   5. Prints the acceptance criteria of A28 that it can check (probes, monotonicity, held-out wake-ups <= 2).
 
-  python 5-ml-training/train_health_baseline.py            (about a minute; read-only except the outputs)
+  python 5-ml-training/train_health_baseline.py            (seconds; read-only except the outputs)
 
 Writes health_model.pkl (bundle, gitignored), baseline_metrics_healthy_filtered.csv and training_report.json.
 """
@@ -46,7 +48,6 @@ REPORT_FILE = HERE / "training_report.json"
 
 MIN_RPS = 1.0            # = anomaly_detector.MIN_THROUGHPUT_RPS
 NU = 0.02
-COPIES = 3               # lower-latency copies of each healthy reading
 GRID = {"gamma": [0.1, 0.2, 0.5, 1.0], "w_load": [1.0, 2.0, 4.0], "w_lat": [1.0, 2.0, 4.0], "w_err": [1.0, 3.0],
         "w_rep": [8.0, 12.0]}
 STREAK_REQUIRED = 3
@@ -69,18 +70,6 @@ def load_healthy():
     return data, data[keep].reset_index(drop=True), reasons
 
 
-def augment(rows, floor):
-    """The healthy readings plus COPIES copies of each with a lower p95, in equal log steps from its p95 down to the
-    floor itself (the last copy is at the floor)."""
-    out = [rows]
-    slow = rows[rows["latency_p95"] > floor]
-    for k in range(1, COPIES + 1):
-        c = slow.copy()
-        c["latency_p95"] = np.exp(np.log(floor) + (np.log(slow["latency_p95"]) - np.log(floor)) * (1 - k / COPIES))
-        out.append(c)
-    return pd.concat(out, ignore_index=True)
-
-
 def params_for(health, floor, w_load, w_lat, w_err, w_rep):
     load = np.log(health["throughput"])
     return {"load_mean": float(load.mean()), "load_std": float(load.std()) or 1.0, "p95_floor": float(floor),
@@ -89,7 +78,7 @@ def params_for(health, floor, w_load, w_lat, w_err, w_rep):
 
 
 def fit(params, rows, gamma):
-    return OneClassSVM(kernel="rbf", nu=NU, gamma=gamma).fit(hm.transform(params, augment(rows, params["p95_floor"])))
+    return OneClassSVM(kernel="rbf", nu=NU, gamma=gamma).fit(hm.transform(params, rows))
 
 
 def bands_of(health):
@@ -233,7 +222,7 @@ def healthy_band(bundle, n):
 def main():
     data, health, reasons = load_healthy()
     health.to_csv(OUTPUT_CSV, index=False)
-    floor = float(health["latency_p95"].min())
+    floor = nfr.SAFE_P95   # A28.1: every p95 at or below the safe level counts the same
     print(f"{len(data)} readings, {len(health)} healthy (p95 <= {nfr.SAFE_P95} s, errors <= "
           f"{100 * nfr.SAFE_ERRORS:g}%); rejected: {reasons}; latency floor {floor:.3f} s")
     print(health.groupby("replicas")[["rps_per_pod", "throughput", "latency_p95"]]
@@ -263,8 +252,7 @@ def main():
              for q in probes if "ABOVE" in q["label"] and q["replicas"] == p["replicas"]]
     bundle["memory_similar_max"] = float(np.median([np.linalg.norm(np.diff(hm.transform(params, [p, q]), axis=0))
                                                     for p, q in pairs]))
-    bundle.update(trained_at=datetime.now().isoformat(timespec="seconds"), n_train=len(health),
-                  n_augmented=len(augment(health, floor)))
+    bundle.update(trained_at=datetime.now().isoformat(timespec="seconds"), n_train=len(health))
     joblib.dump(bundle, MODEL_FILE)
 
     failures, d = probe_failures(bundle, probes)
@@ -290,7 +278,7 @@ def main():
         "decision_noise": bundle["decision_noise"], "p95_floor": floor, "bands": bundle["bands"],
         "healthy_ranges": bundle["healthy_ranges"], "pos_ref": bundle["pos_ref"],
         "memory_similar_max": bundle["memory_similar_max"], "train_below_zero": int((train_s < 0).sum()),
-        "n_train": len(health), "n_augmented": bundle["n_augmented"], "rejected": reasons,
+        "n_train": len(health), "rejected": reasons,
         "monotonicity": {"flips": flips, "worst_rise": worst},
         "probes": [{"label": p["label"], "score": round(float(sc), 4), "decision": round(float(dd), 5),
                     "expect_anomaly": p["expect_anomaly"]} for p, sc, dd in zip(probes, s, d)]}, indent=2))

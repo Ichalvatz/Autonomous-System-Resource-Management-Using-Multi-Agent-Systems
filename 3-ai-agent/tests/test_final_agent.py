@@ -1,6 +1,6 @@
 """
-The final agent (v9, thesis phase 2, 2026-10-22): its toolset (3 observation tools, scale, rolling restart of the
-whole app) and tool descriptions, the prompt's rules, the three code-enforced guards (evidence before action; no
+The final agent (v10, thesis phase 2, 2026-10-26; prompt and tools as v9): its toolset (3 observation tools, scale,
+rolling restart of the whole app) and tool descriptions, the prompt's rules, the three code-enforced guards (evidence before action; no
 claimed action without a tool call; full diagnosis before a restart), and replays of the three measured incidents
 that motivated the guards (phase 1, agents v6/v7), run through a real smolagents CodeAgent with a scripted model.
 The computed facts are tested in test_agent_logic.py.
@@ -35,7 +35,8 @@ def test_agent_has_the_five_tools_and_the_guards():
 
 
 def test_prompt_classifies_first_and_has_no_fault_specific_hint():
-    p = agent.AGENT_PROMPT.format(metrics_json="{}", signature="s", capacity="c", facts="F", recent="r", memory="m")
+    p = agent.AGENT_PROMPT.format(metrics_json="{}", signature="s", capacity="c", facts="F", recent="r", memory="m",
+                                  nfr_p95=0.35, nfr_errors_pct=1.0, max_pods=3)
     assert "you MUST scale DOWN" in p and "minimum pod count in the facts" in p
     assert "Look at ALL THREE observation tools" in p
     assert "p95 < 0.35 s" in p and "fewer than 1% of requests fail" in p and "at most 3 pods" in p

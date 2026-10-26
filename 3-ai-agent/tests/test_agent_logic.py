@@ -1,5 +1,5 @@
 """
-Unit tests for the deterministic parts of the AIOps runtime (agent v9, phase 2): safety guards, the verification
+Unit tests for the deterministic parts of the AIOps runtime (agent v10, phase 2): safety guards, the verification
 by the health score's trajectory, incident memory in the model's space, the scale-down rollback, the re-wake
 signal, the computed facts, the LLM retry wrapper and the observation tools. Kubernetes, Prometheus and
 ChromaDB are mocked: nothing touches the cluster. (The rule baseline, pod restart and rollback tools and their
@@ -20,9 +20,10 @@ os.environ.setdefault("GEMINI_API_KEY", "dummy-for-tests")
 import agent_tools  # noqa: E402
 import health_model  # noqa: E402
 
-PARAMS = {"form": "per_pod", "load_mean": 3.5, "load_std": 0.8, "p95_floor": 0.2, "p95_weight": 4.0,
-          "err_weight": 300.0, "rep_weight": 8.0}
-BUNDLE = {"params": PARAMS, "trend_eps": 0.05,
+PARAMS = {"load_mean": 4.4, "load_std": 0.95, "p95_floor": 0.25, "nfr_p95": 0.35, "nfr_errors": 0.01,
+          "w_load": 1.0, "w_lat": 2.0, "w_err": 1.0, "w_rep": 8.0}
+BUNDLE = {"params": PARAMS, "noise_eps": 0.15, "memory_similar_max": 0.45,
+          "bands": {1: [4.0, 87.0], 2: [73.7, 162.4], 3: [123.7, 251.5]},
           "healthy_ranges": {n: {"rps_per_pod": [20.0, 80.0], "latency_p95": 0.25, "error_rate": 0.001} for n in (1, 2, 3)}}
 
 
@@ -140,24 +141,24 @@ def verify_scores(pre_score, scores, rps=40.0):
     return agent_tools.run_outcome["verification"], text
 
 
-def test_verify_a_restart_that_fixes_the_app_waits_through_the_old_window_then_is_stable():
-    """Stuck app restarted: the first minute of 1 m windows still holds the 3 s requests (flat, very low score);
-    no UNSTABLE before the window is post-action only, then the score climbs and is normal twice."""
-    verdict, text = verify_scores(-1.05, [-1.05, -1.05, -1.04, -1.0, -0.8, -0.5, -0.2, 0.05, 0.08, 0.09])
-    assert verdict == "STABLE"      # judged on the 30 s average: (0.05 + 0.08 + 0.09) / 3 >= 0, 3 of 3 normal
-    assert agent_tools.run_outcome["recovery_s"] == 12 + 90 and agent_tools.run_outcome["score_after"] == 0.09
-    assert "before the action -1.05" in text
+def test_verify_a_restart_that_fixes_the_app_is_stable_at_the_first_healthy_reading():
+    """The stuck run of 2026-10-23 18:49 in v10 scores: the errors leave the 1 m window step by step (the distance
+    falls), and the first healthy reading is STABLE (the user's rule, A28)."""
+    verdict, text = verify_scores(-63.0, [-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8, 0.9])
+    assert verdict == "STABLE"
+    assert agent_tools.run_outcome["recovery_s"] == 12 + 60 and agent_tools.run_outcome["score_after"] == 0.8
+    assert "before the action -63.00" in text
 
 
 def test_verify_a_scale_up_that_only_dilutes_a_fault_is_unstable_not_improving():
-    verdict, text = verify_scores(-1.05, [-1.02] * 12)
+    verdict, text = verify_scores(-50.0, [-50.0] * 12)
     assert verdict == "UNSTABLE" and "not improving" in text.splitlines()[0]
     assert "Still outside the healthy range" in text
 
 
 def test_verify_a_scale_down_that_overloads_is_unstable_worse():
-    verdict, text = verify_scores(-0.10, [-0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8])
-    assert verdict == "UNSTABLE" and "worse than before the action" in text.splitlines()[0]
+    verdict, text = verify_scores(-0.10, [-0.1 - 0.5 * i for i in range(10)])
+    assert verdict == "UNSTABLE" and "worse" in text.splitlines()[0]
 
 
 def test_verify_waits_while_the_score_keeps_improving():
@@ -166,7 +167,7 @@ def test_verify_waits_while_the_score_keeps_improving():
 
 
 def test_verify_still_anomalous_after_the_time_limit_is_unstable():
-    # +0.06 every 10 s (> eps): always "improving", never normal within 240 s
+    # +0.06 every 10 s: 0.18 over 30 s, more than eps, so always "improving", never healthy within 240 s
     verdict, text = verify_scores(-2.0, [-2.0 + 0.06 * i for i in range(40)])
     assert verdict == "UNSTABLE" and "still anomalous after 4 min" in text
 
@@ -182,25 +183,23 @@ def test_verify_without_any_usable_reading_is_unverifiable():
     assert text.startswith("UNVERIFIABLE") and agent_tools.run_outcome["verification"] == "UNVERIFIABLE"
 
 
-@pytest.mark.parametrize("scores,pre,full_at,expected", [
-    ([0.1], -0.5, 0, "WAIT"),                         # one normal reading is not enough
-    ([-0.5, 0.1, 0.2], -0.5, 0, "WAIT"),              # 30 s average still below 0
-    ([-0.5, 0.1, 0.2, 0.2], -0.5, 0, "STABLE"),
-    ([0.1, -0.01, 0.1], -0.5, 0, "STABLE"),           # one noisy dip below 0 does not undo a healthy state
-    ([-0.03, -0.04, -0.03, -0.04, -0.03], -0.5, 0, "WAIT"),   # within the noise of 0: neither stable nor failed
-    # smoke run 2026-10-23 06:32: a scale-up that worked, the first post-action reading already healthy; the
-    # average must not mix in the readings of the old window (it called this "worse than before")
-    ([-0.537] * 6 + [0.061], -0.30, 6, "WAIT"),
-    ([-0.537] * 6 + [0.061, 0.06], -0.30, 6, "STABLE"),
-    ([-0.537] * 6 + [-0.6, -0.6], -0.30, 6, "WAIT"),          # a failure needs a full 30 s of post-action data
-    ([-0.537] * 6 + [-0.6, -0.6, -0.6], -0.30, 6, "UNSTABLE: worse"),
-    ([-1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 5, "WAIT"),    # window not yet post-action only
-    ([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0], -1.0, 0, "UNSTABLE: not improving"),
-    ([-0.2, -0.4, -0.4, -0.4], -0.2, 0, "UNSTABLE: worse"),
-    ([-0.9, -0.7, -0.5, -0.3], -0.9, 0, "WAIT"),
+@pytest.mark.parametrize("scores,full_at,expected", [
+    ([0.1], 0, "STABLE"),                                # the user's rule: one healthy reading is STABLE
+    ([-0.5, 0.1], None, "STABLE"),                       # also before the window holds only post-action data
+    ([-0.5, -0.9], None, "WAIT"),                        # before it, a fall may be the old minute: no verdict
+    ([-0.5] * 6 + [-0.6], 6, "WAIT"),                    # one post-action reading: nothing to compare yet
+    ([-0.5] * 6 + [-0.6, -0.62], 6, "WAIT"),             # a fall within the noise
+    ([-0.5] * 6 + [-0.6, -0.8], 6, "UNSTABLE: worse"),   # a fall beyond the noise
+    ([-1.0] * 10, 6, "UNSTABLE: not improving"),         # no rise beyond the noise over 30 s
+    ([-0.9, -0.7, -0.5, -0.3], 0, "WAIT"),               # moving back towards healthy
+    # the smoke run of 2026-10-23 06:32 (v9 called it "worse"): the first post-action reading is already healthy
+    ([-0.537] * 6 + [0.061], 6, "STABLE"),
+    # the stuck run of 2026-10-23 18:49 in v10 scores: the distance falls as the errors leave the window
+    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8], 6, "STABLE"),
+    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1], 6, "WAIT"),
 ])
-def test_judge_trajectory(scores, pre, full_at, expected):
-    assert health_model.judge_trajectory(scores, pre, 0.05, full_at).startswith(expected)
+def test_judge_trajectory(scores, full_at, expected):
+    assert health_model.judge_trajectory(scores, 0.05, full_at).startswith(expected)
 
 
 # ---------------------------------------------------------------- incident memory (the model's space)
@@ -242,7 +241,7 @@ STORED = [
 
 def memory_for(state, items=STORED):
     with mock.patch.object(agent_tools, "_get_collection", return_value=FakeCollection(items)), \
-         mock.patch.object(agent_tools, "_health_bundle", return_value={"params": PARAMS}):
+         mock.patch.object(agent_tools, "_health_bundle", return_value=BUNDLE):
         return agent_tools.query_knowledge_base(state)
 
 
@@ -276,14 +275,14 @@ def test_save_incident_stores_status_embedding_and_trajectory():
     agent_tools.run_outcome.update(detail="STABLE\nHealth score: ...", recovery_s=85, score_after=0.07)
     state = {**metrics(1, 40, p95=3.0, err=0.5, score=-1.1), "explanation": ["p95 latency 3.00 s is above ..."]}
     with mock.patch.object(agent_tools, "_get_collection", return_value=collection), \
-         mock.patch.object(agent_tools, "_health_bundle", return_value={"params": PARAMS}):
-        assert agent_tools.save_incident(state, ["restart"], "STABLE", "Root cause: pool leak", "v9").startswith(
+         mock.patch.object(agent_tools, "_health_bundle", return_value=BUNDLE):
+        assert agent_tools.save_incident(state, ["restart"], "STABLE", "Root cause: pool leak", "v10").startswith(
             "Success: incident saved as resolved")
-        agent_tools.save_incident(state, ["scale 1->2"], "UNSTABLE", "", "v9")
+        agent_tools.save_incident(state, ["scale 1->2"], "UNSTABLE", "", "v10")
     (_, emb, doc, meta), (_, _, _, meta2) = collection.items
     assert emb == health_model.embedding({"params": PARAMS}, state)
     assert meta["status"] == "resolved" and meta["recovery_s"] == 85 and meta["score_before"] == -1.1
-    assert meta["actions"] == "restart" and meta["agent_version"] == "v9" and "p95 latency 3.00 s" in doc
+    assert meta["actions"] == "restart" and meta["agent_version"] == "v10" and "p95 latency 3.00 s" in doc
     assert meta2["status"] == "failed"
 
 
@@ -559,29 +558,41 @@ def test_deployment_history_after_a_rollback(fake_cluster):
     assert "revision 6" in lines[3] and "later re-applied as revision 8" in lines[3]
 
 
-# ---------------------------------------------------------------- computed facts (v9)
+# ---------------------------------------------------------------- computed facts (v10)
 
-def test_facts_size_with_headroom_and_the_load_trend():
+def _fake_min_pods(_bundle, rps):
+    """The smallest count whose band (BUNDLE["bands"]) holds rps, as health_model.min_healthy_pods would say."""
+    fits = [n for n, (lo, hi) in sorted(BUNDLE["bands"].items()) if lo <= rps <= hi]
+    return (fits[0], True) if fits else (3, False)
+
+
+def test_facts_take_the_minimum_pod_count_from_the_health_model_and_the_load_trend():
     import agent
-    with mock.patch.object(agent, "SAFE_RPS", {1: 95.0, 2: 165.0, 3: 255.0}):
-        over = agent._computed_facts(metrics(1, 120, score=-0.3, p95=0.5))
+    with mock.patch.object(agent, "_health_bundle", return_value=BUNDLE), \
+         mock.patch.object(agent.health_model, "min_healthy_pods", side_effect=_fake_min_pods):
+        over = agent._computed_facts(metrics(1, 120, score=-1.3, p95=0.5))
         ramp = agent._computed_facts({**metrics(2, 158, p95=0.24, score=-0.2), "load_trend_rps_per_min": 22.0})
-        steady = agent._computed_facts({**metrics(2, 120, score=-0.1), "load_trend_rps_per_min": 0.5})
-        stuck = agent._computed_facts({**metrics(1, 57, p95=3.0, score=-0.54, ready=0),
-                                       "explanation": ["p95 latency 3.00 s is above the healthy maximum 0.35 s"]})
-        waste = agent._computed_facts({**metrics(3, 105, score=-0.06), "load_trend_rps_per_min": -15.0})
-    assert "15% headroom: 2. Current: 1." in over and "ABOVE that capacity" in over
-    # the smoke run of 2026-10-23 05:04: 158 rps on 2 pods (96% of 165) and rising: a capacity case, not a transient
-    assert "RISING +22.0 rps per minute" in ramp and "the 191 rps the trend reaches in 90 s" in ramp
-    assert ": 3. Current: 2." in ramp and "CLOSE to that capacity (96% of it)" in ramp
-    assert "steady" in steady and ": 2. Current: 2." in steady and "well within that capacity (73% of it)" in steady
-    assert "Only 0 of 1 pod(s) are ready" in stuck and "Health score -0.54" in stuck and ": 1. Current: 1." in stuck
-    assert ": 2. Current: 3." in waste and "falling" in waste      # a falling load is not anticipated
+        steady = agent._computed_facts({**metrics(2, 120, score=-0.4), "load_trend_rps_per_min": 0.5})
+        stuck = agent._computed_facts({**metrics(1, 57, p95=3.0, score=-63.0, ready=0),
+                                       "explanation": ["64.0% of requests fail (5xx)"]})
+        waste = agent._computed_facts({**metrics(3, 105, score=-0.37), "load_trend_rps_per_min": -15.0})
+        beyond = agent._computed_facts(metrics(3, 300, score=-0.5))
+    assert "healthy for this load: 2. Current: 1." in over and "for 1 pod(s) is 4-87 rps: the load is ABOVE it" in over
+    # the smoke run of 2026-10-23 05:04: 158 rps on 2 pods and rising is a capacity case, not a transient
+    assert "RISING +22.0 rps per minute" in ramp and "for the 191 rps the trend reaches in 90 s" in ramp
+    assert ": 3. Current: 2." in ramp
+    assert "steady" in steady and ": 2. Current: 2." in steady and "inside it, so the load alone does not" in steady
+    assert "Only 0 of 1 pod(s) are ready" in stuck and "Health score -63.00" in stuck and ": 1. Current: 1." in stuck
+    assert ": 2. Current: 3." in waste and "falling" in waste and "BELOW it (over-provisioned)" in waste
+    assert "3 (the maximum allowed: no pod count is healthy for this load)" in beyond
 
 
-def test_prompt_classifies_by_the_minimum_pod_count():
+def test_prompt_classifies_by_the_minimum_pod_count_and_states_the_nfrs():
     import agent
     p = agent.AGENT_PROMPT
     assert "the minimum pod count in the facts differs from the current count" in p
     assert "The minimum is HIGHER than now" in p and "you MUST scale DOWN" in p
     assert "at least one more than now" not in p
+    filled = p.format(metrics_json="{}", signature="s", capacity="c", facts="f", recent="r", memory="m",
+                      nfr_p95=0.35, nfr_errors_pct=1.0, max_pods=3)
+    assert "p95 < 0.35 s" in filled and "fewer than 1% of requests" in filled and "at most 3 pods" in filled

@@ -32,8 +32,9 @@ CAPACITY_JSON = HERE / "capacity_table.json"
 RUN_LOG = HERE / "runs" / f"capacity_{datetime.now():%Y%m%d_%H%M}.k6.log"
 
 REPLICA_RANGE = [1, 2, 3, 4]
-SAFE_P95, SLO_P95 = 0.25, 0.35
-SAFE_ERR, SLO_ERR = 0.001, 0.01
+# The objectives and the safe level, from the one place they are defined (3-ai-agent/nfr_metrics.py, since v10).
+SAFE_P95, SLO_P95 = nfr_metrics.SAFE_P95, nfr_metrics.NFR_P95
+SAFE_ERR, SLO_ERR = nfr_metrics.SAFE_ERRORS, nfr_metrics.NFR_ERRORS
 STEP_S = 90
 IDLE_AFTER_SCALE_S = 60
 # Ladder: set from the endpoint costs (endpoint_costs.py, 2026-10-22): see START_RPS / STEP_RPS below.

@@ -6,7 +6,10 @@ import time
 from datetime import datetime
 import litellm
 from smolagents import CodeAgent, LiteLLMModel
+import health_model
+import nfr_metrics
 from agent_tools import (
+    _health_bundle,
     query_knowledge_base,
     get_kubernetes_logs,
     scale_kubernetes_deployment,
@@ -134,8 +137,7 @@ def _load_capacity():
         return {}
 
 
-CAPACITY = {n: v for n, v in _load_capacity().items() if n <= 3}   # the 4th count only re-checked the ceiling
-SAFE_RPS = {n: float(v["max_safe_rps"]) for n, v in CAPACITY.items()}
+CAPACITY = {n: v for n, v in _load_capacity().items() if n <= nfr_metrics.MAX_PODS}   # 4 pods only re-checked the ceiling
 
 
 def _capacity_context():
@@ -145,18 +147,18 @@ def _capacity_context():
     for n, v in sorted(CAPACITY.items()):
         limit = v.get("slo_limit_rps")
         lines.append(f"  - {n} pod(s): serves up to ~{v['max_safe_rps']:g} rps with p95 <= ~{v.get('p95_at_safe', 0.25)} s"
-                     + (f"; the 0.35 s objective breaks at ~{limit:g} rps" if limit else ""))
+                     + (f"; the {nfr_metrics.NFR_P95:g} s objective breaks at ~{limit:g} rps" if limit else ""))
     return "\n".join(lines)
 
 
 CAPACITY_CONTEXT = _capacity_context()
 
-# The agent: v9 (thesis phase 2, 2026-10-22; design_decisions.md A24): the anomaly comes from one One-Class SVM on
-# the NFR metrics (latency, errors, load per pod, pod count) measured at the ingress; the LLM decides how many
-# pods (it is given the minimum that the measured capacity covers) or restarts the whole app; the result is judged
-# by the trajectory of the model's score. Prompt and tools as of v8.1, minus pod restart and rollback, with the
-# objectives stated as NFRs instead of CPU targets. v8.1 and earlier: git tag v8.1-campaign.
-AGENT_VERSION = "v9"
+# The agent: v10 (2026-10-26; design_decisions.md A28). As v9 (A24: one One-Class SVM on the NFR metrics measured at
+# the ingress wakes it; it scales or restarts the whole app; code verifies the result by the model's score), with the
+# v10 health model: the score reads as a distance from healthy, and the minimum pod count in the facts is the
+# smallest count the model calls healthy for the load (v9: 15% headroom over the capacity table). v9: git tag
+# v9-campaign; v8.1 and earlier: v8.1-campaign.
+AGENT_VERSION = "v10"
 
 # The LLM decides and acts; code does everything around it (memory lookup before
 # the run, verification and memory save after it). add_base_tools=False: the
@@ -254,27 +256,26 @@ def _recent_actions_text(now=None):
     return "\n".join(lines)
 
 
-# Sizing rule of the facts (2026-10-23, after a smoke run in which "within capacity" at 96% of it and rising led the
-# agent to call a ramp a transient): the minimum pod count must serve the load with HEADROOM (15%: the HPA's 60%
-# target with its 10% tolerance scales at ~84% of the safe load too), and also the load the current trend reaches in
-# REACTION_MINUTES, the time until new pods serve. A falling load is not anticipated (scale-downs stay conservative).
-HEADROOM = 0.85
+# The minimum pod count of the facts (v10, A28): the smallest count the health model calls healthy for the load, and
+# for the load a rising trend reaches in REACTION_MINUTES, the time until new pods serve (detection, the agent, a new
+# pod; added 2026-10-23 after a smoke run in which a ramp at 96% of capacity was called a transient). The headroom is
+# in the model itself: its healthy data stop at the safe level, 0.25 s against the 0.35 s objective. A falling load is
+# not anticipated (scale-downs stay conservative). v9 used 15% headroom over the capacity table instead.
 REACTION_MINUTES = 1.5
 
 
 def _minimum_pods(rps, trend):
     projected = rps + max(0.0, trend or 0.0) * REACTION_MINUTES
-    target = max(projected, rps / HEADROOM)
-    covering = [n for n in sorted(SAFE_RPS) if SAFE_RPS[n] >= target]
-    return (covering[0] if covering else max(SAFE_RPS)), projected, bool(covering)
+    need, covered = health_model.min_healthy_pods(_health_bundle(), max(rps, projected))
+    return need, projected, covered
 
 
 def _computed_facts(metrics):
     """Arithmetic and model output the LLM should not redo itself, as plain facts: the health score and which
-    metrics are outside their healthy range (health_model.explain), the load and its trend, the minimum pod count
-    that serves it with headroom (and the load the trend reaches by the time new pods serve), and how the load
-    compares with what the current pods serve. No rule says what to do: the prompt uses them to tell a capacity
-    mismatch from something else."""
+    metrics are outside their healthy range (health_model.explain), the load and its trend, the minimum pod count the
+    health model calls healthy for it (and for the load the trend reaches by the time new pods serve), and where the
+    load sits in the healthy band of the current pod count. No rule says what to do: the prompt uses them to tell a
+    capacity mismatch from something else."""
     rps = float(metrics.get("throughput") or 0.0)
     reps = int(round(float(metrics.get("replicas") or 0)))
     ready = metrics.get("ready_replicas")
@@ -282,13 +283,15 @@ def _computed_facts(metrics):
     lines = []
     if metrics.get("score") is not None:
         why = metrics.get("explanation") or []
-        lines.append(f"- Health score {float(metrics['score']):+.2f} (>= 0 = healthy; the further below 0, the further "
-                     "from every healthy state seen in training)." + (" Outside the healthy range: " + "; ".join(why)
-                                                                       if why else ""))
+        lines.append(f"- Health score {float(metrics['score']):+.2f} (0 to 1 = healthy, 1 = typical; below 0 = anomalous, "
+                     "the value is the distance from the nearest healthy state)." + (" Outside the healthy range: "
+                                                                                    + "; ".join(why) if why else ""))
     if ready is not None and int(round(ready)) < reps:
         lines.append(f"- Only {int(round(ready))} of {reps} pod(s) are ready (the readiness probe of the others fails).")
-    if not SAFE_RPS:
-        return "\n".join(lines + ["- Capacity reference unavailable."])
+    try:
+        bands = _health_bundle()["bands"]
+    except Exception:
+        return "\n".join(lines + ["- Health model unavailable: no minimum pod count."])
     if trend is None:
         trend_text = "unknown (too few readings)"
     elif abs(trend) < 0.05 * max(rps, 1.0):
@@ -298,25 +301,25 @@ def _computed_facts(metrics):
     need, projected, covered = _minimum_pods(rps, trend)
     lines.append(f"- Load: {rps:.1f} rps on {reps} pod(s) ({rps / max(reps, 1):.1f} per pod); trend over the last "
                  f"minute: {trend_text}.")
-    beyond = "" if covered else " (the maximum allowed: the load exceeds every measured safe limit)"
-    trend_note = (f", and the {projected:.0f} rps the trend reaches in {REACTION_MINUTES * 60:.0f} s (the time until "
-                  "new pods serve)") if projected > rps + 0.5 else ""
-    lines.append(f"- Minimum pod count that serves this load with {100 * (1 - HEADROOM):.0f}% headroom{trend_note}: "
-                 f"{need}{beyond}. Current: {reps}.")
-    if reps in SAFE_RPS:
-        share = rps / SAFE_RPS[reps]
-        relation = ("ABOVE that capacity" if share > 1 else
-                    f"CLOSE to that capacity ({share:.0%} of it): latency rises near the limit, that is what capacity "
-                    "looks like" if share >= HEADROOM else
-                    f"well within that capacity ({share:.0%} of it), so the load alone does not explain bad latency "
-                    "or errors")
-        lines.append(f"- {reps} pod(s) serve up to ~{SAFE_RPS[reps]:g} rps within the objectives: the load is {relation}.")
+    beyond = "" if covered else " (the maximum allowed: no pod count is healthy for this load)"
+    trend_note = (f", and for the {projected:.0f} rps the trend reaches in {REACTION_MINUTES * 60:.0f} s (the time "
+                  "until new pods serve)") if projected > rps + 0.5 else ""
+    lines.append(f"- Minimum pod count the health model calls healthy for this load{trend_note}: {need}{beyond}. "
+                 f"Current: {reps}.")
+    band = bands.get(reps)
+    if band:
+        lo, hi = band
+        where = ("ABOVE it (under-provisioned)" if rps > hi else
+                 "BELOW it (over-provisioned)" if rps < lo else
+                 "inside it, so the load alone does not explain bad latency or errors")
+        lines.append(f"- The health model's healthy load band for {reps} pod(s) is {lo:g}-{hi:g} rps: the load is {where}.")
     return "\n".join(lines)
 
 
-# The prompt v9 (2026-10-22). Same structure as v8: Step 1 classifies capacity (scale to the minimum that fits,
-# no investigation) or something else (investigate with all three observation tools, then act on the cause,
-# restart only with evidence); the objectives are the NFRs, the actions scale and restart.
+# The prompt v9 (2026-10-22), as used by v10 (2026-10-26: the objectives from nfr_metrics, the minimum pod count from
+# the health model). Same structure as v8: Step 1 classifies capacity (scale to the minimum that fits, no
+# investigation) or something else (investigate with all three observation tools, then act on the cause, restart only
+# with evidence); the objectives are the NFRs, the actions scale and restart.
 AGENT_PROMPT = """
 [ALERT - AIOPS TRIGGER]
 You are an Autonomous SRE Agent responsible for the backend deployment. The health monitor (a One-Class SVM trained on healthy traffic) flagged the current state as abnormal.
@@ -326,9 +329,9 @@ Current reading (whole deployment, measured at the ingress as users see it, 1-mi
 Assigned Signature: "{signature}"
 
 === SERVICE OBJECTIVES (non-functional requirements) ===
-- Latency: p95 < 0.35 s, as users see it.
-- Errors: fewer than 1% of requests fail (5xx).
-- Cost: at most 3 pods (the ceiling of this cluster), and no more pods than the load needs.
+- Latency: p95 < {nfr_p95:g} s, as users see it.
+- Errors: fewer than {nfr_errors_pct:g}% of requests fail (5xx).
+- Cost: at most {max_pods} pods (the ceiling of this cluster), and no more pods than the load needs.
 
 === SYSTEM CAPACITY REFERENCE ===
 Measured by load testing with the normal request mix: the load each pod count serves within the objectives.
@@ -354,11 +357,11 @@ Measured by load testing with the normal request mix: the load each pod count se
 First decide which kind of problem this is, then act on it.
 
 Step 1 - CLASSIFY, using the computed facts.
-  (A) CAPACITY: the minimum pod count in the facts differs from the current count (it already includes headroom and the load trend), and the pods are ready. Go to Step 2A; no investigation is needed.
+  (A) CAPACITY: the minimum pod count in the facts differs from the current count (it is the smallest count the health model calls healthy for this load and the load the trend is rising to), and the pods are ready. Go to Step 2A; no investigation is needed.
   (B) SOMETHING ELSE: the minimum pod count equals the current count but latency or errors are bad, or pods are not ready, OR you are not sure. Go to Step 2B.
 
 Step 2A - CAPACITY:
-  - The minimum is HIGHER than now (the load, or the load it is rising to, is more than the current pods serve with headroom): scale UP with `scale_kubernetes_deployment(replicas=N)` to that minimum.
+  - The minimum is HIGHER than now (the load, or the load it is rising to, is more than the current pods serve healthily): scale UP with `scale_kubernetes_deployment(replicas=N)` to that minimum.
   - The minimum is LOWER than now and the objectives are met: you MUST scale DOWN to save resources, to that minimum.
 
 Step 2B - INVESTIGATE, then act on the cause. Look at ALL THREE observation tools, one per step (the system refuses a restart until you have):
@@ -393,7 +396,9 @@ def trigger_ai_agent(metrics_json):
     memory_on = os.getenv("AIOPS_MEMORY", "on").lower() != "off"
     memory = query_knowledge_base(metrics) if memory_on else "Incident memory disabled for this run."
     prompt = AGENT_PROMPT.format(metrics_json=metrics_json, signature=strict_signature, capacity=CAPACITY_CONTEXT,
-                                 facts=_computed_facts(metrics), recent=_recent_actions_text(), memory=memory)
+                                 facts=_computed_facts(metrics), recent=_recent_actions_text(), memory=memory,
+                                 nfr_p95=nfr_metrics.NFR_P95, nfr_errors_pct=100 * nfr_metrics.NFR_ERRORS,
+                                 max_pods=nfr_metrics.MAX_PODS)
 
     print(f"\n🤖 [AIOps Agent] Agent woke up ({AGENT_VERSION})! Assigned Signature: {strict_signature}")
     print(f"🧠 [Memory] {memory}\n")

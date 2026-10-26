@@ -152,3 +152,18 @@ frontend, τα `.DS_Store`, το αδέσποτο `2-target-app/software-fronten
 `campaign-2026-10-21.md`), τα σχήματα της φάσης 1 και οι σημειώσεις με ημερομηνία. Η φάση 2 γράφει σε νέα αρχεία
 (`results_nfr*.csv`, `comparison_nfr.md`), γιατί οι μετρικές της (στο ingress, με τη μίξη) δεν συγκρίνονται ένα προς ένα με
 της φάσης 1.
+
+## 8. Agent v10: ό,τι έφυγε με το νέο μοντέλο (2026-10-26, Α28 / Α28.1)
+
+Ο κώδικας του v9 βρίσκεται στο git tag `v9-campaign`. Τα αρχεία του μοντέλου του είναι στο `5-ml-training/v9/`: το bundle
+(gitignored), το report, τα φιλτραρισμένα δεδομένα και οι μετρήσεις της επικύρωσης A–I.
+
+| Τι | Πού ήταν | Γιατί έφυγε |
+|---|---|---|
+| Το SVM του v9: είσοδοι log(throughput), 4·log(max(p95, 0.2)), 100·σφάλματα, 12·pods, και υγιή = p95 < 0.35 s | `health_model.transform`, `train_health_baseline.py` | Το όριο latency έβγαινε διαφορετικό ανά αριθμό pods, και η σειρά αναποδογύριζε (95 rps / 0.15 s ανωμαλία, 103 rps / 0.30 s υγιές). Το score ήταν +0.01..0.06 στο υγιές και κολλούσε στο −0.537. |
+| Η επαλήθευση στον κινητό μέσο 30 s, με το `trend_eps` | `health_model.judge_trajectory`, `agent_tools._check_stabilization` | Ο κανόνας του χρήστη, μέτρηση προς μέτρηση, πάνω στο score που διαβάζεται ως απόσταση και δεν κορεστώνεται. |
+| Ο κανόνας «ελάχιστα pods με 15% περιθώριο πάνω στον πίνακα χωρητικότητας» (`HEADROOM`) και η σχέση ABOVE / CLOSE (≥ 85%) / well within | `agent._minimum_pods`, `agent._computed_facts` | Ο ελάχιστος αριθμός pods βγαίνει πλέον από το ίδιο το μοντέλο (`health_model.min_healthy_pods`), και η θέση του φορτίου από τη ζώνη του μοντέλου. |
+| Το σταθερό «όμοιο» της μνήμης, `MEMORY_SIMILAR_MAX = 1.5` | `agent_tools.py` | Βγαίνει από το μοντέλο: `bundle["memory_similar_max"]`. |
+| Οι NFR γραμμένες χωριστά σε ~6 αρχεία (0.35 / 0.25 / 1% / 3 pods) | `capacity_discovery.py`, `train_health_baseline.py`, `evaluate_run.py`, `compare_results.py`, `agent.py`, `agent_tools.py` | Ένα σημείο: `nfr_metrics.py` (`NFR_P95`, `NFR_ERRORS`, `MAX_PODS`, `SAFE_P95`, `SAFE_ERRORS`). |
+| Η ετικέτα `llm-v9` καρφωμένη στις αναφορές | `compare_results.py`, `campaign_report.py`, `run_experiment.sh` | `AGENT_LABEL` (default `llm-v10`). Για την καμπάνια του v9: `AGENT_LABEL=llm-v9`. |
+| **Δοκιμάστηκε και δεν μπήκε:** αντίγραφα κάθε υγιούς μέτρησης με χαμηλότερο p95 (η μέθοδος όπως δηλώθηκε στην Α28) | το commit `8334774` | Απέτυχε τη μονοτονία και το held-out. Λεπτομέρειες στην Α28.1 και στο `phase2_worklog.md`. |

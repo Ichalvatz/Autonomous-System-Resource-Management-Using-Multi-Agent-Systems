@@ -5,7 +5,7 @@ see it (3-ai-agent/nfr_metrics.py, the detector's own queries), against the NFRs
 
 Usage (from repo root):
     python 4-load-testing/evaluate_run.py --label hpa --run-dir 4-load-testing/eval_hpa_20261023_0100   # reads window.txt
-    python 4-load-testing/evaluate_run.py --label llm-v9 --start "..." --end "..." [--fault-at 2026-10-23T01:04:00]
+    python 4-load-testing/evaluate_run.py --label llm-v10 --start "..." --end "..." [--fault-at 2026-10-23T01:04:00]
 
 Appends one row to --results (default 4-load-testing/results_nfr.csv) and prints it.
 
@@ -41,8 +41,8 @@ STEP = 10
 RESULTS = os.path.join(ROOT, "4-load-testing", "results_nfr.csv")
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
 CAPACITY = os.path.join(ROOT, "5-ml-training", "capacity_table.json")
-SLO_P95 = 0.35
-MAX_ERR = 0.01
+SLO_P95 = nfr_metrics.NFR_P95       # the objectives, from the one place they are defined (v10)
+MAX_ERR = nfr_metrics.NFR_ERRORS
 RECOVERY_HOLD_S = 60
 RESTARTS = ('sum(max_over_time(kube_pod_container_status_restarts_total{namespace="default", '
             'pod=~"aiops-backend-deployment-.*"}[%ds]))')
@@ -125,7 +125,7 @@ def main():
     end = datetime.strptime(args.end, "%Y-%m-%d %H:%M:%S").timestamp()
 
     with open(CAPACITY) as f:
-        table = {int(k): v["max_safe_rps"] for k, v in json.load(f).items() if int(k) <= 3 and v.get("max_safe_rps")}
+        table = {int(k): v["max_safe_rps"] for k, v in json.load(f).items() if int(k) <= nfr_metrics.MAX_PODS and v.get("max_safe_rps")}
 
     series = nfr_metrics.fetch_range(start, end, STEP)
     if args.run_dir:

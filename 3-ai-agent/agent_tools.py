@@ -2,6 +2,9 @@
 Tools of the AIOps agent and the code around them (agent v9, thesis phase 2, 2026-10-22: NFR-driven;
 thesis_notes/design_decisions.md A24). v8.1 and earlier: git tag v8.1-campaign, thesis_notes/removed_and_archived.md.
 
+Agent v10 (2026-10-26, design_decisions.md A28): the verification follows the v10 health score reading by reading, and
+the memory's "similar" distance comes from the model. Tools, guards and safety bounds as in v9.
+
 THE 5 LLM TOOLS: the only things the LLM can call (agent.py passes them to the CodeAgent in this order).
   Observe (read-only):
     1. get_pod_breakdown()            per pod: CPU, throttling, req/s, CPU per request, p95, 5xx, event-loop lag,
@@ -45,7 +48,7 @@ PROMETHEUS_URL = "http://prometheus.aiops"
 ALLOWED_NAMESPACE = "default"
 ALLOWED_DEPLOYMENT = "aiops-backend-deployment"
 MIN_REPLICAS = 1
-MAX_REPLICAS = 3  # Host CPU limit: >3 x 1-core pods saturates the laptop (see "Pod sizing" in CLAUDE.md)
+MAX_REPLICAS = nfr_metrics.MAX_PODS  # the cost NFR (see "Pod sizing" in CLAUDE.md)
 MAX_SCALE_DELTA = 2
 SCALE_COOLDOWN_SECONDS = 30
 RESTART_COOLDOWN_SECONDS = 60
@@ -53,12 +56,12 @@ RESTART_COOLDOWN_SECONDS = 60
 
 # Healthy reference for the per-pod view (diagnosis only, not used by the detector), for the phase-2 request
 # mix, from the healthy training data (baseline_metrics_healthy_filtered.csv, 2026-10-23, readings with >= 5 rps
-# per pod): CPU cost per request median 0.0084 core-s, max 0.016; per-pod p95 within the NFR-safe 0.25 s.
+# per pod): CPU cost per request median 0.0084 core-s, max 0.016; per-pod p95 within the safe level (nfr_metrics).
 # Throttling is no longer a clean overload signal with the mix (up to ~25% per pod at the top of a healthy band:
 # several requests share each 100 ms CFS period), so it is shown but not stressed.
 HEALTHY_CPU_PER_REQUEST = 0.0084
 HEALTHY_CPU_PER_REQUEST_MAX = 0.016
-HEALTHY_POD_P95 = 0.25
+HEALTHY_POD_P95 = nfr_metrics.SAFE_P95
 HEALTHY_POD_THROTTLING = 0.25
 
 
@@ -571,14 +574,14 @@ def claim_final_answer_check(final_answer, memory, agent=None):
 
 
 # ===== Verification (code, after the LLM) =======================================================
-# Phase 2 (2026-10-22, the user's design): an action is judged by the trajectory of the health model's score,
-# the same One-Class SVM that woke the agent, read every 10 s on the detector's own metrics once the rollout
-# has converged. The score is a distance from the healthy region, so its direction has a physical reading:
-# rising = the system moves back towards healthy, falling = it moves away. health_model.judge_trajectory:
-#   normal twice in a row -> STABLE; anomalous but improving -> wait; worse than before the action, or not
-#   improving for 30 s once the 1 m windows hold only post-action data -> UNSTABLE (the detector re-wakes the
+# An action is judged by the score of the same One-Class SVM that woke the agent, read every 10 s on the detector's
+# own metrics once the rollout has converged. Since v10 (2026-10-26, A28) the score is the distance from the healthy
+# region, so it does not flatten and its direction has a physical reading: rising = the system moves back towards
+# healthy, falling = it moves away. health_model.judge_trajectory, the user's rule, one reading at a time:
+#   a healthy reading -> STABLE; anomalous but moving back -> wait; once the 1 m windows hold only post-action data,
+#   a fall by more than the measurement noise, or no rise beyond it for 30 s -> UNSTABLE (the detector re-wakes the
 #   agent at once); still anomalous after VERIFY_MAX_SECONDS -> UNSTABLE.
-# Until phase 2: fixed thresholds on CPU / throttling / p95 over one 40 s window, 50 s after the rollout.
+# v9 judged a 30 s moving average of the bounded score; phase 1, fixed thresholds on CPU / throttling / p95.
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(REPO_ROOT, "5-ml-training", "health_model.pkl")
 # A new pod is ready in ~10 s; a pod that never becomes ready again (e.g. the stuck one after a scale-up, whose
@@ -657,7 +660,7 @@ def _check_stabilization(pre_action_metrics_json):
     ready_seconds = _wait_for_rollout(timeout_seconds=VERIFY_ROLLOUT_TIMEOUT)
     print(f"⏳ Rollout converged after {ready_seconds:.0f}s; following the health score every "
           f"{VERIFY_INTERVAL_SECONDS}s (before the action: {pre_score:+.3f})...")
-    eps = float(bundle.get("trend_eps", 0.05))
+    eps = float(bundle["noise_eps"])
     started = time.monotonic()
     scores, readings, window_full_at, verdict = [], [], None, None
     while True:
@@ -668,8 +671,7 @@ def _check_stabilization(pre_action_metrics_json):
             readings.append(reading)
             if window_full_at is None and elapsed >= VERIFY_WINDOW_FULL_SECONDS:
                 window_full_at = len(scores) - 1
-            verdict = health_model.judge_trajectory(
-                scores, pre_score, eps, window_full_at if window_full_at is not None else len(scores))
+            verdict = health_model.judge_trajectory(scores, eps, window_full_at)
             print(f"   +{elapsed:3.0f}s score {scores[-1]:+.3f} ({_describe(reading)}) -> {verdict}")
             if verdict != "WAIT":
                 break
@@ -691,7 +693,7 @@ def _check_stabilization(pre_action_metrics_json):
     return (f"{verdict}\n"
             f"Health score: before the action {pre_score:+.2f}; after the rollout ({ready_seconds:.0f} s, "
             f"{run_outcome.get('rollout') or '?'}) "
-            f"{trajectory} over {len(scores) * VERIFY_INTERVAL_SECONDS} s (>= 0 = healthy)\n"
+            f"{trajectory} over {len(scores) * VERIFY_INTERVAL_SECONDS} s (>= 0 = healthy, below 0 = distance)\n"
             f"First reading: {_describe(first)}\nLast reading:  {_describe(last)}{why}")
 
 
@@ -700,17 +702,21 @@ def _check_stabilization(pre_action_metrics_json):
 # verification, both from agent.py. ChromaDB (through the chromadb.aiops ingress) is connected lazily and retried
 # on every use: a single attempt at import time once failed silently while ChromaDB was still starting.
 # Phase 2 (2026-10-22): every incident is stored with its embedding = the reading in the health model's own space
-# (health_model.embedding: log load per pod, p95, errors, replica count, weighted as the model sees them), and the
-# lookup is ChromaDB's own nearest-neighbour search in that space, among the STABLE ones. Until then ChromaDB
+# (health_model.embedding: log load, p95 above the safe level, errors, replica count, weighted as the model sees them),
+# and the lookup is ChromaDB's own nearest-neighbour search in that space, among the STABLE ones. Until then ChromaDB
 # computed text embeddings nobody used and the distance was computed by hand on other scales. Failed runs are
 # stored too (status "failed"), for the record only: the lookup never returns them, and what failed recently is
 # in the prompt's "YOUR RECENT ACTIONS" (agent.py, 15 min). The volume is persistent since 2026-10-22.
 COLLECTION = "incidents_nfr"
 MEMORY_MATCHES = 2
-# Distance in the model's space (Euclidean). 1 = e.g. ~1 std of log load per pod, or p95 x1.28, or 1% errors
-# x(err_weight/100); a different pod count is rep_weight away, so in practice only the same count is "similar".
-MEMORY_SIMILAR_MAX = 1.5
+# "Similar" = closer, in the model's space (Euclidean), than the model's own separation of a healthy state from an
+# early overload of the same pod count (bundle["memory_similar_max"], set in training; v10, A28). A different pod
+# count is w_rep away, so in practice only the same count is similar. (v9: a fixed 1.5.)
 _collection = None
+
+
+def _similar_max():
+    return float(_health_bundle()["memory_similar_max"])
 
 
 def _get_collection():
@@ -750,11 +756,12 @@ def query_knowledge_base(metrics: dict) -> str:
     # ChromaDB's "l2" distance is the squared Euclidean distance.
     matches = [(math.sqrt(max(d, 0.0)), doc, meta) for d, doc, meta in
                zip(found["distances"][0], found["documents"][0], found["metadatas"][0])]
-    similar = [m for m in matches if m[0] <= MEMORY_SIMILAR_MAX]
+    limit = _similar_max()
+    similar = [m for m in matches if m[0] <= limit]
     if not similar:
         # 2026-10-01: a stuck app was shown far-away scale-down incidents under a neutral header, and the agent
         # reused "scale 3->1". Say it plainly, and show only the closest one.
-        lines = [f"NO similar past incident: the closest (distance {matches[0][0]:.1f}, >{MEMORY_SIMILAR_MAX:g} = a "
+        lines = [f"NO similar past incident: the closest (distance {matches[0][0]:.1f}, >{limit:.1f} = a "
                  "different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the "
                  "current metrics. For reference only:"]
         matches = matches[:1]

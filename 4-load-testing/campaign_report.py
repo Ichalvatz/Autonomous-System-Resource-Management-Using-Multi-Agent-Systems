@@ -1,9 +1,10 @@
 """
 Report of one experiment campaign (full_campaign.sh), phase 2 (2026-10-22): every run whose notes column is the
-campaign TAG, per scenario and method (agent v9, HPA), with the checks that say whether the agent did the right thing.
+campaign TAG, per scenario and method (the agent, label AGENT_LABEL, default llm-v10; HPA), with the checks that say
+whether the agent did the right thing.
 
 Usage (from repo root):
-    .venv/bin/python3 4-load-testing/campaign_report.py <TAG> > 4-load-testing/<TAG>.md
+    [AGENT_LABEL=llm-v9] .venv/bin/python3 4-load-testing/campaign_report.py <TAG> > 4-load-testing/<TAG>.md
 
 Reads 4-load-testing/results_nfr*.csv (one row per run), 3-ai-agent/incident_log.csv (one row per agent wake-up),
 each run's controller.log (guard refusals) and the campaign log (provenance hashes). The checks, per agent run:
@@ -27,7 +28,7 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
-AGENT = "llm-v9"
+AGENT = os.environ.get("AGENT_LABEL", "llm-v10")
 METHODS = [AGENT, "hpa"]
 # scenario, results CSV, right action (regex on the incident's actions), recovery column, Greek name
 SCENARIOS = [
