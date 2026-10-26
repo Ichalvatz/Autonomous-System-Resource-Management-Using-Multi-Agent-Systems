@@ -1,0 +1,106 @@
+[
+ {
+  "id": "incident_1793021601010399000",
+  "document": "1 pod(s), 94.8 rps (94.8/pod), p95 0.34 s, errors 0.0%; score -0.64: load per pod 94.8 rps is above the healthy maximum 87.4 for 1 pod(s) (under-provisioned); p95 latency 0.34 s is above the healthy maximum 0.23 s (objective 0.35 s)",
+  "metadata": {
+   "error_rate": 0.0,
+   "score_after": 1.0,
+   "p95": 0.3352,
+   "recovery_s": 40,
+   "agent_version": "v10",
+   "diagnosis": "Root cause: The system was under-provisioned, with current load of 94.8 rps exceeding the healthy capacity of 87.4 rps for 1 pod, and a rising load trend. Action: Scaled the deployment to 2 replicas to accommodate the increased traffic and maintain latency objectives.",
+   "rps": 94.78,
+   "score_before": -0.6402,
+   "actions": "scale 1->2",
+   "time": "2026-10-26T15:33:21",
+   "status": "resolved",
+   "verdict": "STABLE",
+   "rps_per_pod": 94.78,
+   "replicas": 1
+  },
+  "embedding": [
+   0.14831,
+   -0.08629,
+   0.0,
+   8.0
+  ]
+ },
+ {
+  "id": "incident_1793021990791597000",
+  "document": "2 pod(s), 167.0 rps (83.5/pod), p95 0.27 s, errors 0.0%; score -0.20: load per pod 83.5 rps is above the healthy maximum 81.1 for 2 pod(s) (under-provisioned); p95 latency 0.27 s is above the healthy maximum 0.19 s (objective 0.35 s)",
+  "metadata": {
+   "rps": 167.04,
+   "actions": "scale 2->3",
+   "diagnosis": "Root cause: The system was under-provisioned, with current load of 167.0 rps exceeding the healthy capacity of 2 pods and a rising trend towards 200 rps. Action: Scaled the deployment to 3 replicas to accommodate the increased traffic and maintain latency objectives.",
+   "score_after": 1.0,
+   "replicas": 2,
+   "status": "resolved",
+   "p95": 0.2672,
+   "score_before": -0.2018,
+   "verdict": "STABLE",
+   "time": "2026-10-26T15:39:50",
+   "recovery_s": 0,
+   "error_rate": 0.0,
+   "rps_per_pod": 83.52,
+   "agent_version": "v10"
+  },
+  "embedding": [
+   0.73341,
+   -0.54022,
+   0.0,
+   16.0
+  ]
+ },
+ {
+  "id": "incident_1793022709687186000",
+  "document": "3 pod(s), 112.7 rps (37.6/pod), p95 0.08 s, errors 0.0%; score -0.27: load per pod 37.6 rps is below the healthy minimum 41.1 for 3 pod(s) (over-provisioned)",
+  "metadata": {
+   "error_rate": 0.0,
+   "agent_version": "v10",
+   "diagnosis": "Root cause: The system was over-provisioned, with 3 pods serving a load of 112.7 rps, which is below the healthy minimum throughput for 3 pods. Action: Scaled the deployment to 2 replicas to optimize resource usage while maintaining performance objectives.",
+   "time": "2026-10-26T15:51:49",
+   "replicas": 3,
+   "p95": 0.0823,
+   "status": "resolved",
+   "verdict": "STABLE",
+   "score_after": 1.0,
+   "recovery_s": 0,
+   "rps_per_pod": 37.56,
+   "actions": "scale 3->2",
+   "score_before": -0.2693,
+   "rps": 112.68
+  },
+  "embedding": [
+   0.32689,
+   -0.67294,
+   0.0,
+   24.0
+  ]
+ },
+ {
+  "id": "incident_1793022987612226000",
+  "document": "2 pod(s), 67.9 rps (33.9/pod), p95 0.08 s, errors 0.0%; score -0.26: load per pod 33.9 rps is below the healthy minimum 36.6 for 2 pod(s) (over-provisioned)",
+  "metadata": {
+   "score_after": 0.6399,
+   "recovery_s": 10,
+   "replicas": 2,
+   "status": "resolved",
+   "rps_per_pod": 33.94,
+   "p95": 0.0764,
+   "actions": "scale 2->1",
+   "time": "2026-10-26T15:56:27",
+   "error_rate": 0.0,
+   "verdict": "STABLE",
+   "score_before": -0.2612,
+   "rps": 67.88,
+   "diagnosis": "Root cause: The system was over-provisioned with 2 pods for a load of 67.9 rps, which is below the healthy minimum of 73.7 rps for 2 pods. Action: Scaled the deployment down to 1 replica to match capacity with current demand and improve cost efficiency.",
+   "agent_version": "v10"
+  },
+  "embedding": [
+   -0.1964,
+   -0.67294,
+   0.0,
+   16.0
+  ]
+ }
+]

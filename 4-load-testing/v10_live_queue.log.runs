@@ -1,0 +1,122 @@
+[14:37:34] scenario=stuck strategy=llm: reset to 1 replica(s)
+[14:37:34] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on LABEL=llm-v10
+[14:37:42] rollout history reset: 1 ReplicaSet(s) left
+[14:37:44] k6 token pool ready
+[14:39:49] k6 stuck.js started
+[14:55:49] k6 finished (exit 0)
+                       label: llm-v10
+                       start: 2026-10-26 14:39:49
+                         end: 2026-10-26 14:55:49
+                duration_min: 16.0
+             nfr_violation_s: 130
+             slo_violation_s: 50
+                     error_s: 130
+                  errors_pct: 9.88
+                    p95_mean: 0.332
+                     p95_p99: 4.439
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 80
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 54721
+                    k6_p95_s: 0.123
+               k6_failed_pct: 9.91
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 9
+                agent_s_mean: 43.1
+               agent_actions: 14:44 restart (STABLE)
+                       notes: smoke-v10-2026-10-26
+                     run_dir: 4-load-testing/eval_stuck_llm_20261026_1437
+                fault_at_min: 4.0
+                  recovery_s: 160
+ nfr_violation_after_fault_s: 130
+    max_replicas_after_fault: 1
+[14:56:10] done
+[14:59:59] scenario=cpuhog strategy=llm: reset to 1 replica(s)
+[14:59:59] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on LABEL=llm-v10
+[15:00:06] rollout history reset: 1 ReplicaSet(s) left
+[15:00:08] k6 token pool ready
+[15:02:13] k6 cpuhog.js started
+[15:18:14] k6 finished (exit 0)
+                       label: llm-v10
+                       start: 2026-10-26 15:02:13
+                         end: 2026-10-26 15:18:14
+                duration_min: 16.0
+             nfr_violation_s: 100
+             slo_violation_s: 100
+                     error_s: 70
+                  errors_pct: 0.64
+                    p95_mean: 0.227
+                     p95_p99: 1.422
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 0
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 54720
+                    k6_p95_s: 0.187
+               k6_failed_pct: 0.67
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 4
+                agent_s_mean: 12.7
+               agent_actions: 15:06 restart (STABLE)
+                       notes: smoke-v10-2026-10-26
+                     run_dir: 4-load-testing/eval_cpuhog_llm_20261026_1459
+                fault_at_min: 4.0
+                  recovery_s: 100
+ nfr_violation_after_fault_s: 90
+    max_replicas_after_fault: 1
+[15:18:35] done
+[15:21:58] scenario=baseline strategy=llm: reset to 1 replica(s)
+[15:21:58] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=llm-v10
+[15:22:05] rollout history reset: 1 ReplicaSet(s) left
+[15:22:07] k6 token pool ready
+[15:24:12] k6 baseline.js started
+[16:02:13] k6 finished (exit 0)
+                       label: llm-v10
+                       start: 2026-10-26 15:24:12
+                         end: 2026-10-26 16:02:13
+                duration_min: 38.0
+             nfr_violation_s: 50
+             slo_violation_s: 50
+                     error_s: 0
+                  errors_pct: 0.0
+                    p95_mean: 0.137
+                     p95_p99: 0.388
+             replica_minutes: 72.0
+                under_prov_s: 40
+                 over_prov_s: 290
+            correct_prov_pct: 85.5
+               scale_actions: 4
+             replica_changes: 08:40 1->2, 15:40 2->3, 26:00 3->2, 32:10 2->1
+                   unready_s: 10
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 243959
+                    k6_p95_s: 0.156
+               k6_failed_pct: 0.12
+                  k6_dropped: 0
+                   incidents: 4
+                      stable: 4
+                     rewakes: 0
+                   llm_calls: 10
+                agent_s_mean: 47.4
+               agent_actions: 15:32 scale 1->2 (STABLE); 15:39 scale 2->3 (STABLE); 15:49 scale 3->2 (STABLE); 15:56 scale 2->1 (STABLE)
+                       notes: smoke-v10-2026-10-26
+                     run_dir: 4-load-testing/eval_llm_20261026_1521
+[16:02:34] done
