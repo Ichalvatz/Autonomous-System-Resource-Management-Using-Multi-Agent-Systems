@@ -4,7 +4,8 @@ criteria 2-5). Uses the runtime's own code: the detector's gates and streak (ano
 (health_model.judge_trajectory with agent_tools' timings) and the agent's minimum pod count (agent._minimum_pods).
 
   2. Detector validation A-I (2026-10-23, dry run): the readings v9's detector evaluated
-     (5-ml-training/v9/dry_run_readings_validation_2026-10-23.csv) and the phases (detector_validation_phases.csv).
+     (5-ml-training/v9/dry_run_readings_validation_2026-10-23.csv) and its phases
+     (archive/detector_validation_v9/detector_validation_phases.csv).
   3. The valid runs of the campaign (results_nfr*.csv, notes = TAG): each run's series.json (10 s readings) through
      the detector logic: wake-ups after each fault, false wake-ups before a fault or in the first 5 min of the normal
      load, and the first wake-up of the normal load against v9's (controller.log).
@@ -34,7 +35,7 @@ import health_model as hm  # noqa: E402
 
 LT = os.path.join(ROOT, "4-load-testing")
 VALIDATION_CSV = os.path.join(ROOT, "5-ml-training", "v9", "dry_run_readings_validation_2026-10-23.csv")
-PHASES_CSV = os.path.join(LT, "detector_validation_phases.csv")
+PHASES_CSV = os.path.join(LT, "archive", "detector_validation_v9", "detector_validation_phases.csv")
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
 SCENARIOS = [("baseline", "results_nfr.csv"), ("stuck", "results_nfr_stuck.csv"), ("cpuhog", "results_nfr_cpuhog.csv")]
 NORMAL_START_S = 300          # the first 5 min of the normal load: 42.8 rps on 1 pod, nothing to do
