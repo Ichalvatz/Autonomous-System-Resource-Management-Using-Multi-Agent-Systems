@@ -21,8 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import health_model as hm  # noqa: E402
 import nfr_metrics  # noqa: E402
 
-PARAMS = {"load_mean": 4.0, "load_std": 0.8, "p95_floor": 0.25, "nfr_p95": 0.35, "nfr_errors": 0.01,
-          "w_load": 1.0, "w_lat": 2.0, "w_err": 1.0, "w_rep": 8.0}
+PARAMS = {"safe_p95": 0.25, "nfr_p95": 0.35, "safe_errors": 0.001, "nfr_errors": 0.01, "pod_separation": 100.0}
 
 
 def reading(reps=1, rps=40.0, p95=0.1, err=0.0):
@@ -32,13 +31,12 @@ def reading(reps=1, rps=40.0, p95=0.1, err=0.0):
 
 @pytest.fixture(scope="module")
 def bundle():
-    """A small v10 model: 1 pod healthy from 10 to 80 rps, 2 pods from 60 to 160 rps, latency within the safe level."""
+    """A small v11 model: 1 pod healthy from 10 to 80 rps, 2 pods from 60 to 160 rps, latency within the safe level."""
     healthy = ([reading(1, r, p95=0.1) for r in np.geomspace(10, 80, 30)]
                + [reading(2, r, p95=0.15) for r in np.geomspace(60, 160, 30)])
     model = OneClassSVM(nu=0.02, gamma=0.2).fit(hm.transform(PARAMS, healthy))
     b = {"model_type": hm.MODEL_TYPE, "params": PARAMS, "model": model, "gamma": 0.2,
-         "healthy_ranges": {1: {"rps_per_pod": [10.0, 80.0], "latency_p95": 0.1, "error_rate": 0.001},
-                            2: {"rps_per_pod": [30.0, 80.0], "latency_p95": 0.15, "error_rate": 0.001}}}
+         "bands": {1: [10.0, 80.0], 2: [60.0, 160.0]}}
     d = hm.decision(b, healthy)
     b["pos_ref"] = {1: float(np.median(d[:30][d[:30] > 0])), 2: float(np.median(d[30:][d[30:] > 0]))}
     return b
@@ -49,13 +47,15 @@ def test_nfr_values_live_in_one_place_and_the_safe_level_is_below_the_objective(
     assert nfr_metrics.SAFE_P95 < nfr_metrics.NFR_P95 and nfr_metrics.SAFE_ERRORS < nfr_metrics.NFR_ERRORS
 
 
-def test_transform_is_in_nfr_units_and_every_latency_up_to_the_safe_level_counts_the_same():
-    x = hm.transform(PARAMS, [reading(p95=0.05), reading(p95=0.25), reading(reps=2, rps=80, p95=0.35, err=0.01)])
-    assert x.shape == (3, 4)
-    assert x[0, 1] == x[1, 1] == pytest.approx(2.0 * math.log(0.25 / 0.35))   # at or below the safe level: the floor
-    assert x[2, 1] == pytest.approx(0.0)                                       # at the latency objective
-    assert x[2, 2] == pytest.approx(1.0)                                       # 1% errors = the error objective
-    assert x[0, 0] == pytest.approx((math.log(40) - 4.0) / 0.8) and x[2, 3] == 16.0
+def test_transform_is_in_nfr_units_and_everything_within_the_safe_level_counts_the_same():
+    x = hm.transform(PARAMS, [reading(p95=0.05, err=0.0005), reading(p95=0.25, err=0.001),
+                              reading(reps=2, rps=80, p95=0.35, err=0.01), reading(p95=0.7, err=0.019)])
+    assert x.shape == (4, 4)
+    assert x[0, 1] == x[1, 1] == 0.0 and x[0, 2] == x[1, 2] == 0.0   # within the safe level: 0, for both NFRs
+    assert x[2, 1] == pytest.approx(1.0) and x[2, 2] == pytest.approx(1.0)   # at the objectives: 1
+    assert x[3, 1] == pytest.approx(math.log(0.7 / 0.25) / math.log(0.35 / 0.25))   # log in latency
+    assert x[3, 2] == pytest.approx(2.0)                                     # linear in errors
+    assert x[0, 0] == pytest.approx(math.log(40)) and x[2, 3] == 200.0       # no tuned weights
 
 
 def test_missing_error_rate_counts_as_no_errors():
@@ -92,15 +92,15 @@ def test_embedding_and_bundle_check(bundle, tmp_path):
         hm.load(tmp_path / "v9.pkl")
 
 
-def test_explain_names_what_is_outside_the_healthy_range_with_the_objectives():
-    b = {"params": PARAMS,
-         "healthy_ranges": {1: {"rps_per_pod": [5.0, 80.0], "latency_p95": 0.25, "error_rate": 0.001},
-                            2: {"rps_per_pod": [28.0, 78.0], "latency_p95": 0.24, "error_rate": 0.001}}}
-    assert "above the healthy maximum 80.0 for 1 pod(s) (under-provisioned)" in hm.explain(b, reading(rps=95))[0]
-    assert "below the healthy minimum 28.0 for 2 pod(s) (over-provisioned)" in hm.explain(b, reading(2, 40))[0]
+def test_explain_uses_the_model_bands_and_the_safe_level_with_the_objectives():
+    b = {"params": PARAMS, "bands": {1: [5.0, 80.0], 2: [56.0, 156.0]}}
+    assert ("load 95.0 rps (95.0 per pod) is above the healthy maximum 80.0 rps for 1 pod(s) (under-provisioned)"
+            in hm.explain(b, reading(rps=95))[0])
+    assert "below the healthy minimum 56.0 rps for 2 pod(s) (over-provisioned)" in hm.explain(b, reading(2, 40))[0]
     stuck = hm.explain(b, reading(p95=3.0, err=0.5))
-    assert any("p95 latency 3.00 s" in s and "(objective 0.35 s)" in s for s in stuck)
-    assert any("50.0% of requests fail" in s and "(objective 1%)" in s for s in stuck)
+    assert any("p95 latency 3.00 s is above the safe level 0.25 s (objective 0.35 s)" in s for s in stuck)
+    assert any("50.0% of requests fail (5xx); safe level 0.1% (objective 1%)" in s for s in stuck)
+    assert hm.explain(b, reading(rps=40, p95=0.24, err=0.0008))[0].startswith("every metric is inside")
     assert hm.explain(b, reading(rps=40))[0].startswith("every metric is inside")
     assert hm.explain(b, reading(reps=4, rps=160))[0].startswith("no healthy data for 4 pod(s)")
 

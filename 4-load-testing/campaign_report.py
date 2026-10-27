@@ -1,6 +1,6 @@
 """
 Report of one experiment campaign (full_campaign.sh), phase 2 (2026-10-22): every run whose notes column is the
-campaign TAG, per scenario and method (the agent, label AGENT_LABEL, default llm-v10; HPA), with the checks that say
+campaign TAG, per scenario and method (the agent, label AGENT_LABEL, default llm-v11; HPA), with the checks that say
 whether the agent did the right thing.
 
 Usage (from repo root):
@@ -28,7 +28,7 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
-AGENT = os.environ.get("AGENT_LABEL", "llm-v10")
+AGENT = os.environ.get("AGENT_LABEL", "llm-v11")
 METHODS = [AGENT, "hpa"]
 # scenario, results CSV, right action (regex on the incident's actions), recovery column, Greek name
 SCENARIOS = [

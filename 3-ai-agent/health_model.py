@@ -1,21 +1,24 @@
 """
-The health model of agent v10 (thesis phase 2, 2026-10-26; design_decisions.md A28): ONE One-Class SVM over the NFR
+The health model of the agent (v11 since 2026-10-27, design_decisions.md A30; v10 A28): ONE One-Class SVM over the NFR
 metrics (load, latency, errors, pod count) that alone decides at run time. The NFRs (nfr_metrics.py) are built into
 the model instead of rules around it:
   - healthy training data = the readings within the safe level (p95 <= SAFE_P95, errors <= SAFE_ERRORS;
     5-ml-training/train_health_baseline.py);
-  - the inputs are in NFR units (transform), and every p95 at or below the safe level counts the same, so a faster
-    state is never judged worse (A28.1: a model that also learned "normal latency for this load" below it was not
-    monotone at the edges of the bands and failed its acceptance tests);
+  - the inputs are in NFR units, with no tuned weights (transform): for latency and errors 0 = the safe level and
+    1 = the objective, and everything within the safe level counts the same, so a faster or cleaner state is never
+    judged worse (A28.1: a model that also learned "normal latency for this load" below it was not monotone);
   - the acceptance probes require p95 = NFR_P95 and NFR_ERRORS of errors to be anomalies at every pod count.
+Every healthy training reading sits at the safe level of both NFRs, so from the data the SVM learns the healthy load
+of each pod count (the bands, which the latency set through the safe level), and latency and errors count as the
+distance above the safe level (A28.1, A30). The only choice in training is gamma.
 Shared by the detector, the verification of an action, the incident memory (its embedding space), the agent's facts
 (the minimum pod count) and the training script, so they all see a reading the same way.
 
-Inputs (weights from the training grid, in the bundle):
-  x0 = w_load * (log(throughput) - mean) / std
-  x1 = w_lat  * log(max(p95, floor) / NFR_P95)     floor = SAFE_P95; 0 = at the objective
-  x2 = w_err  * error_rate / NFR_ERRORS            1 = at the objective
-  x3 = w_rep  * replicas
+Inputs (constants in the bundle's params, from nfr_metrics at training time):
+  x0 = ln(throughput)                                              1 = e times the load
+  x1 = ln(max(p95, SAFE_P95) / SAFE_P95) / ln(NFR_P95 / SAFE_P95)  0 = safe level, 1 = objective
+  x2 = (max(errors, SAFE_ERRORS) - SAFE_ERRORS) / (NFR_ERRORS - SAFE_ERRORS)   same
+  x3 = POD_SEPARATION * replicas                                   far apart: one healthy region per pod count
 The score is the SVM's own decision function d = sum_i a_i * exp(-gamma * |x - x_i|^2) - rho, read as a distance:
   d >= 0: min(1, d / d_ref), d_ref = the median d of the healthy readings of this pod count: 1 = typically healthy;
   d <  0: -sqrt(log(rho / sum) / gamma), the log of the kernel sum: the distance from the healthy region in the units
@@ -29,13 +32,15 @@ import numpy as np
 from scipy.special import logsumexp
 
 FEATURES = ["throughput", "latency_p95", "error_rate", "replicas"]
-MODEL_TYPE = "OneClassSVM-NFR-v10"
+MODEL_TYPE = "OneClassSVM-NFR-v11"
+# exp(-gamma * 100^2) = 0 for every gamma tried: neighbouring pod counts never share kernel mass (A30).
+POD_SEPARATION = 100.0
 
 
 def load(path):
     bundle = joblib.load(path)
     if not isinstance(bundle, dict) or bundle.get("model_type") != MODEL_TYPE:
-        raise ValueError(f"{path} is not a v10 health model bundle (retrain with train_health_baseline.py)")
+        raise ValueError(f"{path} is not a v11 health model bundle (retrain with train_health_baseline.py)")
     return bundle
 
 
@@ -49,11 +54,14 @@ def transform(params, readings):
     """readings: a dict, a list of dicts or a DataFrame with throughput, latency_p95, error_rate, replicas."""
     rows = _rows(readings)
     out = np.empty((len(rows), 4))
+    safe_p95, safe_err = params["safe_p95"], params["safe_errors"]
+    lat_unit = math.log(params["nfr_p95"] / safe_p95)
+    err_unit = params["nfr_errors"] - safe_err
     for i, r in enumerate(rows):
-        out[i, 0] = params["w_load"] * (math.log(max(r["throughput"], 0.01)) - params["load_mean"]) / params["load_std"]
-        out[i, 1] = params["w_lat"] * math.log(max(r["latency_p95"], params["p95_floor"]) / params["nfr_p95"])
-        out[i, 2] = params["w_err"] * max(r.get("error_rate") or 0.0, 0.0) / params["nfr_errors"]
-        out[i, 3] = params["w_rep"] * r["replicas"]
+        out[i, 0] = math.log(max(r["throughput"], 0.01))
+        out[i, 1] = math.log(max(r["latency_p95"], safe_p95) / safe_p95) / lat_unit
+        out[i, 2] = (max(r.get("error_rate") or 0.0, safe_err) - safe_err) / err_unit
+        out[i, 3] = params["pod_separation"] * r["replicas"]
     return out
 
 
@@ -95,35 +103,39 @@ def embedding(bundle, reading):
 
 
 def min_healthy_pods(bundle, throughput):
-    """The smallest pod count the model calls healthy for this throughput (latency at its floor, no errors), from
+    """The smallest pod count the model calls healthy for this throughput (latency and errors at the safe level), from
     the counts it was trained on: (count, True), or (the largest count, False) when none is."""
-    counts = sorted(bundle["healthy_ranges"])
+    counts = sorted(bundle["bands"])
     probe = [{"throughput": throughput, "latency_p95": 0.0, "error_rate": 0.0, "replicas": float(n)} for n in counts]
     healthy = [n for n, d in zip(counts, decision(bundle, probe)) if d >= 0]
     return (healthy[0], True) if healthy else (counts[-1], False)
 
 
 def explain(bundle, reading):
-    """Which metrics are outside the healthy range seen in training for this replica count, in physical units, with
-    the objectives next to them. The physical reading of a negative score, for the agent, the logs and the memory."""
+    """Which metrics are outside what the model calls healthy for this pod count, in physical units: the load against
+    the model's band (latency and errors at the safe level), latency and errors against the safe level, with the
+    objectives next to them. The physical reading of a negative score, for the agent, the logs and the memory."""
     n = int(round(reading["replicas"]))
-    ranges = bundle["healthy_ranges"].get(n)
-    if ranges is None:
-        return [f"no healthy data for {n} pod(s): the model was trained on {sorted(bundle['healthy_ranges'])}"]
+    band = bundle["bands"].get(n)
+    if band is None:
+        return [f"no healthy data for {n} pod(s): the model was trained on {sorted(bundle['bands'])}"]
     p = bundle["params"]
     out = []
-    lo, hi = ranges["rps_per_pod"]
-    rps = reading["throughput"] / max(reading["replicas"], 1)
-    if rps > hi:
-        out.append(f"load per pod {rps:.1f} rps is above the healthy maximum {hi:.1f} for {n} pod(s) (under-provisioned)")
-    elif rps < lo:
-        out.append(f"load per pod {rps:.1f} rps is below the healthy minimum {lo:.1f} for {n} pod(s) (over-provisioned)")
-    if reading["latency_p95"] > ranges["latency_p95"]:
-        out.append(f"p95 latency {reading['latency_p95']:.2f} s is above the healthy maximum "
-                   f"{ranges['latency_p95']:.2f} s (objective {p['nfr_p95']:g} s)")
+    lo, hi = band
+    load = reading["throughput"]
+    per_pod = load / max(reading["replicas"], 1)
+    if load > hi:
+        out.append(f"load {load:.1f} rps ({per_pod:.1f} per pod) is above the healthy maximum {hi:.1f} rps for {n} "
+                   "pod(s) (under-provisioned)")
+    elif load < lo:
+        out.append(f"load {load:.1f} rps ({per_pod:.1f} per pod) is below the healthy minimum {lo:.1f} rps for {n} "
+                   "pod(s) (over-provisioned)")
+    if reading["latency_p95"] > p["safe_p95"]:
+        out.append(f"p95 latency {reading['latency_p95']:.2f} s is above the safe level {p['safe_p95']:g} s "
+                   f"(objective {p['nfr_p95']:g} s)")
     err = reading.get("error_rate") or 0.0
-    if err > ranges["error_rate"]:
-        out.append(f"{100 * err:.1f}% of requests fail (5xx); healthy maximum {100 * ranges['error_rate']:.1f}% "
+    if err > p["safe_errors"]:
+        out.append(f"{100 * err:.1f}% of requests fail (5xx); safe level {100 * p['safe_errors']:g}% "
                    f"(objective {100 * p['nfr_errors']:g}%)")
     return out or ["every metric is inside its healthy range for this pod count; only their combination is unusual"]
 

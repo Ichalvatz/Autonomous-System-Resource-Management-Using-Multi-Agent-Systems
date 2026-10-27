@@ -5,7 +5,7 @@ see it (3-ai-agent/nfr_metrics.py, the detector's own queries), against the NFRs
 
 Usage (from repo root):
     python 4-load-testing/evaluate_run.py --label hpa --run-dir 4-load-testing/eval_hpa_20261023_0100   # reads window.txt
-    python 4-load-testing/evaluate_run.py --label llm-v10 --start "..." --end "..." [--fault-at 2026-10-23T01:04:00]
+    python 4-load-testing/evaluate_run.py --label llm-v11 --start "..." --end "..." [--fault-at 2026-10-23T01:04:00]
 
 Appends one row to --results (default 4-load-testing/results_nfr.csv) and prints it.
 

@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-Health model, agent v10 (2026-10-26, design_decisions.md A28): ONE One-Class SVM on the NFR metrics (load, latency,
-errors, pod count) that alone decides at run time, with the NFRs (3-ai-agent/nfr_metrics.py) built into the data, the
-input scale and the acceptance tests. Replaces v9's model (A26; git tag v9-campaign). A28.1: latency counts only above
-the safe level (the method declared first, a learned "normal latency for this load" with lower-latency copies, failed
-the monotonicity and held-out criteria).
+Health model, agent v11 (2026-10-27, design_decisions.md A30; v10 A28 / A28.1): ONE One-Class SVM on the NFR metrics
+(load, latency, errors, pod count) that alone decides at run time, with the NFRs (3-ai-agent/nfr_metrics.py) built
+into the data, the input units and the acceptance tests. Replaces v10's model (git tag v10-campaign), whose four
+input weights came from a grid (A30: the pod weight and the load standardization changed nothing, the latency weight
+only set a unit that gamma then compensated).
 
 Input: baseline_metrics_healthy.csv (collect_healthy_data.py), unchanged since 2026-10-23.
   1. Healthy = p95 <= SAFE_P95 (0.25 s, the safe level of the capacity table), errors <= SAFE_ERRORS, >= MIN_RPS, every
      pod ready.
-  2. The latency floor is SAFE_P95: every p95 at or below the safe level counts the same, for every load and pod count,
-     so a faster state is never judged worse (monotone by construction).
-  3. The transform and the score live in 3-ai-agent/health_model.py (inputs in NFR units, score read as a distance).
-  4. A grid over gamma and the input weights; each candidate judged by
+  2. The inputs are in NFR units with no tuned weights (3-ai-agent/health_model.py): ln(throughput); latency and errors
+     0 = the safe level, 1 = the objective, everything within the safe level the same (monotone by construction); the
+     pod counts far apart. The score lives in health_model.py too (the SVM's decision read as a distance).
+  3. The only choice is gamma (the grid of A28); each candidate judged by
        - probes from the measured bands, including p95 = NFR_P95 and NFR_ERRORS at every pod count (all must pass);
        - monotonicity in latency: a slower state is never healthy when the faster one is anomalous, and on the
          anomalous side the score never improves by more than the noise when the latency rises;
        - held-out false alarms: train on the ramp-up readings, score the ramp-down ones, and back;
-     with the selection rule declared in A28 before this script ran.
-  5. Prints the acceptance criteria of A28 that it can check (probes, monotonicity, held-out wake-ups <= 2).
+     with the selection rule declared in A28.
+  4. Prints the acceptance criteria of A30 that it can check (probes, monotonicity, held-out wake-ups <= 2).
 
   python 5-ml-training/train_health_baseline.py            (seconds; read-only except the outputs)
 
@@ -48,10 +48,9 @@ REPORT_FILE = HERE / "training_report.json"
 
 MIN_RPS = 1.0            # = anomaly_detector.MIN_THROUGHPUT_RPS
 NU = 0.02
-GRID = {"gamma": [0.1, 0.2, 0.5, 1.0], "w_load": [1.0, 2.0, 4.0], "w_lat": [1.0, 2.0, 4.0], "w_err": [1.0, 3.0],
-        "w_rep": [8.0, 12.0]}
+GAMMAS = [0.1, 0.2, 0.5, 1.0]   # the grid of A28; the only choice since A30
 STREAK_REQUIRED = 3
-MAX_HELD_OUT_WAKES = 2   # v9's (A26): an acceptance criterion of A28
+MAX_HELD_OUT_WAKES = 2   # v9's (A26): an acceptance criterion of A28 and A30
 ABOVE, WASTE = 1.1, 0.8  # probe positions relative to the band (A28)
 
 
@@ -70,11 +69,10 @@ def load_healthy():
     return data, data[keep].reset_index(drop=True), reasons
 
 
-def params_for(health, floor, w_load, w_lat, w_err, w_rep):
-    load = np.log(health["throughput"])
-    return {"load_mean": float(load.mean()), "load_std": float(load.std()) or 1.0, "p95_floor": float(floor),
-            "nfr_p95": nfr.NFR_P95, "nfr_errors": nfr.NFR_ERRORS,
-            "w_load": w_load, "w_lat": w_lat, "w_err": w_err, "w_rep": w_rep}
+def params_for():
+    """The transform's constants: the NFRs and their safe levels (nfr_metrics), nothing learned from the data."""
+    return {"safe_p95": nfr.SAFE_P95, "nfr_p95": nfr.NFR_P95, "safe_errors": nfr.SAFE_ERRORS,
+            "nfr_errors": nfr.NFR_ERRORS, "pod_separation": hm.POD_SEPARATION}
 
 
 def fit(params, rows, gamma):
@@ -134,7 +132,7 @@ def monotonicity(bundle, health, eps):
     """(violations of (a): anomalous -> healthy as the latency rises, largest rise of the score on the anomalous side
     as the latency rises (b)) over a grid of loads and latencies per pod count."""
     flips, worst = 0, 0.0
-    p95s = np.geomspace(bundle["params"]["p95_floor"], 1.0, 30)
+    p95s = np.geomspace(bundle["params"]["safe_p95"], 1.0, 30)
     for r, (lo, hi, _, _) in bands_of(health).items():
         for load in np.geomspace(0.5 * lo * r, 1.3 * hi * r, 20):
             rows = [{"throughput": load, "latency_p95": p, "error_rate": 0.0, "replicas": float(r)} for p in p95s]
@@ -173,7 +171,7 @@ def held_out(params, health, gamma):
 
 def make_bundle(params, model, gamma, health):
     bundle = {"model_type": hm.MODEL_TYPE, "features": hm.FEATURES, "params": params, "model": model, "gamma": gamma,
-              "nu": NU, "healthy_ranges": {}}
+              "nu": NU, "bands": {}}
     d = hm.decision(bundle, health)
     pos = d[d > 0]
     bundle["pos_ref_all"] = float(np.median(pos)) if len(pos) else 1.0
@@ -184,10 +182,10 @@ def make_bundle(params, model, gamma, health):
     return bundle
 
 
-def search(health, probes, floor):
+def search(health, probes):
     results = []
-    for gamma, w_load, w_lat, w_err, w_rep in itertools.product(*GRID.values()):
-        params = params_for(health, floor, w_load, w_lat, w_err, w_rep)
+    params = params_for()
+    for gamma in GAMMAS:
         model = fit(params, health, gamma)
         bundle = make_bundle(params, model, gamma, health)
         failures, d = probe_failures(bundle, probes)
@@ -196,22 +194,21 @@ def search(health, probes, floor):
         normal = [s for p, s in zip(probes, d) if not p["expect_anomaly"]]
         anomalous = [s for p, s in zip(probes, d) if p["expect_anomaly"]]
         margin = min(min(normal), -max(anomalous))
-        results.append({"gamma": gamma, "w_load": w_load, "w_lat": w_lat, "w_err": w_err, "w_rep": w_rep,
-                        "probe_failures": len(failures), "failed": [f for f, _ in failures],
+        results.append({"gamma": gamma, "probe_failures": len(failures), "failed": [f for f, _ in failures],
                         "monotone": mono_ok, "mono_flips": flips, "mono_worst_rise": round(worst, 4),
-                        "noise_eps": round(bundle["noise_eps"], 4),
+                        "noise_eps": round(bundle["noise_eps"], 4), "support_vectors": len(model.support_),
                         "held_out_flagged": flagged, "held_out_total": total, "held_out_wakes": wakes,
                         "margin_over_noise": round(margin / bundle["decision_noise"], 3)})
-    # The selection rule of A28, declared before this ran: every probe passes; monotone in latency; the fewest
-    # held-out wake-ups; the largest probe margin over the noise of the decision function; the fewest held-out
-    # flagged readings; ties: the smaller gamma, then the lighter weights.
+    # The selection rule of A28 (kept in A30): every probe passes; monotone in latency; the fewest held-out wake-ups;
+    # the largest probe margin over the noise of the decision function; the fewest held-out flagged readings; ties:
+    # the smaller gamma.
     results.sort(key=lambda r: (r["probe_failures"], not r["monotone"], r["held_out_wakes"], -r["margin_over_noise"],
-                                r["held_out_flagged"], r["gamma"], r["w_load"] + r["w_lat"] + r["w_err"] + r["w_rep"]))
+                                r["held_out_flagged"], r["gamma"]))
     return results
 
 
 def healthy_band(bundle, n):
-    """The throughput range (rps) the model calls healthy for n pods, latency at its floor and no errors."""
+    """The throughput range (rps) the model calls healthy for n pods, latency and errors at the safe level."""
     grid = np.geomspace(1.0, 600.0, 1200)
     d = hm.decision(bundle, [{"throughput": t, "latency_p95": 0.0, "error_rate": 0.0, "replicas": float(n)}
                              for t in grid])
@@ -222,30 +219,24 @@ def healthy_band(bundle, n):
 def main():
     data, health, reasons = load_healthy()
     health.to_csv(OUTPUT_CSV, index=False)
-    floor = nfr.SAFE_P95   # A28.1: every p95 at or below the safe level counts the same
     print(f"{len(data)} readings, {len(health)} healthy (p95 <= {nfr.SAFE_P95} s, errors <= "
-          f"{100 * nfr.SAFE_ERRORS:g}%); rejected: {reasons}; latency floor {floor:.3f} s")
+          f"{100 * nfr.SAFE_ERRORS:g}%); rejected: {reasons}")
     print(health.groupby("replicas")[["rps_per_pod", "throughput", "latency_p95"]]
           .agg(["min", "median", "max"]).round(3).to_string())
-    probes = build_probes(health, floor)
-    results = search(health, probes, floor)
-    print(f"\n--- best of {len(results)} configurations (selection rule of A28) ---")
-    for r in results[:8]:
-        print(f"  gamma {r['gamma']:<4} w_load {r['w_load']:<3} w_lat {r['w_lat']:<3} w_err {r['w_err']:<3} "
-              f"w_rep {r['w_rep']:<4} probe failures {r['probe_failures']} {r['failed'][:2]} monotone {r['monotone']} "
+    probes = build_probes(health, nfr.SAFE_P95)
+    results = search(health, probes)
+    print(f"\n--- {len(results)} values of gamma, in the order of the selection rule (A28, A30) ---")
+    for r in results:
+        print(f"  gamma {r['gamma']:<4} probe failures {r['probe_failures']} {r['failed'][:2]} monotone {r['monotone']} "
               f"(flips {r['mono_flips']}, rise {r['mono_worst_rise']} vs eps {r['noise_eps']}) held-out "
               f"{r['held_out_flagged']}/{r['held_out_total']}, {r['held_out_wakes']} wake-up(s), "
               f"margin/noise {r['margin_over_noise']}")
     best = results[0]
 
-    params = params_for(health, floor, best["w_load"], best["w_lat"], best["w_err"], best["w_rep"])
+    params = params_for()
     model = fit(params, health, best["gamma"])
     bundle = make_bundle(params, model, best["gamma"], health)
-    bundle["healthy_ranges"] = {int(r): {"rps_per_pod": [float(g["rps_per_pod"].min()), float(g["rps_per_pod"].max())],
-                                         "latency_p95": float(g["latency_p95"].max()),
-                                         "error_rate": max(float(g["error_rate"].max()), nfr.SAFE_ERRORS)}
-                                for r, g in health.groupby("replicas")}
-    bundle["bands"] = {n: healthy_band(bundle, n) for n in bundle["healthy_ranges"]}
+    bundle["bands"] = {int(n): healthy_band(bundle, int(n)) for n in sorted(health["replicas"].unique())}
     # Memory: "similar" = closer than the model's own separation of a healthy state from an early overload of the
     # same pod count (the median distance HEALTHY mid-band -> ABOVE over the counts), instead of v9's fixed 1.5.
     pairs = [(p, q) for p in probes if "HEALTHY mid" in p["label"]
@@ -257,8 +248,7 @@ def main():
 
     failures, d = probe_failures(bundle, probes)
     s = hm.scores(bundle, probes)
-    print(f"\nChosen: gamma {best['gamma']}, weights load {best['w_load']} latency {best['w_lat']} errors "
-          f"{best['w_err']} pods {best['w_rep']}; {len(model.support_)} support vectors")
+    print(f"\nChosen: gamma {best['gamma']}; {len(model.support_)} support vectors")
     print("--- Probes (score: 0..1 healthy, below 0 = distance from healthy) ---")
     for p, sc in zip(probes, s):
         ok = (sc < 0) == p["expect_anomaly"]
@@ -267,16 +257,16 @@ def main():
     flips, worst, mono_ok = monotonicity(bundle, health, bundle["noise_eps"])
     train_s = hm.scores(bundle, health)
     print(f"\nHealthy training readings below 0: {(train_s < 0).sum()}/{len(health)}; noise_eps {bundle['noise_eps']:.3f}; "
-          f"bands (rps, latency at the floor): {bundle['bands']}; memory 'similar' within "
+          f"bands (rps, latency and errors at the safe level): {bundle['bands']}; memory 'similar' within "
           f"{bundle['memory_similar_max']:.2f}")
     accept = {"all_probes_pass": not failures, "monotone_in_latency": mono_ok,
               f"held_out_wakes_<=_{MAX_HELD_OUT_WAKES}": best["held_out_wakes"] <= MAX_HELD_OUT_WAKES}
-    print("ACCEPTANCE (A28, training part): " + ", ".join(f"{k} {'PASS' if v else 'FAIL'}" for k, v in accept.items()))
+    print("ACCEPTANCE (A30, training part): " + ", ".join(f"{k} {'PASS' if v else 'FAIL'}" for k, v in accept.items()))
 
     REPORT_FILE.write_text(json.dumps({
         "chosen": best, "top": results[:10], "acceptance": accept, "noise_eps": bundle["noise_eps"],
-        "decision_noise": bundle["decision_noise"], "p95_floor": floor, "bands": bundle["bands"],
-        "healthy_ranges": bundle["healthy_ranges"], "pos_ref": bundle["pos_ref"],
+        "decision_noise": bundle["decision_noise"], "params": params, "bands": bundle["bands"],
+        "pos_ref": bundle["pos_ref"],
         "memory_similar_max": bundle["memory_similar_max"], "train_below_zero": int((train_s < 0).sum()),
         "n_train": len(health), "rejected": reasons,
         "monotonicity": {"flips": flips, "worst_rise": worst},

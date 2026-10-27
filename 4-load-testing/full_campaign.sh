@@ -1,5 +1,6 @@
 #!/bin/bash
-# Full comparison campaign, phase 2 (2026-10-22): the agent (llm-v10 since 2026-10-26; llm-v9 in campaign-2026-10-23)
+# Full comparison campaign, phase 2 (2026-10-22): the agent (llm-v11 since 2026-10-27; llm-v10 in campaign-2026-10-26,
+# llm-v9 in campaign-2026-10-23)
 # against the native Kubernetes HPA, both on
 # the same deployment with the same probes, on the three scenarios, under the same conditions, in one go.
 # (Phase 1's version, 2026-10-21: agent v8.1 against hpa, rules, rules-v2, static-1/3 on four scenarios; git tag

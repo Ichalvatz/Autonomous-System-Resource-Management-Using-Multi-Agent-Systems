@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import anomaly_detector as ad  # noqa: E402
 
-BUNDLE = {"model_type": "fake", "features": [], "params": {}, "gamma": 0.2,
-          "healthy_ranges": {1: {"rps_per_pod": [1, 80], "latency_p95": 0.2, "error_rate": 0.001}}}
+BUNDLE = {"model_type": "fake", "features": [], "gamma": 0.2, "bands": {1: [1, 80]},
+          "params": {"safe_p95": 0.25, "nfr_p95": 0.35, "safe_errors": 0.001, "nfr_errors": 0.01}}
 
 
 def reading(p95=0.1, rps=40.0, reps=1, err=0.0):

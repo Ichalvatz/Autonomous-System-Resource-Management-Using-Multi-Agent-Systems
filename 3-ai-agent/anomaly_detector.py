@@ -74,7 +74,7 @@ def print_summary(stats, started_at, dry_run):
 
 
 def load_model():
-    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v10 since 2026-10-26)."""
+    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v11 since 2026-10-27)."""
     try:
         return health_model.load(MODEL_FILENAME)
     except FileNotFoundError:
@@ -198,7 +198,7 @@ def run_monitor(dry_run=False):
 
             # One model for every replica count: the count is an input, and each count keeps its own
             # healthy band (below it = over-provisioned, above it = overloaded; latency above the safe level or
-            # errors = broken). The score is the v10 one: 0..1 healthy, below 0 the distance from healthy (A28).
+            # errors = broken). The score (since v10, A28): 0..1 healthy, below 0 the distance from healthy.
             prediction, score = evaluate(bundle, reading)
             stats["evaluated"] += 1
             print(

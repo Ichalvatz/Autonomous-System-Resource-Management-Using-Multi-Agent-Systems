@@ -20,11 +20,9 @@ os.environ.setdefault("GEMINI_API_KEY", "dummy-for-tests")
 import agent_tools  # noqa: E402
 import health_model  # noqa: E402
 
-PARAMS = {"load_mean": 4.4, "load_std": 0.95, "p95_floor": 0.25, "nfr_p95": 0.35, "nfr_errors": 0.01,
-          "w_load": 1.0, "w_lat": 2.0, "w_err": 1.0, "w_rep": 8.0}
+PARAMS = {"safe_p95": 0.25, "nfr_p95": 0.35, "safe_errors": 0.001, "nfr_errors": 0.01, "pod_separation": 100.0}
 BUNDLE = {"params": PARAMS, "noise_eps": 0.15, "memory_similar_max": 0.45,
-          "bands": {1: [4.0, 87.0], 2: [73.7, 162.4], 3: [123.7, 251.5]},
-          "healthy_ranges": {n: {"rps_per_pod": [20.0, 80.0], "latency_p95": 0.25, "error_rate": 0.001} for n in (1, 2, 3)}}
+          "bands": {1: [4.0, 87.0], 2: [73.7, 162.4], 3: [123.7, 251.5]}}
 
 
 def metrics(reps, rps, p95=0.12, err=0.0, score=None, ready=None):

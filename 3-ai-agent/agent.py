@@ -153,12 +153,13 @@ def _capacity_context():
 
 CAPACITY_CONTEXT = _capacity_context()
 
-# The agent: v10 (2026-10-26; design_decisions.md A28). As v9 (A24: one One-Class SVM on the NFR metrics measured at
-# the ingress wakes it; it scales or restarts the whole app; code verifies the result by the model's score), with the
-# v10 health model: the score reads as a distance from healthy, and the minimum pod count in the facts is the
-# smallest count the model calls healthy for the load (v9: 15% headroom over the capacity table). v9: git tag
+# The agent: v11 (2026-10-27; design_decisions.md A30). As v10 (A28: the score reads as a distance from healthy, and
+# the minimum pod count in the facts is the smallest count the model calls healthy for the load), with the v11 health
+# model: inputs in NFR units with no tuned weights, and the explanation of a score against the model's own bands and
+# the safe level. As v9 (A24) otherwise: one One-Class SVM on the NFR metrics measured at the ingress wakes it; it
+# scales or restarts the whole app; code verifies the result by the model's score. v10: git tag v10-campaign; v9:
 # v9-campaign; v8.1 and earlier: v8.1-campaign.
-AGENT_VERSION = "v10"
+AGENT_VERSION = "v11"
 
 # The LLM decides and acts; code does everything around it (memory lookup before
 # the run, verification and memory save after it). add_base_tools=False: the

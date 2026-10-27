@@ -3,7 +3,8 @@ Tools of the AIOps agent and the code around them (agent v9, thesis phase 2, 202
 thesis_notes/design_decisions.md A24). v8.1 and earlier: git tag v8.1-campaign, thesis_notes/removed_and_archived.md.
 
 Agent v10 (2026-10-26, design_decisions.md A28): the verification follows the v10 health score reading by reading, and
-the memory's "similar" distance comes from the model. Tools, guards and safety bounds as in v9.
+the memory's "similar" distance comes from the model. Tools, guards and safety bounds as in v9. Agent v11 (2026-10-27,
+A30): the same, with the v11 health model (inputs in NFR units, no tuned weights).
 
 THE 5 LLM TOOLS: the only things the LLM can call (agent.py passes them to the CodeAgent in this order).
   Observe (read-only):
@@ -710,8 +711,8 @@ def _check_stabilization(pre_action_metrics_json):
 COLLECTION = "incidents_nfr"
 MEMORY_MATCHES = 2
 # "Similar" = closer, in the model's space (Euclidean), than the model's own separation of a healthy state from an
-# early overload of the same pod count (bundle["memory_similar_max"], set in training; v10, A28). A different pod
-# count is w_rep away, so in practice only the same count is similar. (v9: a fixed 1.5.)
+# early overload of the same pod count (bundle["memory_similar_max"], set in training; A28). A different pod
+# count is health_model.POD_SEPARATION away, so only the same count is similar. (v9: a fixed 1.5.)
 _collection = None
 
 
