@@ -9,15 +9,15 @@ The comparison is against the native Kubernetes HPA.
 
 **Two phases.**
 - **Phase 2** (since 2026-10-22, after a meeting with the supervisors): NFRs, request mix, one SVM, HPA-only comparison.
-  Decisions and results: `thesis_notes/design_decisions.md` A24–A28. Log: `thesis_notes/phase2_worklog.md`. One-page
-  summary of the measured v9: `thesis_notes/results_summary.md`.
+  Decisions and results: `thesis_notes/design_decisions.md` A24–A29. Log: `thesis_notes/phase2_worklog.md`. One-page
+  summaries: `thesis_notes/results_summary.md` (v10), `results_summary_v9.md`.
   - **Agent v10 is the current code** (branch `nfr-v10`, since 2026-10-26; A28 / A28.1): a new health model (one SVM that
     alone decides, the NFRs in its data and input scale, the score read as a distance), the user's verification rule,
     the minimum pod count from the model. Replayed offline (`4-load-testing/replay_v10.md`); live detector validation
-    (4/4 anomaly phases, 0 false wakes) and 3 smoke runs (stuck, cpuhog, normal load: all right and STABLE) on
-    2026-10-26 (`phase2_worklog.md`); its campaign is `campaign-2026-10-26`.
+    (4/4 anomaly phases, 0 false wakes), 3 smoke runs, and **measured in `campaign-2026-10-26`** (commit `4308c93`; A29;
+    results below).
   - **Agent v9** = git tag `v9-campaign` (measured code `5cf4960`, campaign-2026-10-23); its model files in
-    `5-ml-training/v9/`.
+    `5-ml-training/v9/`; its comparison in `4-load-testing/archive/comparison_campaign-2026-10-23_v9/`.
 - **Phase 1** is git tag `v8.1-campaign` (agent v3–v8.1, CPU-based per-replica SVMs, login-only closed-model load, rule /
   static baselines, badconfig scenario). Documented in `design_decisions.md` A1–A23,
   `thesis_notes/removed_and_archived.md` and `thesis_notes/results_summary_phase1.md`. Its data:
@@ -32,7 +32,7 @@ The comparison is against the native Kubernetes HPA.
 | `3-ai-agent/` | The runtime: `anomaly_detector.py` (main loop) → `agent.py` (facts, prompt, CodeAgent, LLM retries) → `agent_tools.py` (5 tools, guards, verification, memory). Shared modules: `nfr_metrics.py` (every PromQL query), `health_model.py` (the SVM transform, score, explanation, embedding, trajectory judgement). `memory_snapshot.py` saves / restores the memory. |
 | `4-load-testing/` | k6 scenarios in `k6/` (generated, frozen), the experiment harness, campaign scripts and reports (see "Evaluation harness") |
 | `5-ml-training/` | Capacity discovery, healthy data, training (see "ML pipeline"); artifacts; `phase1/` (archived phase-1 pipeline and data) |
-| `thesis_notes/` | `system_overview.md` (the whole picture: before / after / now), design decisions (A1–A28), worklogs, results summaries, study guide, defense Q&A (phase-1 versions as `*_phase1.md`), manual testing guide, figures |
+| `thesis_notes/` | `system_overview.md` (the whole picture: before / after / now), design decisions (A1–A29), worklogs, results summaries, study guide, defense Q&A (phase-1 versions as `*_phase1.md`), manual testing guide, figures |
 | root | `deploy.sh` (full cluster bootstrap), `reset_chroma.py` (empty the `incidents_nfr` collection) |
 
 ## Hostnames (ingress, need `/etc/hosts` → 127.0.0.1)
@@ -205,8 +205,8 @@ fault; A26.)
 - **v10 (A28 / A28.1):** the NFRs are built into the model instead of rules around it. An RBF SVM cannot both learn
   "normal latency for this load" and be monotone in latency (the declared method failed), so latency counts only above the
   safe level; the score is read as a distance.
-- **Live validation** (`detector_validation.sh`, 2026-10-23): 4/4 overload and waste phases caught (52–75 s), 0 false
-  wakes in normal phases (A27).
+- **Live validation** (`detector_validation.sh`): v10 (2026-10-26) 4/4 overload and waste phases caught (52–84 s), 0 false
+  wakes in normal phases (A29); v9 (2026-10-23) 4/4 (52–75 s), 0 (A27).
 
 ## Evaluation harness (`4-load-testing/`)
 - **`run_experiment.sh <llm|hpa> [notes]`:**
@@ -241,22 +241,31 @@ fault; A26.)
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
-## Results of the phase-2 campaign (`campaign-2026-10-23`, 4 + 4 runs per scenario; A27, `results_summary.md`)
+## Results of the phase-2 campaigns (4 + 4 runs per scenario; A29 / A27, `results_summary.md`)
 
-| | HPA | Agent v9 |
-|---|---|---|
-| Normal load: NFR violation | 0 s | 108 ± 25 s (almost all at the first scale-up) |
-| Normal load: cost | 76.3 replica-min | 71.5 (−6.3%, permutation p = 0.014) |
-| Normal load: correct provisioning | 78% | 83% |
-| Stuck: recovery | never (0/4) | 4/4, restart, 138 s |
-| Cpuhog: recovery | never (0/4), scaled to 2–3 pods | 3/4, restart, 113 s; the 4th was lost to a stalled LLM provider |
+`campaign-2026-10-26` (agent v10) and `campaign-2026-10-23` (agent v9), each against the HPA in the same campaign.
 
-- **Agent decisions:** all 16 scale actions and all 7 fault restarts were right at the first wake-up and verified STABLE;
-  0 re-wakes.
-- **False wakes:** one, before a fault (p95 0.31 s), which the agent correctly declined.
+| | HPA (v10 campaign) | Agent v10 | Agent v9 |
+|---|---|---|---|
+| Normal load: NFR violation | 0 s | 82.5 ± 75 s (130 / 160 / 0 / 40) | 108 ± 25 s |
+| Normal load: cost | 76.1 replica-min | 72.3 (−5.0%, permutation p = 0.014) | 71.5 (HPA 76.3) |
+| Normal load: correct provisioning | 78.5% | 81.6% | 83.3% |
+| Stuck: recovery | never (0/4) | 4/4, restart, 165 ± 71 s | 4/4, 138 s |
+| Cpuhog: recovery | never (0/4), scaled to 2 pods | 4/4, restart, 158 ± 57 s | 3/4, 113 s; the 4th lost to a stalled LLM provider |
+| Faults pooled | 0/8 | 8/8 (Fisher p = 0.00008) | 7/8 |
+
+- **v10 agent decisions:** 24 actions (16 scale, 8 restart), all right at the first wake-up and verified STABLE; 0 false
+  wakes (v9: 1 of 25, correctly declined); 0 re-wakes.
+- **The LLM provider sets the spread:** on the normal load the NFR violation follows the agent's time at the first
+  scale-up (18 s → 0 s violation, 261 s → 160 s); the detector woke at the same point every run (481–491 s). In the faults,
+  recovery minus the agent's time is 87–112 s (v9: 64–111 s). Retries in 19/24 wake-ups, fallback model in 7 (v9: 12/24,
+  2): the provider was slower on 26/10 than on 23/10, so the v10 / v9 comparison is not controlled.
 - **Why the agent has NFR violation on normal load:** it reacts at the anomaly boundary, plus LLM time. The HPA scales
-  ahead with headroom and pays for it in cost.
-- **Limits:** LLM provider dependency, shallow liveness by design, n = 4, one machine.
+  ahead with headroom and pays for it in cost. The difference is no longer significant for v10 (p = 0.071; v9 0.014).
+- **Invalid runs:** two (charger dropped for 26 s and 43 s), relabelled `*-INVALID` and repeated after the campaign
+  (`archive/campaign_followup_2026-10-26.sh`).
+- **Limits:** LLM provider dependency, latency below 0.25 s invisible to the model (A28.1), no live UNSTABLE yet, shallow
+  liveness by design, n = 4, one machine.
 
 ## Running
 ```bash

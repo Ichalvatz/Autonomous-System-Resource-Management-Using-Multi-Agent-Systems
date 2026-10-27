@@ -208,7 +208,8 @@ def main():
     tag = sys.argv[1] if len(sys.argv) > 1 else None
     path = os.path.join(HERE, "results_nfr.csv")
     df = runs(path, tag)
-    md = ["# Agent v9 vs Kubernetes HPA (phase 2: NFRs at the ingress, request mix, open-model load)", "",
+    md = [f"# Agent {AGENT.replace('llm-', '')} vs Kubernetes HPA (phase 2: NFRs at the ingress, request mix, "
+          "open-model load)", "",
           f"Generated {datetime.now():%Y-%m-%d %H:%M}"
           + (f" from the runs of campaign `{tag}` only" if tag else " from every valid run") + ". Both strategies "
           "on the same deployment with the same readiness and liveness probes. Lower is better except correct "

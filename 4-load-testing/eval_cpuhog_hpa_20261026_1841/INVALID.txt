@@ -1,0 +1,5 @@
+Excluded from the results (2026-10-26 22:30): the laptop ran on battery for part of this run (pmset log: battery
+18:50:15-18:50:41, ~3 min after the fault at 18:47:19; power.log: 1 BATTERY sample, on_battery_s 30). The protocol
+requires AC power for every run. The HPA never recovers from cpuhog (all other runs: never), so the outcome would not
+change, but the run is excluded anyway, as eval_llm_20261023_0834 was, and repeated after the campaign
+(archive/campaign_followup_2026-10-26.sh). Label in results_nfr_cpuhog.csv: hpa-INVALID.

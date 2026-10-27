@@ -1,0 +1,113 @@
+[2026-10-26 16:07:41] campaign campaign-2026-10-26: NORMAL_RUNS=4 FAULT_RUNS=4 MAX_WAIT_H=8
+[2026-10-26 16:07:41] git HEAD 4308c93, uncommitted files: 1
+[2026-10-26 16:07:41] backend image sha256:d35b51f7b762a62d34ecbe6bd8a2ab1f3c8f3b9e7dfe3d13f1166d4f69109d3a
+c460fb9fa0d655f4d519d0bfba97d7618cdf0951a4af9240b6211cd6e281b8c7  3-ai-agent/agent.py
+e0804108fdf9bcb8368e4d980205a9b8a58ec35525dc90bb2d6c95e53b846f0a  3-ai-agent/agent_tools.py
+86b5f47a824bced9765b1d6ebccb6d910c20584d3e0bc090c475946c035fc555  3-ai-agent/anomaly_detector.py
+aff122b4b041be008f97695008295763fdc087d2e812e0a700b5dd3e03880337  3-ai-agent/health_model.py
+f77fcd39278672c3a9e4cd5a155ec0d9b453012eb1b7f72b4f6a6abdec656908  3-ai-agent/nfr_metrics.py
+2211b1ee5aba645c7191c6030f5e63ac723e74e5ea959923712dfcfab0e42e06  5-ml-training/health_model.pkl
+3a4d2b7f841f7ffcb092d56c58c7ad7babadf7c9806fe7a81567cfb580b79d5c  5-ml-training/capacity_table.json
+6827e444d53164679845490f8a24cf5fa1a7c728958bd085e53f760beb662db1  4-load-testing/baselines/hpa.yaml
+6696ab52d853dc01863e4fececb9bf6f25107898492ae8ce18e22257334b22c0  2-target-app/backend-deployment.yaml
+ac5520b4dcd61776688aa5ba0b921d28d0022b3a3c18a4016f8995b12e8fddc5  4-load-testing/k6/lib/mix.js
+518893bc7c1293733f423d35fc495fa68cf7c5bc72507197968a8718c887f32f  4-load-testing/k6/baseline.js
+4314daf7e3a8b4c3aadd3d2b973a14adbf8435e10bacd7e7446b955752cd4c07  4-load-testing/k6/stuck.js
+877cd3ada28cfe3ff60d90c840e162de603646ba0da41f213d684d2926e01e21  4-load-testing/k6/cpuhog.js
+incident memory emptied (4 incidents from before the campaign)
+[16:07:45] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-26 16:07:45] start stuck hpa
+[2026-10-26 16:26:24] end   stuck hpa (exit 0)
+[16:29:56] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-26 16:29:56] start cpuhog hpa
+[2026-10-26 16:48:35] end   cpuhog hpa (exit 0)
+[16:51:56] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-26 16:51:57] start stuck llm (memory off)
+[2026-10-26 17:10:36] end   stuck llm (exit 0)
+[2026-10-26 17:13:36] start baseline hpa
+[2026-10-26 17:54:16] end   baseline hpa (exit 0)
+[17:57:33] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-26 17:57:34] start cpuhog llm (memory off)
+[2026-10-26 18:16:13] end   cpuhog llm (exit 0)
+[2026-10-26 18:19:13] start stuck hpa
+[2026-10-26 18:37:53] end   stuck hpa (exit 0)
+[18:41:00] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-26 18:41:01] start cpuhog hpa
+[2026-10-26 18:59:41] end   cpuhog hpa (exit 0)
+[19:03:02] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-26 19:03:02] start baseline hpa
+[2026-10-26 19:43:41] end   baseline hpa (exit 0)
+[19:47:03] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-26 19:47:03] start baseline llm (memory on)
+[2026-10-26 20:27:43] end   baseline llm (exit 0)
+[2026-10-26 20:30:43] start stuck hpa
+[2026-10-26 20:49:23] end   stuck hpa (exit 0)
+[20:52:25] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-26 20:52:25] start cpuhog hpa
+[2026-10-26 21:11:05] end   cpuhog hpa (exit 0)
+[21:14:07] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-26 21:14:07] start baseline hpa
+[2026-10-26 21:54:47] end   baseline hpa (exit 0)
+[21:58:18] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-26 21:58:18] start stuck llm (memory off)
+[2026-10-26 22:16:58] end   stuck llm (exit 0)
+[2026-10-26 22:18:35] follow-up queued until the campaign ends: cpuhog hpa and stuck llm (repeats of the runs that touched battery)
+[2026-10-26 22:19:58] start stuck hpa
+[2026-10-26 22:38:42] end   stuck hpa (exit 0)
+[22:42:14] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-26 22:42:14] start cpuhog hpa
+[2026-10-26 23:00:53] end   cpuhog hpa (exit 0)
+[23:04:16] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-26 23:04:16] start cpuhog llm (memory off)
+[2026-10-26 23:22:56] end   cpuhog llm (exit 0)
+[2026-10-26 23:25:56] start baseline hpa
+[2026-10-27 00:06:36] end   baseline hpa (exit 0)
+[00:09:38] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[00:09:40] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-27 00:09:40] only agent runs left and the primary model is unavailable: checking again in 5 min
+[00:14:46] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[00:15:12] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 3)
+[2026-10-27 00:15:12] only agent runs left and the primary model is unavailable: checking again in 5 min
+[00:20:27] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 3)
+[00:20:58] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 00:20:58] start baseline llm (memory on)
+[2026-10-27 01:01:42] end   baseline llm (exit 0)
+[01:05:24] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 2)
+[01:05:27] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-27 01:05:27] only agent runs left and the primary model is unavailable: checking again in 5 min
+[01:11:01] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 01:11:02] start stuck llm (memory off)
+[2026-10-27 01:29:41] end   stuck llm (exit 0)
+[01:33:16] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 01:33:16] start cpuhog llm (memory off)
+[2026-10-27 01:52:00] end   cpuhog llm (exit 0)
+[01:55:34] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 01:55:34] start baseline llm (memory on)
+[2026-10-27 02:36:18] end   baseline llm (exit 0)
+[02:39:37] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 02:39:37] start stuck llm (memory off)
+[2026-10-27 02:58:17] end   stuck llm (exit 0)
+[03:02:00] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 03:02:00] start cpuhog llm (memory off)
+[2026-10-27 03:20:39] end   cpuhog llm (exit 0)
+[03:24:06] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 3)
+[2026-10-27 03:24:06] only agent runs left and the primary model is unavailable: checking again in 5 min
+[03:29:09] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-27 03:29:10] only agent runs left and the primary model is unavailable: checking again in 5 min
+[03:34:41] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-10-27 03:34:42] only agent runs left and the primary model is unavailable: checking again in 5 min
+[03:40:05] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 03:40:05] start baseline llm (memory on)
+[2026-10-27 04:20:45] end   baseline llm (exit 0)
+[2026-10-27 04:23:45] all runs done: 12/12 agent, 12/12 baseline
+[2026-10-27 04:23:48] comparison_nfr.md and timelines regenerated
+[2026-10-27 04:23:48] report: 4-load-testing/campaign-2026-10-26.md
+[2026-10-27 04:23:48] campaign done
+[2026-10-27 04:27:40] start cpuhog hpa (follow-up)
+[2026-10-27 04:46:20] end   cpuhog hpa (follow-up, exit 0)
+[04:49:54] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 04:49:54] start stuck llm (memory off) (follow-up)
+[2026-10-27 05:08:38] end   stuck llm (follow-up, exit 0)
+[2026-10-27 05:08:41] comparison_nfr.md and timelines regenerated
+[2026-10-27 05:08:41] report: 4-load-testing/campaign-2026-10-26.md
+[2026-10-27 05:08:41] follow-up done

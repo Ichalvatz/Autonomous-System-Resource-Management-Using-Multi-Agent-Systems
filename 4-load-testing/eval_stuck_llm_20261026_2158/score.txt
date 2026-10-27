@@ -1,0 +1,35 @@
+                       label: llm-v10
+                       start: 2026-10-26 22:00:36
+                         end: 2026-10-26 22:16:36
+                duration_min: 16.0
+             nfr_violation_s: 110
+             slo_violation_s: 50
+                     error_s: 110
+                  errors_pct: 6.72
+                    p95_mean: 0.357
+                     p95_p99: 4.606
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 50
+           liveness_restarts: 0
+                on_battery_s: 30
+                 k6_requests: 54720
+                    k6_p95_s: 0.136
+               k6_failed_pct: 6.57
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 7
+                agent_s_mean: 28.1
+               agent_actions: 22:05 restart (STABLE)
+                       notes: campaign-2026-10-26
+                     run_dir: 4-load-testing/eval_stuck_llm_20261026_2158
+                fault_at_min: 4.0
+                  recovery_s: 120
+ nfr_violation_after_fault_s: 110
+    max_replicas_after_fault: 1

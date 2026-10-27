@@ -1,0 +1,45 @@
+52m         Normal    Scheduled           pod/aiops-backend-deployment-699c48fc9d-9dttq    Successfully assigned default/aiops-backend-deployment-699c48fc9d-9dttq to aiops-cluster-control-plane
+30m         Normal    Scheduled           pod/aiops-backend-deployment-5bc8c7d585-v9wg2    Successfully assigned default/aiops-backend-deployment-5bc8c7d585-v9wg2 to aiops-cluster-control-plane
+23m         Normal    Scheduled           pod/aiops-backend-deployment-5bc8c7d585-wcjhl    Successfully assigned default/aiops-backend-deployment-5bc8c7d585-wcjhl to aiops-cluster-control-plane
+40m         Normal    Scheduled           pod/aiops-backend-deployment-5bc8c7d585-nbf9n    Successfully assigned default/aiops-backend-deployment-5bc8c7d585-nbf9n to aiops-cluster-control-plane
+53m         Warning   Unhealthy           pod/aiops-backend-deployment-6db87764dc-tpzz4    Readiness probe failed: HTTP probe failed with statuscode: 503
+52m         Normal    Created             pod/aiops-backend-deployment-699c48fc9d-9dttq    Container created
+52m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-699c48fc9d   Created pod: aiops-backend-deployment-699c48fc9d-9dttq
+52m         Normal    Started             pod/aiops-backend-deployment-699c48fc9d-9dttq    Container started
+52m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-699c48fc9d from 0 to 1
+52m         Normal    Pulled              pod/aiops-backend-deployment-699c48fc9d-9dttq    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+52m         Normal    Killing             pod/aiops-backend-deployment-6db87764dc-tpzz4    Stopping container aiops-backend-container
+52m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-6db87764dc   Deleted pod: aiops-backend-deployment-6db87764dc-tpzz4
+52m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-6db87764dc from 1 to 0
+40m         Normal    Pulled              pod/aiops-backend-deployment-5bc8c7d585-nbf9n    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+40m         Normal    Created             pod/aiops-backend-deployment-5bc8c7d585-nbf9n    Container created
+40m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-5bc8c7d585 from 0 to 1
+40m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-5bc8c7d585   Created pod: aiops-backend-deployment-5bc8c7d585-nbf9n
+40m         Normal    Started             pod/aiops-backend-deployment-5bc8c7d585-nbf9n    Container started
+40m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-699c48fc9d   Deleted pod: aiops-backend-deployment-699c48fc9d-9dttq
+40m         Normal    Killing             pod/aiops-backend-deployment-699c48fc9d-9dttq    Stopping container aiops-backend-container
+40m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-699c48fc9d from 1 to 0
+39m         Warning   Unhealthy           pod/aiops-backend-deployment-699c48fc9d-9dttq    Readiness probe failed: Get "http://10.244.0.28:3001/ready": dial tcp 10.244.0.28:3001: connect: connection refused
+30m         Normal    Created             pod/aiops-backend-deployment-5bc8c7d585-v9wg2    Container created
+30m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-5bc8c7d585 from 1 to 2
+30m         Normal    SuccessfulRescale   horizontalpodautoscaler/aiops-backend-hpa        New size: 2; reason: cpu resource utilization (percentage of request) above target
+30m         Normal    Pulled              pod/aiops-backend-deployment-5bc8c7d585-v9wg2    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+30m         Normal    Started             pod/aiops-backend-deployment-5bc8c7d585-v9wg2    Container started
+30m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-5bc8c7d585   Created pod: aiops-backend-deployment-5bc8c7d585-v9wg2
+30m         Warning   Unhealthy           pod/aiops-backend-deployment-5bc8c7d585-v9wg2    Readiness probe failed: Get "http://10.244.0.30:3001/ready": dial tcp 10.244.0.30:3001: connect: connection refused
+23m         Normal    Pulled              pod/aiops-backend-deployment-5bc8c7d585-wcjhl    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+23m         Normal    Started             pod/aiops-backend-deployment-5bc8c7d585-wcjhl    Container started
+23m         Normal    SuccessfulRescale   horizontalpodautoscaler/aiops-backend-hpa        New size: 3; reason: cpu resource utilization (percentage of request) above target
+23m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-5bc8c7d585 from 2 to 3
+23m         Normal    Created             pod/aiops-backend-deployment-5bc8c7d585-wcjhl    Container created
+23m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-5bc8c7d585   Created pod: aiops-backend-deployment-5bc8c7d585-wcjhl
+11m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-5bc8c7d585   Deleted pod: aiops-backend-deployment-5bc8c7d585-wcjhl
+11m         Normal    Killing             pod/aiops-backend-deployment-5bc8c7d585-wcjhl    Stopping container aiops-backend-container
+11m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-5bc8c7d585 from 3 to 2
+11m         Normal    SuccessfulRescale   horizontalpodautoscaler/aiops-backend-hpa        New size: 2; reason: All metrics below target
+11m         Warning   Unhealthy           pod/aiops-backend-deployment-5bc8c7d585-wcjhl    Readiness probe failed: Get "http://10.244.0.31:3001/ready": dial tcp 10.244.0.31:3001: connect: connection refused
+3m49s       Normal    Killing             pod/aiops-backend-deployment-5bc8c7d585-nbf9n    Stopping container aiops-backend-container
+3m49s       Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-5bc8c7d585   Deleted pod: aiops-backend-deployment-5bc8c7d585-nbf9n
+3m49s       Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-5bc8c7d585 from 2 to 1
+3m49s       Normal    SuccessfulRescale   horizontalpodautoscaler/aiops-backend-hpa        New size: 1; reason: All metrics below target
+3m23s       Warning   Unhealthy           pod/aiops-backend-deployment-5bc8c7d585-nbf9n    Readiness probe failed: Get "http://10.244.0.29:3001/ready": dial tcp 10.244.0.29:3001: connect: connection refused
