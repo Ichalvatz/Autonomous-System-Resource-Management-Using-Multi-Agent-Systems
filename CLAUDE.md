@@ -14,7 +14,7 @@ The comparison is against the native Kubernetes HPA.
   - **Agent v10 is the current code** (branch `nfr-v10`, since 2026-10-26; A28 / A28.1): a new health model (one SVM that
     alone decides, the NFRs in its data and input scale, the score read as a distance), the user's verification rule,
     the minimum pod count from the model. Replayed offline (`4-load-testing/replay_v10.md`); live detector validation
-    (4/4 anomaly phases, 0 false wakes), 3 smoke runs, and **measured in `campaign-2026-10-26`** (commit `4308c93`; A29;
+    (4/4 anomaly phases, 0 false wakes), 3 smoke runs, and **measured in `campaign-2026-10-26`** (commit `4308c93`, tag `v10-campaign`; A29;
     results below).
   - **Agent v9** = git tag `v9-campaign` (measured code `5cf4960`, campaign-2026-10-23); its model files in
     `5-ml-training/v9/`; its comparison in `4-load-testing/archive/comparison_campaign-2026-10-23_v9/`.
