@@ -1,0 +1,29 @@
+[2026-10-27 21:55:23] on battery: waiting for AC power
+[2026-10-27 22:19:24] AC power
+[2026-10-27 22:21:24] v11 live queue: git HEAD fee955d; model a6d83c54c10d
+saved 16 entries to 4-load-testing/archive/memory_snapshots/chroma_snapshot_2026-10-27_before_v11.json
+Connecting to ChromaDB...
+✅ Collection 'incidents_nfr' successfully deleted.
+✅ Fresh 'incidents_nfr' collection created. Database is now empty.
+[2026-10-27 22:21:27] detector validation (dry run, v11 model)
+22:21:28 phase A: 1 replica(s), normal
+22:26:28 phase B: 1 replica(s), ANOMALY overload
+22:28:28 phase C: 2 replica(s), normal
+22:33:28 phase D: 2 replica(s), ANOMALY overload
+22:35:28 phase E: 3 replica(s), normal
+22:40:28 phase F: 3 replica(s), ANOMALY waste
+22:43:28 phase G: 2 replica(s), normal
+22:48:28 phase H: 2 replica(s), ANOMALY waste
+22:51:29 phase I: 1 replica(s), normal
+done
+[2026-10-27 22:55:32] validation done: 0 battery samples
+[22:58:48] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 22:58:48] smoke stuck llm (memory off)
+[2026-10-27 23:17:27] end smoke stuck (exit 0)
+[23:20:49] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 23:20:50] smoke cpuhog llm (memory off)
+[2026-10-27 23:39:33] end smoke cpuhog (exit 0)
+[23:42:52] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-27 23:42:52] smoke baseline llm (memory on)
+[2026-10-28 00:23:31] end smoke baseline (exit 0)
+[2026-10-28 00:26:31] v11 live queue done

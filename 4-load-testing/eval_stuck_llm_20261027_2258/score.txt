@@ -1,0 +1,35 @@
+                       label: llm-v11
+                       start: 2026-10-27 23:01:06
+                         end: 2026-10-27 23:17:06
+                duration_min: 16.0
+             nfr_violation_s: 90
+             slo_violation_s: 60
+                     error_s: 90
+                  errors_pct: 4.27
+                    p95_mean: 0.433
+                     p95_p99: 4.596
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 30
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 54721
+                    k6_p95_s: 0.199
+               k6_failed_pct: 4.21
+                  k6_dropped: 0
+                   incidents: 2
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 9
+                agent_s_mean: 5.9
+               agent_actions: 23:05 restart (STABLE); 23:10 none
+                       notes: smoke-v11-2026-10-27
+                     run_dir: 4-load-testing/eval_stuck_llm_20261027_2258
+                fault_at_min: 4.0
+                  recovery_s: 100
+ nfr_violation_after_fault_s: 90
+    max_replicas_after_fault: 1

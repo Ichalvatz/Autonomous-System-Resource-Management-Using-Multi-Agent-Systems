@@ -13,8 +13,10 @@ The comparison is against the native Kubernetes HPA.
   summaries: `thesis_notes/results_summary.md` (v10), `results_summary_v9.md`.
   - **Agent v11 is the current code** (branch `nfr-v11`, since 2026-10-27; A30): v10's design with the health model's
     inputs in NFR units and no tuned weights (only gamma is chosen) and the explanation from the model. Replayed offline
-    (`4-load-testing/replay_v11_campaign-2026-10-2[36].md`); live validation and smoke runs queued
-    (`archive/v11_live_queue.sh`); **its campaign waits for the user's OK**.
+    (`4-load-testing/replay_v11_campaign-2026-10-2[36].md`); live detector validation 2026-10-27 (4/4 anomaly phases at
+    52 / 74 / 75 / 56 s, 0 false wakes) and smoke runs `smoke-v11-2026-10-27` (stuck restart 100 s, cpuhog restart 110 s,
+    normal load 4 scale actions STABLE, 50 s violation; one extra wake on an ingress-side p95 of 0.31 s, correctly no
+    action). **Its campaign waits for the user's OK.**
   - **Agent v10** (A28 / A28.1, A29) = git tag `v10-campaign` (measured code `4308c93`, campaign-2026-10-26): one SVM that
     alone decides, the NFRs in its data and input scale, the score read as a distance, the user's verification rule, the
     minimum pod count from the model. Its model files in `5-ml-training/v10/`, its live validation in
