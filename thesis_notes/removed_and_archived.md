@@ -169,3 +169,19 @@ frontend, τα `.DS_Store`, το αδέσποτο `2-target-app/software-fronten
 | **Δοκιμάστηκε και δεν μπήκε:** αντίγραφα κάθε υγιούς μέτρησης με χαμηλότερο p95 (η μέθοδος όπως δηλώθηκε στην Α28) | το commit `8334774` | Απέτυχε τη μονοτονία και το held-out. Λεπτομέρειες στην Α28.1 και στο `phase2_worklog.md`. |
 | Τα αρχεία σύγκρισης της καμπάνιας του v9 (`comparison_nfr.md` και τα 3 γραφήματα timelines), που η καμπάνια του v10 ξαναγράφει στα ίδια ονόματα | `4-load-testing/` | Αντίγραφα από το git (ίδια με το tag `v9-campaign`) στο `4-load-testing/archive/comparison_campaign-2026-10-23_v9/` (2026-10-27). |
 | Η σύνοψη αποτελεσμάτων του v9 | `thesis_notes/results_summary.md` | Μετονομάστηκε σε `results_summary_v9.md`· το `results_summary.md` είναι πλέον του v10 (2026-10-27). |
+
+## 9. Agent v11: ό,τι έφυγε με τις μονάδες NFR (2026-10-27, Α30)
+
+Ο κώδικας του v10 βρίσκεται στο git tag `v10-campaign`. Τα αρχεία του μοντέλου του είναι στο `5-ml-training/v10/`: το bundle
+(gitignored, ξαναφτιαγμένο από το tag), το report, τα φιλτραρισμένα δεδομένα και οι μετρήσεις της ζωντανής επικύρωσης
+(26/10). Οι φάσεις και τα logs της επικύρωσης είναι στο `4-load-testing/archive/detector_validation_v10/`.
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| Τα 4 βάρη των εισόδων στο grid (φορτίο {1, 2, 4}, latency {1, 2, 4}, σφάλματα {1, 3}, pods {8, 12}): 144 συνδυασμοί | `train_health_baseline.py`, `health_model.transform` | Μονάδες από τις NFR (0 = ασφαλές, 1 = NFR), και μόνο το γ στο grid. Τα βάρη των pods και η τυποποίηση δεν άλλαζαν τίποτα· το βάρος του latency όριζε μόνο μια μονάδα. |
+| Η τυποποίηση του φορτίου με τον μέσο και την τυπική απόκλιση των δεδομένων | `health_model.transform` | ln(rps): η μονάδα δεν εξαρτάται από το πλάτος των ραμπών της συλλογής. |
+| Σφάλματα / 1% χωρίς πάτωμα | `health_model.transform` | Πάτωμα στο ασφαλές 0.1%, όπως το latency στα 0.25 s. |
+| Βάρος pods 8 | `health_model.transform` | `POD_SEPARATION` = 100: χωριστές περιοχές εξ ορισμού. |
+| `healthy_ranges` (min / max ανά αριθμό pods από τα δεδομένα: φορτίο ανά pod, μέγιστο p95, μέγιστα σφάλματα) | bundle, `health_model.explain`, `min_healthy_pods` | Η εξήγηση συγκρίνει με τις ζώνες του μοντέλου (`bands`) και με το ασφαλές επίπεδο: ένα όριο latency σε όλο το σύστημα. |
+| Η ετικέτα `llm-v10` ως default | `run_experiment.sh`, `compare_results.py`, `campaign_report.py` | `llm-v11`. Για την καμπάνια του v10: `AGENT_LABEL=llm-v10`. |
+| Οι μετρήσεις και τα logs της ζωντανής επικύρωσης του v10 στον βασικό φάκελο | `5-ml-training/dry_run_readings.csv`, `4-load-testing/detector_validation*` | Μεταφέρθηκαν (`git mv`) στο `5-ml-training/v10/` και στο `4-load-testing/archive/detector_validation_v10/`. Το `replay_model.py` τα ξαναπαίζει. |

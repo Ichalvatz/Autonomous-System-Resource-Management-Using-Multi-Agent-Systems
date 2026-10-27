@@ -9,13 +9,16 @@ The comparison is against the native Kubernetes HPA.
 
 **Two phases.**
 - **Phase 2** (since 2026-10-22, after a meeting with the supervisors): NFRs, request mix, one SVM, HPA-only comparison.
-  Decisions and results: `thesis_notes/design_decisions.md` A24–A29. Log: `thesis_notes/phase2_worklog.md`. One-page
+  Decisions and results: `thesis_notes/design_decisions.md` A24–A30. Log: `thesis_notes/phase2_worklog.md`. One-page
   summaries: `thesis_notes/results_summary.md` (v10), `results_summary_v9.md`.
-  - **Agent v10 is the current code** (branch `nfr-v10`, since 2026-10-26; A28 / A28.1): a new health model (one SVM that
-    alone decides, the NFRs in its data and input scale, the score read as a distance), the user's verification rule,
-    the minimum pod count from the model. Replayed offline (`4-load-testing/replay_v10.md`); live detector validation
-    (4/4 anomaly phases, 0 false wakes), 3 smoke runs, and **measured in `campaign-2026-10-26`** (commit `4308c93`, tag `v10-campaign`; A29;
-    results below).
+  - **Agent v11 is the current code** (branch `nfr-v11`, since 2026-10-27; A30): v10's design with the health model's
+    inputs in NFR units and no tuned weights (only gamma is chosen) and the explanation from the model. Replayed offline
+    (`4-load-testing/replay_v11_campaign-2026-10-2[36].md`); live validation and smoke runs queued
+    (`archive/v11_live_queue.sh`); **its campaign waits for the user's OK**.
+  - **Agent v10** (A28 / A28.1, A29) = git tag `v10-campaign` (measured code `4308c93`, campaign-2026-10-26): one SVM that
+    alone decides, the NFRs in its data and input scale, the score read as a distance, the user's verification rule, the
+    minimum pod count from the model. Its model files in `5-ml-training/v10/`, its live validation in
+    `archive/detector_validation_v10/`. The results below are v10's and v9's.
   - **Agent v9** = git tag `v9-campaign` (measured code `5cf4960`, campaign-2026-10-23); its model files in
     `5-ml-training/v9/`; its comparison in `4-load-testing/archive/comparison_campaign-2026-10-23_v9/`.
 - **Phase 1** is git tag `v8.1-campaign` (agent v3–v8.1, CPU-based per-replica SVMs, login-only closed-model load, rule /
@@ -85,28 +88,32 @@ Run the steps in order, with the detector **off** and no other traffic. Each scr
    - Bands overlap (anti-flapping deadband): N pods start at 70% of safe(N−1), so the bands are 1 pod 1→95, 2 pods
      66.5→165, 3 pods 115.5→255.
    - Writes `baseline_metrics_healthy.csv` (188 readings, 0 errors).
-3. **`train_health_baseline.py`** (seconds; v10, A28 / A28.1): keeps healthy rows **within the safe level** (p95 ≤ 0.25 s,
-   errors ≤ 0.1%, ≥ 1 rps, every pod ready: 181), then a grid search for **one One-Class SVM** that alone decides at run time.
-   - **Inputs in NFR units** (`health_model.transform`): `w_load·`standardized log throughput,
-     `w_lat·log(max(p95, 0.25) / 0.35)` (every p95 up to the safe level counts the same, so faster is never worse),
-     `w_err·errors / 1%`, `w_rep·replicas`.
+3. **`train_health_baseline.py`** (seconds; v11, A30): keeps healthy rows **within the safe level** (p95 ≤ 0.25 s,
+   errors ≤ 0.1%, ≥ 1 rps, every pod ready: 181), then chooses gamma for **one One-Class SVM** that alone decides at run time.
+   - **Inputs in NFR units, no tuned weights** (`health_model.transform`): ln(throughput);
+     latency `ln(max(p95, 0.25) / 0.25) / ln(0.35 / 0.25)` and errors `(max(err, 0.1%) − 0.1%) / (1% − 0.1%)`, i.e.
+     0 = the safe level, 1 = the objective, everything within the safe level the same (faster is never worse);
+     `POD_SEPARATION` (100) × replicas (one healthy region per pod count).
+   - **What it learns:** every healthy reading sits at the safe level of both NFRs, so from the data the SVM learns the
+     healthy load band of each pod count (which the latency set through the safe level); latency and errors count as the
+     distance above the safe level (A28.1 note, `study_guide.md` §4.4).
    - **Each candidate is judged by:** 40 probes from the measured bands (healthy mid / top, fast, **p95 0.35 s and 1%
      errors at every pod count**, above the band ×1.1, waste, after scale-down, stuck, outage); **monotonicity in latency**
      on a grid; held-out false alarms (ramp-up ↔ ramp-down).
-   - **Pre-declared selection rule (A28):** all probes → monotone → fewest held-out wakes → largest probe margin over the
-     decision noise → fewest held-out flags → smaller γ, lighter weights.
-   - **Selected:** γ 0.2, weights load 1 / latency 2 / errors 1 / pods 8, ν 0.02; 6 support vectors; 40/40 probes,
-     monotone, held-out 2 wakes, margin / noise 1.04. Healthy bands (rps, at the safe latency): 1 pod 4–87, 2 pods
-     73.7–162.4, 3 pods 123.7–251.5. `noise_eps` 0.147; memory "similar" ≤ 0.43.
+   - **Pre-declared selection rule (A28, kept in A30):** all probes → monotone → fewest held-out wakes → largest probe
+     margin over the decision noise → fewest held-out flags → smaller γ. Grid γ ∈ {0.1, 0.2, 0.5, 1.0}, ν 0.02.
+   - **Selected (v11):** γ 0.5; 8 support vectors; 40/40 probes, monotone, held-out 2 wakes, margin / noise 0.905.
+     Healthy bands (rps): 1 pod 3.9–87.0, 2 pods 73.3–161.5, 3 pods 123.7–251.5. `noise_eps` 0.142; memory "similar" ≤ 0.42.
+     (v10: γ 0.2 with weights load 1 / latency 2 / errors 1 / pods 8 from a 144-point grid, margin / noise 1.04.)
    - The method declared first (learn "normal latency for this load" below the safe level, with lower-latency copies)
      **failed** monotonicity and held-out; A28.1 records it and the change.
    - Writes `health_model.pkl` (gitignored), `training_report.json` and `baseline_metrics_healthy_filtered.csv`.
 
 **The score (`health_model.score`)** is the SVM's own decision read as a distance: 0..1 when healthy (1 = typical for the
 pod count), below 0 = minus the distance from the healthy region (the log of the RBF kernel sum, so it does not flatten:
-stuck 100% errors ≈ −100, cpuhog p95 0.7 s ≈ −2). Same sign as the SVM's `decision_function`. The SVM flags latency above
-~0.28–0.33 s at every pod count and load. (v9's score was the raw decision function: +0.01..0.06 healthy, −0.537 for every
-fault; A26.)
+stuck 100% errors ≈ −111, cpuhog p95 0.7 s ≈ −3). Same sign as the SVM's `decision_function`. The v11 SVM flags latency
+above ~0.28 s mid-band and ~0.255 s at the band edges, errors above ~0.4% / ~0.15% (v10: 0.30–0.325 s mid-band). (v9's
+score was the raw decision function: +0.01..0.06 healthy, −0.537 for every fault; A26.)
 
 ## Runtime flow
 **Detector** (`anomaly_detector.run_monitor`, every 10 s):
@@ -116,8 +123,9 @@ fault; A26.)
   every status.
 - **Wakes the agent** after 3 anomalous readings in a row (`ANOMALY_STREAK_REQUIRED`); then a 60 s cooldown
   (`AGENT_COOLDOWN_SECONDS`).
-- **The JSON the agent gets** holds the reading, the score, its explanation (`health_model.explain`: which metrics lie
-  outside their healthy range, in physical units) and the **load trend** (least-squares slope of throughput over the last
+- **The JSON the agent gets** holds the reading, the score, its explanation (`health_model.explain`, in physical units:
+  the load against the model's band for the pod count, latency and errors against the safe level, with the objectives)
+  and the **load trend** (least-squares slope of throughput over the last
   60 s, rps/min).
 - **Re-wake:** if the agent's verification says UNSTABLE (worse or not improving), the next anomalous reading wakes it
   again at once (no streak, cooldown or settle), at most `MAX_REWAKES` = 2 times in a row. A normal reading cancels it.
@@ -126,7 +134,7 @@ fault; A26.)
 - SIGTERM is handled like Ctrl+C (prints a summary).
 - **Blind spot:** a request is counted when it finishes. A process that never answers is seen only when nginx times out.
 
-**Agent v10** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict"}`; prompt and tools as v9):
+**Agent v11** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict"}`; prompt and tools as v9, the rest as v10):
 - **Computed facts** (`agent._computed_facts`):
   - the score and its explanation (with the objectives); ready vs desired pods;
   - load, load per pod and the trend (steady / RISING / falling);
@@ -205,6 +213,8 @@ fault; A26.)
 - **v10 (A28 / A28.1):** the NFRs are built into the model instead of rules around it. An RBF SVM cannot both learn
   "normal latency for this load" and be monotone in latency (the declared method failed), so latency counts only above the
   safe level; the score is read as a distance.
+- **v11 (A30):** the same, with the units taken from the NFRs instead of tuned weights (0 = safe level, 1 = objective, for
+  latency and errors); only gamma is chosen.
 - **Live validation** (`detector_validation.sh`): v10 (2026-10-26) 4/4 overload and waste phases caught (52–84 s), 0 false
   wakes in normal phases (A29); v9 (2026-10-23) 4/4 (52–75 s), 0 (A27).
 
@@ -216,8 +226,9 @@ fault; A26.)
   - writes `eval_[<scenario>_]<strategy>_<time>/`: controller.log, k6.log, `k6_summary.json`, `series.json`,
     `events.txt`, `pods_at_end.txt`, `power.log` (AC or battery every 30 s), window and score;
   - appends one row to `results_nfr.csv` / `results_nfr_stuck.csv` / `results_nfr_cpuhog.csv`;
-  - env: `AIOPS_MEMORY`, `AIOPS_ACT_GUARD`, `LABEL` (default `llm-v10` / `hpa`; `*-INVALID` rows are excluded).
-    `compare_results.py` / `campaign_report.py` take `AGENT_LABEL` (default `llm-v10`; `llm-v9` for campaign-2026-10-23).
+  - env: `AIOPS_MEMORY`, `AIOPS_ACT_GUARD`, `LABEL` (default `llm-v11` / `hpa`; `*-INVALID` rows are excluded).
+    `compare_results.py` / `campaign_report.py` take `AGENT_LABEL` (default `llm-v11`; `llm-v10` for campaign-2026-10-26,
+    `llm-v9` for campaign-2026-10-23).
   - Never run two strategies at once (`queue.sh` runs them back to back).
 - **`evaluate_run.py`** scores a window at the ingress:
   - `nfr_violation_s` (p95 > 0.35 s or errors > 1%), `errors_pct`;
@@ -236,8 +247,9 @@ fault; A26.)
   - Stop: `pkill -f full_campaign.sh; pkill -TERM -f run_experiment.sh`.
 - **`detector_validation.sh` + `analyze_validation.py`:** scripted dry-run validation, phases A–I.
 - **`replay_model.py [TAG]`:** the current health model, verification rule and minimum pod count replayed offline on
-  the A–I validation readings and on a campaign's recorded runs (`series.json`, controller.log, incident_log) →
-  `replay_v10.md` (A28 acceptance criteria 2–5).
+  both live A–I validations (23/10 v9, 26/10 v10) and on a campaign's recorded runs (`series.json`, controller.log,
+  incident_log) → `replay_v11_<TAG>.md` (A30 criteria 2–5; `replay_v10.md` = A28's). Replay times sit on the series' 10 s
+  grid, so they can differ from the live log by up to 10 s.
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
