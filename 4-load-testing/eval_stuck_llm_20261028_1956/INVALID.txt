@@ -1,0 +1,7 @@
+Excluded from the results (2026-10-28 20:20): the laptop ran on battery for part of this run (power.log: BATTERY from
+20:09:52 to the end, 12 samples; on_battery_s 330 of the scored window 19:59:08-20:15:09). The charger was unplugged
+after the campaign was stopped at the user's request (20:09). The protocol requires AC power for every run. The battery
+stretch came after the agent's action (restart at ~20:08 after 254 s of agent time with 11 LLM retries, STABLE), so the
+recovery of 290 s reflects the slow LLM provider rather than the battery, but the run is excluded anyway, as the
+battery-touched runs of campaign-2026-10-23 and campaign-2026-10-26 were. Not repeated (the campaign was stopped at
+34/36 by the user). Label in results_nfr_stuck.csv: llm-v11-INVALID.

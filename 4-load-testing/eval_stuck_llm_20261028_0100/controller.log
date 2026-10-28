@@ -1,0 +1,426 @@
+Loading anomaly detection model from: /Users/ioannischalvatzis/Documents/LLM_AGENT/5-ml-training/health_model.pkl
+Model: OneClassSVM-NFR-v11 (gamma 0.5), features ['throughput', 'latency_p95', 'error_rate', 'replicas'], trained 2026-10-27T21:51:41 on 181 readings
+✅ Model loaded. Starting continuous monitoring...
+Metrics unavailable. Skipping ML prediction and remediation.
+rps: 5.4 (5.4/pod), p95: 0.175s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:02:57]  Normal operation.
+rps: 16.7 (16.7/pod), p95: 0.129s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.029)
+[01:03:07]  Normal operation.
+rps: 28.1 (28.1/pod), p95: 0.126s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.508)
+[01:03:17]  Normal operation.
+rps: 39.5 (39.5/pod), p95: 0.119s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:03:27]  Normal operation.
+rps: 50.8 (50.8/pod), p95: 0.116s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:03:37]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.124s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:03:47]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.122s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:03:57]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.121s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:04:07]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.130s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:04:17]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.131s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:04:27]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.119s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:04:37]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.121s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:04:47]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.118s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:04:57]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.110s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:05:07]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.105s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:05:17]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.100s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:05:27]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.099s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:05:37]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.094s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:05:47]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.098s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:05:57]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.102s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:06:07]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.109s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:06:17]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:06:27]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.113s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:06:37]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.116s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:06:48]  Normal operation.
+rps: 53.7 (53.7/pod), p95: 0.169s, errors: 3.4%, replicas: 1 (ready 1), prediction: -1 (score -3.679)
+[01:06:58] Anomalous reading 1/3 — waiting for confirmation.
+rps: 56.0 (56.0/pod), p95: 4.565s, errors: 28.0%, replicas: 1 (ready 1), prediction: -1 (score -32.178)
+[01:07:08] Anomalous reading 2/3 — waiting for confirmation.
+rps: 57.0 (57.0/pod), p95: 4.590s, errors: 49.3%, replicas: 1 (ready 0), prediction: -1 (score -55.383)
+
+[01:07:18] ANOMALY DETECTED!
+Score -55.383: p95 latency 4.59 s is above the safe level 0.25 s (objective 0.35 s); 49.3% of requests fail (5xx); safe level 0.1% (objective 1%)
+Αναμονή ολοκλήρωσης ενεργειών από τον Agent...
+
+🤖 [AIOps Agent] Agent woke up (v11)! Assigned Signature: State -> Pods:1 | Load:57rps (57/pod) | P95:4.59s | Errors:49.3%
+🧠 [Memory] Incident memory disabled for this run.
+
+╭────────────────────────────────── New run ───────────────────────────────────╮
+│                                                                              │
+│ [ALERT - AIOPS TRIGGER\]                                                     │
+│ You are an Autonomous SRE Agent responsible for the backend deployment. The  │
+│ health monitor (a One-Class SVM trained on healthy traffic) flagged the      │
+│ current state as abnormal.                                                   │
+│ This IS your active task.                                                    │
+│                                                                              │
+│ Current reading (whole deployment, measured at the ingress as users see it,  │
+│ 1-minute windows): {"throughput": 57.04114082281646, "error_rate":           │
+│ 0.4933380084151473, "latency_p95": 4.590229885057471, "replicas": 1.0,       │
+│ "ready_replicas": 0.0, "avg_cpu_per_pod": null, "rps_per_pod":               │
+│ 57.04114082281646, "timestamp": "01:07:18", "score": -55.3828,               │
+│ "explanation": ["p95 latency 4.59 s is above the safe level 0.25 s           │
+│ (objective 0.35 s)", "49.3% of requests fail (5xx); safe level 0.1%          │
+│ (objective 1%)"\], "load_trend_rps_per_min": -1.2}                           │
+│ Assigned Signature: "State -> Pods:1 | Load:57rps (57/pod) | P95:4.59s |     │
+│ Errors:49.3%"                                                                │
+│                                                                              │
+│ === SERVICE OBJECTIVES (non-functional requirements) ===                     │
+│ - Latency: p95 < 0.35 s, as users see it.                                    │
+│ - Errors: fewer than 1% of requests fail (5xx).                              │
+│ - Cost: at most 3 pods (the ceiling of this cluster), and no more pods than  │
+│ the load needs.                                                              │
+│                                                                              │
+│ === SYSTEM CAPACITY REFERENCE ===                                            │
+│ Measured by load testing with the normal request mix: the load each pod      │
+│ count serves within the objectives.                                          │
+│   - 1 pod(s): serves up to ~95 rps with p95 <= ~0.227 s; the 0.35 s          │
+│ objective breaks at ~100 rps                                                 │
+│   - 2 pod(s): serves up to ~165 rps with p95 <= ~0.238 s; the 0.35 s         │
+│ objective breaks at ~195 rps                                                 │
+│   - 3 pod(s): serves up to ~255 rps with p95 <= ~0.2 s; the 0.35 s objective │
+│ breaks at ~270 rps                                                           │
+│                                                                              │
+│ === COMPUTED FACTS (by the monitoring code from the reading above; use them, │
+│ do not recompute) ===                                                        │
+│ - Health score -55.38 (0 to 1 = healthy, 1 = typical; below 0 = anomalous,   │
+│ the value is the distance from the nearest healthy state). Outside the       │
+│ healthy range: p95 latency 4.59 s is above the safe level 0.25 s (objective  │
+│ 0.35 s); 49.3% of requests fail (5xx); safe level 0.1% (objective 1%)        │
+│ - Only 0 of 1 pod(s) are ready (the readiness probe of the others fails).    │
+│ - Load: 57.0 rps on 1 pod(s) (57.0 per pod); trend over the last minute:     │
+│ steady (-1.2 rps per minute).                                                │
+│ - Minimum pod count the health model calls healthy for this load: 1.         │
+│ Current: 1.                                                                  │
+│ - The health model's healthy load band for 1 pod(s) is 3.9-87 rps: the load  │
+│ is inside it, so the load alone does not explain bad latency or errors.      │
+│                                                                              │
+│ === YOUR RECENT ACTIONS (last 15 minutes; verdicts from the automatic        │
+│ verification) ===                                                            │
+│ None in the last 15 minutes.                                                 │
+│                                                                              │
+│ === INCIDENT MEMORY (retrieved automatically from past verified incidents)   │
+│ ===                                                                          │
+│ Incident memory disabled for this run.                                       │
+│                                                                              │
+│ === CRITICAL RULES FOR CODE AGENTS ===                                       │
+│ 1. You MUST output executable Python code wrapped in ```python ... ```       │
+│ blocks.                                                                      │
+│ 2. DO NOT write conversational text outside the python blocks.               │
+│ 3. YOU MUST ONLY EXECUTE ONE TOOL PER TURN. Call one tool, print its result, │
+│ and STOP to wait for the system output.                                      │
+│ 4. Never decide in the same step in which you observe: the system refuses an │
+│ action or a final answer written in the same step as an observation tool.    │
+│ 5. Only a tool call changes the cluster. If you did not execute an action    │
+│ tool, your final answer must start with "No action taken:".                  │
+│                                                                              │
+│ === YOUR TASK ===                                                            │
+│ First decide which kind of problem this is, then act on it.                  │
+│                                                                              │
+│ Step 1 - CLASSIFY, using the computed facts.                                 │
+│   (A) CAPACITY: the minimum pod count in the facts differs from the current  │
+│ count (it is the smallest count the health model calls healthy for this load │
+│ and the load the trend is rising to), and the pods are ready. Go to Step 2A; │
+│ no investigation is needed.                                                  │
+│   (B) SOMETHING ELSE: the minimum pod count equals the current count but     │
+│ latency or errors are bad, or pods are not ready, OR you are not sure. Go to │
+│ Step 2B.                                                                     │
+│                                                                              │
+│ Step 2A - CAPACITY:                                                          │
+│   - The minimum is HIGHER than now (the load, or the load it is rising to,   │
+│ is more than the current pods serve healthily): scale UP with                │
+│ `scale_kubernetes_deployment(replicas=N)` to that minimum.                   │
+│   - The minimum is LOWER than now and the objectives are met: you MUST scale │
+│ DOWN to save resources, to that minimum.                                     │
+│                                                                              │
+│ Step 2B - INVESTIGATE, then act on the cause. Look at ALL THREE observation  │
+│ tools, one per step (the system refuses a restart until you have):           │
+│   - `get_pod_breakdown()`: per pod: CPU, throttling, request rate, CPU cost  │
+│ per request, p95, 5xx rate, event-loop lag, memory, restarts, age, revision, │
+│ ready or not.                                                                │
+│   - `get_deployment_history()`: recent revisions of the deployment and what  │
+│ changed in each.                                                             │
+│   - `get_kubernetes_logs()`: warnings, errors and 5xx lines of every pod.    │
+│   Then choose the action that addresses the cause:                           │
+│   - EVIDENCE of a bad state in the running processes: ERROR lines or a stuck │
+│ / runaway job in the logs, pods that are not ready, or event-loop lag or CPU │
+│ per request several times the healthy reference:                             │
+│ `restart_kubernetes_deployment()` (rolling restart of the whole app; it      │
+│ keeps serving while the pods are replaced). Warnings that only repeat the    │
+│ symptom (e.g. "High latency detected") are not evidence of a cause.          │
+│   - It is capacity after all: scale as in Step 2A.                           │
+│   - A recent change to the deployment caused it (deployment history): you    │
+│ have no tool to undo a change, and a restart would recreate it. Answer "No   │
+│ action taken: <the change>, needs a human decision".                         │
+│   - No evidence of a cause and the breach is small or short (e.g. right      │
+│ after a restart or a scale, while new pods warm up): it may be a transient.  │
+│ Answer "No action taken: <reason>"; the monitor wakes you again if it        │
+│ persists.                                                                    │
+│   More pods only help when the load is more than the current pods serve. A   │
+│ restart only helps when the bad state lives in the running processes. If one │
+│ of your recent actions failed verification, do not repeat it without new     │
+│ evidence: the cause is probably something else.                              │
+│                                                                              │
+│ Step 3 - EXECUTE exactly one remediation action, or none. The system then    │
+│ follows the health score: it waits while the state improves, and wakes you   │
+│ again at once if it gets worse or stops improving.                           │
+│                                                                              │
+│ Step 4 - REPORT in a later step than the action: `final_answer("Root cause:  │
+│ <one sentence, with the evidence>. Action: <what you did and why>.")`, or    │
+│ `final_answer("No action taken: <reason>")`, WRAPPED IN A ```python ... ```  │
+│ BLOCK.                                                                       │
+│   Do NOT verify or save anything yourself: the system verifies the result    │
+│ and stores the incident in memory automatically after you finish.            │
+│                                                                              │
+╰─ RetryingLiteLLMModel - gemini/gemini-3.1-flash-lite ────────────────────────╯
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+⚠️ [LLM] ServiceUnavailableError from gemini/gemini-3.1-flash-lite, retry 1/3 in 5s
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  print(get_pod_breakdown())                                                    
+ ────────────────────────────────────────────────────────────────────────────── 
+Execution logs:
+1 backend pod(s). Healthy reference (healthy traffic of the normal request mix):
+CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. 
+Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod 
+that is not ready receives no traffic.
+- aiops-backend-deployment-5cc8668d5-k8n8c | revision 309 | age 7m02s | not 
+ready (Running) | container restarts 0
+    CPU 0.21 cores (throttled 1.6%) | 24.1 req/s | CPU per request 0.009 core-s 
+| p95 4.42 s | 5xx 5.52/s | event-loop lag p99 0.01 s | memory 142 MiB / 1024 
+MiB limit
+
+Out: None
+[Step 1: Duration 12.99 seconds| Input tokens: 4,461 | Output tokens: 12]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  print(get_deployment_history())                                               
+ ────────────────────────────────────────────────────────────────────────────── 
+Execution logs:
+Deployment aiops-backend-deployment: current revision 309, 0/1 replicas 
+available. Newest first:
+- revision 309 (CURRENT): created 01:00:29 (7m03s ago): oldest revision kept
+
+Out: None
+[Step 2: Duration 1.45 seconds| Input tokens: 9,225 | Output tokens: 23]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 3 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  print(get_kubernetes_logs())                                                  
+ ────────────────────────────────────────────────────────────────────────────── 
+Execution logs:
+--- Pod aiops-backend-deployment-5cc8668d5-k8n8c: 200 lines scanned, 182 
+warnings/errors ---
+[2026-10-27T23:07:04.699Z] [ERROR] [fed1659b37d607f3dea1d9e755ca8ad0] GET 
+/places/101498/reviews - DB connection pool exhausted: waited 3000ms for a free 
+connection (0/10 idle since 2026-10-27T23:06:48.845Z)
+[2026-10-27T23:07:04.700Z] [ERROR] [fed1659b37d607f3dea1d9e755ca8ad0] GET 
+/places/101498/reviews - Server error (5xx): 503 | Duration: 3002ms | Status: 
+503
+[2026-10-27T23:07:04.839Z] [ERROR] [243f374208312e2ef5a22a335d3606f2] GET 
+/places/104909 - DB connection pool exhausted: waited 3000ms for a free 
+connection (0/10 idle since 2026-10-27T23:06:48.845Z)
+[2026-10-27T23:07:04.840Z] [ERROR] [243f374208312e2ef5a22a335d3606f2] GET 
+/places/104909 - Server error (5xx): 503 | Duration: 3002ms | Status: 503
+[2026-10-27T23:07:06.179Z] [ERROR] [9d188cd1-53e4-4b7b-b55b-3973d7a87b09] GET 
+/ready - Server error (5xx): 503 | Duration: 1ms | Status: 503
+[2026-10-27T23:07:11.175Z] [ERROR] [67a09eb7-887f-4683-b8bd-ef97014cce0f] GET 
+/ready - Server error (5xx): 503 | Duration: 0ms | Status: 503
+[2026-10-27T23:07:16.178Z] [ERROR] [3d529bf9-9143-423c-a9a6-d5c643f5cc3d] GET 
+/ready - Server error (5xx): 503 | Duration: 1ms | Status: 503
+[2026-10-27T23:07:21.175Z] [ERROR] [9d861bf1-35f0-401f-b6e6-c9d57630ea74] GET 
+/ready - Server error (5xx): 503 | Duration: 0ms | Status: 503
+[2026-10-27T23:07:26.178Z] [ERROR] [05c844c9-88bb-42d9-8b2d-6624fb7d115b] GET 
+/ready - Server error (5xx): 503 | Duration: 1ms | Status: 503
+[2026-10-27T23:07:31.175Z] [ERROR] [e21c446a-1663-4b7d-af29-b384de7a4f6f] GET 
+/ready - Server error (5xx): 503 | Duration: 1ms | Status: 503
+
+Out: None
+[Step 3: Duration 1.23 seconds| Input tokens: 14,121 | Output tokens: 34]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 4 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  restart_kubernetes_deployment()                                               
+ ────────────────────────────────────────────────────────────────────────────── 
+[SAFETY] restart applied: deployment=aiops-backend-deployment namespace=default cooldown=60s
+Out: ✅ Rolling restart triggered for deployment 'aiops-backend-deployment'.
+[Step 4: Duration 2.12 seconds| Input tokens: 20,128 | Output tokens: 43]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Step 5 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ─ Executing parsed code: ───────────────────────────────────────────────────── 
+  final_answer("Root cause: The application pod was in a bad state indicated    
+  by repeated 'DB connection pool exhausted' errors, preventing it from         
+  passing readiness checks. Action: Triggered a rolling restart of the          
+  deployment to clear the exhausted connection pool and restore service.")      
+ ────────────────────────────────────────────────────────────────────────────── 
+Final answer: Root cause: The application pod was in a bad state indicated by 
+repeated 'DB connection pool exhausted' errors, preventing it from passing 
+readiness checks. Action: Triggered a rolling restart of the deployment to clear
+the exhausted connection pool and restore service.
+[Step 5: Duration 1.31 seconds| Input tokens: 26,217 | Output tokens: 99]
+
+ [AIOps Agent] Actions ['restart'] applied. Verifying...
+⏳ Rollout converged after 3s; following the health score every 10s (before the action: -55.383)...
+   +  0s score -99.394 (1 pod(s), 57.1 rps (57.1/pod), p95 4.59 s, errors 89.2%) -> WAIT
+   + 10s score -104.898 (1 pod(s), 60.6 rps (60.6/pod), p95 4.50 s, errors 94.2%) -> WAIT
+   + 20s score -82.467 (1 pod(s), 58.2 rps (58.2/pod), p95 0.07 s, errors 74.3%) -> WAIT
+   + 30s score -59.951 (1 pod(s), 56.9 rps (56.9/pod), p95 0.08 s, errors 54.1%) -> WAIT
+   + 40s score -37.678 (1 pod(s), 57.0 rps (57.0/pod), p95 0.09 s, errors 34.0%) -> WAIT
+   + 50s score -15.418 (1 pod(s), 56.9 rps (56.9/pod), p95 0.10 s, errors 14.0%) -> WAIT
+   + 60s score +1.000 (1 pod(s), 57.0 rps (57.0/pod), p95 0.11 s, errors 0.0%) -> STABLE
+STABLE
+Health score: before the action -55.38; after the rollout (3 s, 1/1 pods ready) -99.39 -> -104.90 -> -59.95 -> -37.68 -> -15.42 -> +1.00 over 70 s (>= 0 = healthy, below 0 = distance)
+First reading: 1 pod(s), 57.1 rps (57.1/pod), p95 4.59 s, errors 89.2%
+Last reading:  1 pod(s), 57.0 rps (57.0/pod), p95 0.11 s, errors 0.0%
+💾 [Memory] Not saved: memory disabled (AIOPS_MEMORY=off).
+
+ [AIOps Agent] Actions ['restart'] verified STABLE.
+Summary: Root cause: The application pod was in a bad state indicated by repeated 'DB connection pool exhausted' errors, preventing it from passing readiness checks. Action: Triggered a rolling restart of the deployment to clear the exhausted connection pool and restore service.
+
+[01:08:40]  Το πρόβλημα επιλύθηκε από τον Agent. Επανεκκίνηση παρακολούθησης.
+Agent cooldown 60s (monitoring continues).
+rps: 56.8 (56.8/pod), p95: 0.105s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:08:50]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.109s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:09:00]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.120s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:09:10]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.123s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:09:20]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.134s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:09:30]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.138s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:09:40]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.138s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:09:50]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.126s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:10:00]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.121s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:10:10]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.107s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:10:20]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:10:30]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:10:40]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.119s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:10:50]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.118s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:11:00]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.117s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:11:10]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.117s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:11:21]  Normal operation.
+rps: 57.3 (57.3/pod), p95: 0.116s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:11:31]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.102s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:11:41]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:11:51]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.116s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:12:01]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.111s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:12:11]  Normal operation.
+rps: 56.8 (56.8/pod), p95: 0.110s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:12:21]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:12:31]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.102s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:12:41]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.102s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:12:51]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.102s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:13:01]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.111s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:13:11]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.111s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:13:21]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.111s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:13:31]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.109s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:13:41]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.117s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:13:51]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.105s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:14:01]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.098s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:14:11]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.098s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:14:21]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.105s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:14:31]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.099s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:14:41]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.101s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:14:51]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:15:01]  Normal operation.
+rps: 56.7 (56.7/pod), p95: 0.111s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:15:11]  Normal operation.
+rps: 56.8 (56.8/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:15:21]  Normal operation.
+rps: 56.8 (56.8/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:15:31]  Normal operation.
+rps: 56.9 (56.9/pod), p95: 0.111s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:15:41]  Normal operation.
+rps: 56.7 (56.7/pod), p95: 0.114s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:15:51]  Normal operation.
+rps: 56.7 (56.7/pod), p95: 0.110s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:16:01]  Normal operation.
+rps: 56.7 (56.7/pod), p95: 0.110s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:16:11]  Normal operation.
+rps: 56.8 (56.8/pod), p95: 0.119s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:16:22]  Normal operation.
+rps: 56.7 (56.7/pod), p95: 0.118s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:16:32]  Normal operation.
+rps: 56.8 (56.8/pod), p95: 0.128s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:16:42]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.133s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:16:52]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.129s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:17:02]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.119s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:17:12]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.121s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:17:22]  Normal operation.
+rps: 57.2 (57.2/pod), p95: 0.108s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:17:32]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:17:42]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.115s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:17:52]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.114s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:18:02]  Normal operation.
+rps: 57.0 (57.0/pod), p95: 0.105s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:18:12]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:18:22]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.099s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:18:32]  Normal operation.
+rps: 57.1 (57.1/pod), p95: 0.097s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[01:18:42]  Normal operation.
+
+⏹️ Monitoring stopped by user.
+
+--- Monitor summary (16.0 min) ---
+  Readings evaluated:          87
+  Anomalous readings:          3 (3.4%)
+  Woke the agent:              1 (3.7/hour)
+  Skipped readings:            settling=0 low_traffic=0 missing_metrics=1

@@ -1,0 +1,8 @@
+[10:07:47] scenario=cpuhog strategy=hpa: reset to 1 replica(s)
+[10:07:47] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=hpa
+[10:07:54] rollout history reset: 1 ReplicaSet(s) left
+[10:07:56] k6 token pool ready
+[10:10:01] k6 cpuhog.js started
+[10:14:01] inject cpuhog -> aiops-backend-deployment-577d8db54-znwp4: {"cpuhog":true,"since":"2026-10-28T08:14:02.033Z","busyMs":600}
+[10:26:02] k6 finished (exit 0)
+[10:26:22] done

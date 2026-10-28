@@ -1,0 +1,203 @@
+[2026-10-28 01:00:10] campaign campaign-2026-10-28: NORMAL_RUNS=6 FAULT_RUNS=6 MAX_WAIT_H=8
+[2026-10-28 01:00:10] git HEAD 92b8c51, uncommitted files: 1
+[2026-10-28 01:00:10] backend image sha256:d35b51f7b762a62d34ecbe6bd8a2ab1f3c8f3b9e7dfe3d13f1166d4f69109d3a
+ab4b09b0a37024a856bf8b246bbd09f07168ea14ec2f2ff049b56440f6771e27  3-ai-agent/agent.py
+4a452dd37e382989aa15dd4560f6caff6fe97f9380afdf35014d7ed1f108d641  3-ai-agent/agent_tools.py
+e77a6879a546645909712137938ea0210b56a20f032e9503f4e5534bc0189f37  3-ai-agent/anomaly_detector.py
+0f4a61740e2fc7baed6d96f65b20dea313249c4259c4de48087fd234d5cb5933  3-ai-agent/health_model.py
+f77fcd39278672c3a9e4cd5a155ec0d9b453012eb1b7f72b4f6a6abdec656908  3-ai-agent/nfr_metrics.py
+a6d83c54c10da8bd65cd88700d5cda38c9981d93d424f514ce01c5518b94372e  5-ml-training/health_model.pkl
+3a4d2b7f841f7ffcb092d56c58c7ad7babadf7c9806fe7a81567cfb580b79d5c  5-ml-training/capacity_table.json
+6827e444d53164679845490f8a24cf5fa1a7c728958bd085e53f760beb662db1  4-load-testing/baselines/hpa.yaml
+6696ab52d853dc01863e4fececb9bf6f25107898492ae8ce18e22257334b22c0  2-target-app/backend-deployment.yaml
+ac5520b4dcd61776688aa5ba0b921d28d0022b3a3c18a4016f8995b12e8fddc5  4-load-testing/k6/lib/mix.js
+518893bc7c1293733f423d35fc495fa68cf7c5bc72507197968a8718c887f32f  4-load-testing/k6/baseline.js
+4314daf7e3a8b4c3aadd3d2b973a14adbf8435e10bacd7e7446b955752cd4c07  4-load-testing/k6/stuck.js
+877cd3ada28cfe3ff60d90c840e162de603646ba0da41f213d684d2926e01e21  4-load-testing/k6/cpuhog.js
+incident memory emptied (4 incidents from before the campaign)
+[01:00:25] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 01:00:26] start stuck llm (memory off)
+[2026-10-28 01:19:10] end   stuck llm (exit 0)
+[2026-10-28 01:22:10] start stuck hpa
+[2026-10-28 01:40:48] end   stuck hpa (exit 0)
+[01:43:56] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 2)
+[2026-10-28 01:43:56] start cpuhog hpa
+[2026-10-28 02:02:35] end   cpuhog hpa (exit 0)
+[02:05:50] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 02:05:50] start cpuhog llm (memory off)
+[2026-10-28 02:24:29] end   cpuhog llm (exit 0)
+[2026-10-28 02:27:29] start baseline hpa
+[2026-10-28 03:08:07] end   baseline hpa (exit 0)
+[03:11:26] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 03:11:27] start baseline llm (memory on)
+[2026-10-28 03:52:06] end   baseline llm (exit 0)
+[2026-10-28 03:55:06] start stuck hpa
+[2026-10-28 04:13:45] end   stuck hpa (exit 0)
+[04:17:03] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 04:17:03] start stuck llm (memory off)
+[2026-10-28 04:35:43] end   stuck llm (exit 0)
+[2026-10-28 04:38:43] start cpuhog hpa
+[2026-10-28 04:57:22] end   cpuhog hpa (exit 0)
+[05:01:02] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 2)
+[2026-10-28 05:01:02] start baseline hpa
+[2026-10-28 05:41:41] end   baseline hpa (exit 0)
+[05:45:02] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 05:45:02] start cpuhog llm (memory off)
+[2026-10-28 06:03:41] end   cpuhog llm (exit 0)
+[2026-10-28 06:06:41] start stuck hpa
+[2026-10-28 06:25:25] end   stuck hpa (exit 0)
+[06:28:50] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 06:28:50] start baseline llm (memory on)
+[2026-10-28 07:09:30] end   baseline llm (exit 0)
+[2026-10-28 07:12:30] start cpuhog hpa
+[2026-10-28 07:31:10] end   cpuhog hpa (exit 0)
+[07:34:39] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 07:34:40] start stuck llm (memory off)
+[2026-10-28 07:53:19] end   stuck llm (exit 0)
+[2026-10-28 07:56:19] start baseline hpa
+[2026-10-28 08:36:58] end   baseline hpa (exit 0)
+[08:40:20] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 08:40:21] start cpuhog llm (memory off)
+[2026-10-28 08:59:00] end   cpuhog llm (exit 0)
+[2026-10-28 09:02:00] start stuck hpa
+[2026-10-28 09:20:44] end   stuck hpa (exit 0)
+[09:24:03] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 09:24:04] start baseline llm (memory on)
+[2026-10-28 10:04:43] end   baseline llm (exit 0)
+[2026-10-28 10:07:43] start cpuhog hpa
+[2026-10-28 10:26:22] end   cpuhog hpa (exit 0)
+[10:29:41] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 10:29:41] start stuck llm (memory off)
+[2026-10-28 10:48:20] end   stuck llm (exit 0)
+[2026-10-28 10:51:20] start baseline hpa
+[2026-10-28 11:32:04] end   baseline hpa (exit 0)
+[11:35:46] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 2)
+[2026-10-28 11:35:46] start stuck hpa
+[2026-10-28 11:54:25] end   stuck hpa (exit 0)
+[11:57:44] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 11:57:44] start cpuhog llm (memory off)
+[2026-10-28 12:16:23] end   cpuhog llm (exit 0)
+[2026-10-28 12:19:23] start cpuhog hpa
+[2026-10-28 12:38:03] end   cpuhog hpa (exit 0)
+[12:41:39] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 12:41:39] start baseline llm (memory on)
+[2026-10-28 13:22:18] end   baseline llm (exit 0)
+[2026-10-28 13:25:18] start baseline hpa
+[2026-10-28 14:05:57] end   baseline hpa (exit 0)
+[14:09:22] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 14:09:22] start stuck llm (memory off)
+[2026-10-28 14:28:06] end   stuck llm (exit 0)
+[2026-10-28 14:31:06] start stuck hpa
+[2026-10-28 14:49:46] end   stuck hpa (exit 0)
+[14:53:16] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 14:53:17] start cpuhog llm (memory off)
+[2026-10-28 15:11:56] end   cpuhog llm (exit 0)
+[2026-10-28 15:14:56] start cpuhog hpa
+[2026-10-28 15:33:35] end   cpuhog hpa (exit 0)
+[15:37:00] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 15:37:00] start baseline llm (memory on)
+[2026-10-28 16:17:39] end   baseline llm (exit 0)
+[2026-10-28 16:20:40] start baseline hpa
+[2026-10-28 17:01:23] end   baseline hpa (exit 0)
+[17:04:26] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:04:30] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:04:31] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:09:36] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:09:41] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:09:41] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:14:44] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:15:01] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:15:01] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:20:04] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:20:06] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:20:06] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:25:11] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:25:14] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:25:14] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:30:46] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[17:30:49] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:30:50] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:35:55] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:35:58] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:35:58] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:41:02] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:41:06] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:41:06] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:46:09] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:46:24] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:46:24] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:51:27] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:51:29] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 17:51:30] only agent runs left and the primary model is unavailable: checking again in 5 min
+[17:56:32] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[17:57:22] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 2)
+[2026-10-28 17:57:22] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:02:25] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:02:27] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:02:28] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:07:30] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:07:32] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:07:32] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:12:34] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:12:36] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:12:37] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:17:39] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:17:52] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:17:52] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:22:55] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:23:03] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:23:03] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:28:34] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:28:36] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:28:36] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:33:39] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:33:41] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:33:42] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:38:45] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:38:52] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:38:52] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:43:55] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:43:57] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:43:58] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:49:02] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:49:04] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:49:04] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:54:07] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:54:09] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:54:09] only agent runs left and the primary model is unavailable: checking again in 5 min
+[18:59:24] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[18:59:27] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 18:59:27] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:04:30] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:04:32] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:04:32] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:09:35] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:09:37] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:09:37] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:15:06] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 2)
+[19:15:08] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:15:08] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:20:11] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:20:14] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:20:14] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:25:19] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:25:21] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:25:21] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:30:24] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:30:49] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 2)
+[2026-10-28 19:30:49] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:35:52] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:35:55] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:35:55] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:40:58] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:41:01] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:41:01] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:46:10] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:46:13] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:46:13] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:51:18] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[19:51:20] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-10-28 19:51:20] only agent runs left and the primary model is unavailable: checking again in 5 min
+[19:56:51] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-10-28 19:56:51] start stuck llm (memory off)
+[2026-10-28 20:09:45] campaign stopped by the user's request after this run (34/36: agent cpuhog and normal-load run 6 not done); the running stuck agent run is left to finish

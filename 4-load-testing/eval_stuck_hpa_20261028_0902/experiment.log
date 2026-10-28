@@ -1,0 +1,8 @@
+[09:02:03] scenario=stuck strategy=hpa: reset to 1 replica(s)
+[09:02:03] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=hpa
+[09:02:15] rollout history reset: 1 ReplicaSet(s) left
+[09:02:17] k6 token pool ready
+[09:04:22] k6 stuck.js started
+[09:08:23] inject stuck -> aiops-backend-deployment-6559c7c947-99vjq: {"stuck":true,"since":"2026-10-28T07:08:23.214Z","delayMs":3000}
+[09:20:23] k6 finished (exit 0)
+[09:20:44] done
