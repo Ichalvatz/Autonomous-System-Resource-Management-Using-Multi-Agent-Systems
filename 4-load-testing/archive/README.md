@@ -3,7 +3,7 @@
 Moved here on 2026-10-10 to declutter `4-load-testing/` (full list of what was removed or archived, and how to rerun an
 old agent version: `thesis_notes/removed_and_archived.md`). Nothing here is needed to run the system or the
 harness (`run_experiment.sh`, `queue.sh`, `evaluate_run.py`, `compare_results.py` stay one level up). They are
-kept as **provenance**: the notes (`NOTES_2026-10-01_DAY.md`, `NOTES_2026-10-03.md`, `CLAUDE.md`) cite them to
+kept as **provenance**: the notes (`thesis_notes/history/phase1/early_notes/NOTES_2026-10-01_DAY.md`, `NOTES_2026-10-03.md`, `CLAUDE.md`) cite them to
 show exactly how each measured run was launched (scenario, strategy, label, env switches, notes). The scored
 results themselves live in `../evaluation_results*.csv` and `../eval_*/`.
 

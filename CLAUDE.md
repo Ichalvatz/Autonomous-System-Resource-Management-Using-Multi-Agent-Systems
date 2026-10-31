@@ -10,22 +10,25 @@ The comparison is against the native Kubernetes HPA.
 **Two phases.**
 - **Phase 2** (since 2026-10-22, after a meeting with the supervisors): NFRs, request mix, one SVM, HPA-only comparison.
   Decisions and results: `thesis_notes/design_decisions.md` A24–A30. Log: `thesis_notes/phase2_worklog.md`. One-page
-  summaries: `thesis_notes/results_summary.md` (v10), `results_summary_v9.md`.
+  summaries: `thesis_notes/results_summary.md` (v11); older versions in `thesis_notes/history/<version>/`. **Reading
+  order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
+  current version; superseded ones go to `thesis_notes/history/`).
   - **Agent v11 is the current code** (branch `nfr-v11`, since 2026-10-27; A30): v10's design with the health model's
     inputs in NFR units and no tuned weights (only gamma is chosen) and the explanation from the model. Replayed offline
     (`4-load-testing/replay_v11_campaign-2026-10-2[36].md`); live detector validation 2026-10-27 (4/4 anomaly phases at
     52 / 74 / 75 / 56 s, 0 false wakes) and smoke runs `smoke-v11-2026-10-27` (stuck restart 100 s, cpuhog restart 110 s,
     normal load 4 scale actions STABLE, 50 s violation; one extra wake on an ingress-side p95 of 0.31 s, correctly no
-    action). **Its campaign waits for the user's OK.**
+    action). **Measured in `campaign-2026-10-28`** (measured code `92b8c51`, tag `v11-campaign`; A30; results below).
   - **Agent v10** (A28 / A28.1, A29) = git tag `v10-campaign` (measured code `4308c93`, campaign-2026-10-26): one SVM that
     alone decides, the NFRs in its data and input scale, the score read as a distance, the user's verification rule, the
     minimum pod count from the model. Its model files in `5-ml-training/v10/`, its live validation in
-    `archive/detector_validation_v10/`. The results below are v10's and v9's.
+    `archive/detector_validation_v10/`, its comparison in `4-load-testing/archive/comparison_campaign-2026-10-26_v10/`.
   - **Agent v9** = git tag `v9-campaign` (measured code `5cf4960`, campaign-2026-10-23); its model files in
     `5-ml-training/v9/`; its comparison in `4-load-testing/archive/comparison_campaign-2026-10-23_v9/`.
 - **Phase 1** is git tag `v8.1-campaign` (agent v3–v8.1, CPU-based per-replica SVMs, login-only closed-model load, rule /
   static baselines, badconfig scenario). Documented in `design_decisions.md` A1–A23,
-  `thesis_notes/removed_and_archived.md` and `thesis_notes/results_summary_phase1.md`. Its data:
+  `thesis_notes/removed_and_archived.md` and `thesis_notes/history/phase1/` (results summary, study guide, defense Q&A,
+  the English research framing `THESIS_SUMMARY_EN.md`, the early notes of 1–4/10). Its data:
   `5-ml-training/phase1/`, `4-load-testing/evaluation_results*.csv`, `comparison.md`, `3-ai-agent/incident_log_phase1.csv`.
 
 ## Layout (numbered folders = pipeline order)
@@ -255,9 +258,29 @@ score was the raw decision function: +0.01..0.06 healthy, −0.537 for every fau
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
-## Results of the phase-2 campaigns (4 + 4 runs per scenario; A29 / A27, `results_summary.md`)
+## Results of the phase-2 campaigns (A30 / A29 / A27, `thesis_notes/results_summary.md`)
 
-`campaign-2026-10-26` (agent v10) and `campaign-2026-10-23` (agent v9), each against the HPA in the same campaign.
+**`campaign-2026-10-28` (agent v11, the current code):** 6 + 6 runs planned; the Gemini API was down 17:01–19:56 and the
+user stopped the campaign at 34/36; one battery-touched agent run relabelled `llm-v11-INVALID`. Valid runs: HPA 6, agent 5
+per scenario.
+
+| | HPA | Agent v11 |
+|---|---|---|
+| Normal load: NFR violation | 0 s | 60 ± 40 s (110 / 0 / 70 / 70 / 50), HPA < agent p = 0.015 |
+| Normal load: cost | 76.0 replica-min | 72.1 (−5.1%, permutation p = 0.002) |
+| Normal load: correct provisioning | 78.8% | 83.9% |
+| Stuck: recovery | never (0/6), 74% failed requests | 5/5, restart, 114 ± 5 s, 5.8% failed |
+| Cpuhog: recovery | never (0/6), scaled to 2 pods (27.8 replica-min) | 5/5, restart, 118 ± 13 s (16.2 replica-min) |
+| Faults pooled | 0/12 | 10/10 (Fisher p = 1.5e-6) |
+
+- **v11 agent decisions:** 30 actions (20 scale, 10 restart), all right at the first wake-up and verified STABLE; 0 false
+  wakes; 0 re-wakes; memory found a same-action incident at 16/16 normal-load wake-ups after the first run. Agent time
+  median 19 s, max 150 s; retries in 12/30, fallback in 2.
+- **Normal-load violation** still mostly follows the agent's time at the first scale-up (7 s → 0 s; 67–80 s → 50–110 s);
+  one fast run had 70 s of marginal p95 (0.35–0.39 s) around the pod changes.
+
+**`campaign-2026-10-26` (agent v10) and `campaign-2026-10-23` (agent v9)**, 4 + 4 runs per scenario, each against the HPA
+in the same campaign:
 
 | | HPA (v10 campaign) | Agent v10 | Agent v9 |
 |---|---|---|---|
@@ -279,7 +302,8 @@ score was the raw decision function: +0.01..0.06 healthy, −0.537 for every fau
 - **Invalid runs:** two (charger dropped for 26 s and 43 s), relabelled `*-INVALID` and repeated after the campaign
   (`archive/campaign_followup_2026-10-26.sh`).
 - **Limits:** LLM provider dependency, latency below 0.25 s invisible to the model (A28.1), no live UNSTABLE yet, shallow
-  liveness by design, n = 4, one machine.
+  liveness by design, small n, one machine; 1 pod at 1–4 rps scores as anomalous and the facts then suggest 3 pods
+  (`health_model.min_healthy_pods` falls back to the largest count; A30 note, never reached in a measured run).
 
 ## Running
 ```bash
@@ -301,7 +325,7 @@ SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 - Never read or print `.env` values (they hold HF / Gemini / OpenRouter keys).
 - The code keeps only the final version. Removed things are recorded in `thesis_notes/removed_and_archived.md`, decisions
   in `design_decisions.md`.
-- `THESIS_SUMMARY_EN.md` holds the research framing of phase 1.
+- `thesis_notes/history/phase1/THESIS_SUMMARY_EN.md` holds the research framing of phase 1.
 
 ## Known issues / gotchas
 - **The in-memory DB is per pod:** writes (reviews, favourites) are not shared between pods. They are kept few (10% of the

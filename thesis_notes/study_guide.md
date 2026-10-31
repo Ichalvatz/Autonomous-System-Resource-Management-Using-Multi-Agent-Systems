@@ -8,7 +8,8 @@
 - `design_decisions.md` (Α24–Α30: v9 Α24–Α27, v10 Α28–Α29, v11 Α30): οι αποφάσεις με τα στοιχεία τους.
 - `defense_qa.md`: οι ερωτήσεις των εξεταστών.
 - `manual_testing.md`: οι χειροκίνητες δοκιμές.
-- `study_guide_phase1.md`: ο οδηγός της φάσης 1 (Isolation Forest, prompt v3–v8, badconfig, rollback).
+- `history/phase1/study_guide_phase1.md`: ο οδηγός της φάσης 1 (Isolation Forest, prompt v3–v8, badconfig, rollback).
+- Από πού να ξεκινήσεις: `README.md`.
 
 ---
 
@@ -587,7 +588,7 @@ smolagents τα βάζει αυτούσια στο system prompt.
 | **v11 (φάση 2)** | ίδιο με το v10, με τις μονάδες των εισόδων από τις NFR αντί για βάρη (μόνη επιλογή το γ) και την εξήγηση από το ίδιο το μοντέλο |
 
 Το δίδαγμα που κρατάμε: **κάθε οδηγία του prompt που έπρεπε να ισχύει πάντα, το LLM την παρέβη κάποια στιγμή. Η λύση ήταν
-να γίνει κώδικας**, και το LLM να μένει για την κρίση. Λεπτομέρειες: `study_guide_phase1.md` §5.5.
+να γίνει κώδικας**, και το LLM να μένει για την κρίση. Λεπτομέρειες: `history/phase1/study_guide_phase1.md` §5.5.
 
 ---
 

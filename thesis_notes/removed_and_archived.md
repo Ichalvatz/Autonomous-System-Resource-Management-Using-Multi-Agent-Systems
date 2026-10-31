@@ -185,3 +185,22 @@ frontend, τα `.DS_Store`, το αδέσποτο `2-target-app/software-fronten
 | `healthy_ranges` (min / max ανά αριθμό pods από τα δεδομένα: φορτίο ανά pod, μέγιστο p95, μέγιστα σφάλματα) | bundle, `health_model.explain`, `min_healthy_pods` | Η εξήγηση συγκρίνει με τις ζώνες του μοντέλου (`bands`) και με το ασφαλές επίπεδο: ένα όριο latency σε όλο το σύστημα. |
 | Η ετικέτα `llm-v10` ως default | `run_experiment.sh`, `compare_results.py`, `campaign_report.py` | `llm-v11`. Για την καμπάνια του v10: `AGENT_LABEL=llm-v10`. |
 | Οι μετρήσεις και τα logs της ζωντανής επικύρωσης του v10 στον βασικό φάκελο | `5-ml-training/dry_run_readings.csv`, `4-load-testing/detector_validation*` | Μεταφέρθηκαν (`git mv`) στο `5-ml-training/v10/` και στο `4-load-testing/archive/detector_validation_v10/`. Το `replay_model.py` τα ξαναπαίζει. |
+
+## 10. Οργάνωση των σημειώσεων (2026-10-31)
+
+Ο χρήστης ζήτησε (31/10) ένα σημείο εκκίνησης, και τα αρχεία με σειρά από το πιο πρόσφατο. Νέο `thesis_notes/README.md`
+(σειρά ανάγνωσης, εκδόσεις, πού είναι τα αποτελέσματα). Οι αλλαγές:
+
+| Τι μετακινήθηκε | Από | Πού (`git mv`) |
+|---|---|---|
+| Η σύνοψη του v10 | `thesis_notes/results_summary.md` | `thesis_notes/history/v10/results_summary_v10.md` (το `results_summary.md` είναι πλέον του v11) |
+| Η σύνοψη του v9 | `thesis_notes/results_summary_v9.md` | `thesis_notes/history/v9/results_summary_v9.md` |
+| Σύνοψη, οδηγός μελέτης, ερωτήσεις της φάσης 1 | `thesis_notes/*_phase1.md` | `thesis_notes/history/phase1/` |
+| Η ερευνητική πλαισίωση της φάσης 1 | `THESIS_SUMMARY_EN.md` (ρίζα) | `thesis_notes/history/phase1/THESIS_SUMMARY_EN.md` |
+| Οι πρώτες σημειώσεις (1–4/10) | `READ_ME_FIRST_2026-10-01.md`, `READ_ME_FIRST_2026-10-04.md`, `NOTES_2026-10-01_DAY.md`, `NOTES_2026-10-03.md` (ρίζα) | `thesis_notes/history/phase1/early_notes/` |
+
+- Στην κορυφή του `design_decisions.md` και του `phase2_worklog.md` μπήκε ευρετήριο από το πιο πρόσφατο.
+- Οι παραπομπές στα ζωντανά αρχεία ενημερώθηκαν: `README.md`, `CLAUDE.md`, `system_overview.md`, `study_guide.md`,
+  `defense_qa.md`, `4-load-testing/archive/README.md`.
+- Οι παλιές παραπομπές μέσα στα ημερολόγια και στο ιστορικό μένουν όπως γράφτηκαν.
+
