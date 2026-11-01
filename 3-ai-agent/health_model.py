@@ -1,5 +1,6 @@
 """
-The health model of the agent (v11 since 2026-10-27, design_decisions.md A30; v10 A28): ONE One-Class SVM over the NFR
+The health model of the agent (v12 since 2026-11-01, design_decisions.md A31: v11's model, A30, tested with range probes
+and trained with the 1-pod low end; v10 A28): ONE One-Class SVM over the NFR
 metrics (load, latency, errors, pod count) that alone decides at run time. The NFRs (nfr_metrics.py) are built into
 the model instead of rules around it:
   - healthy training data = the readings within the safe level (p95 <= SAFE_P95, errors <= SAFE_ERRORS;
@@ -7,10 +8,12 @@ the model instead of rules around it:
   - the inputs are in NFR units, with no tuned weights (transform): for latency and errors 0 = the safe level and
     1 = the objective, and everything within the safe level counts the same, so a faster or cleaner state is never
     judged worse (A28.1: a model that also learned "normal latency for this load" below it was not monotone);
-  - the acceptance probes require p95 = NFR_P95 and NFR_ERRORS of errors to be anomalies at every pod count.
+  - the acceptance probes require p95 = NFR_P95 and NFR_ERRORS of errors to be anomalies at every load of every pod count.
 Every healthy training reading sits at the safe level of both NFRs, so from the data the SVM learns the healthy load
 of each pod count (the bands, which the latency set through the safe level), and latency and errors count as the
-distance above the safe level (A28.1, A30). The only choice in training is gamma.
+distance above the safe level (A28.1, A30). The only choice in training is gamma. Since every support vector then sits
+on the load axis, the kernel sum of N pods is exp(-gamma * r^2) * K_N(ln rps), r = the distance above the safe level:
+healthy <=> r^2 <= ln(K_N / rho) / gamma, so a scan along the load covers every reading (A31).
 Shared by the detector, the verification of an action, the incident memory (its embedding space), the agent's facts
 (the minimum pod count) and the training script, so they all see a reading the same way.
 
@@ -104,11 +107,15 @@ def embedding(bundle, reading):
 
 def min_healthy_pods(bundle, throughput):
     """The smallest pod count the model calls healthy for this throughput (latency and errors at the safe level), from
-    the counts it was trained on: (count, True), or (the largest count, False) when none is."""
+    the counts it was trained on: (count, True); when none is, (the smallest count whose band does not end below this
+    load, False): the smallest count below every band, the largest above them (v12, A31: v10 / v11 returned the largest
+    in both cases, so 1 pod at an idle 2 rps got "minimum 3"). The band tops decide, not the rounded band bottoms."""
     counts = sorted(bundle["bands"])
     probe = [{"throughput": throughput, "latency_p95": 0.0, "error_rate": 0.0, "replicas": float(n)} for n in counts]
     healthy = [n for n, d in zip(counts, decision(bundle, probe)) if d >= 0]
-    return (healthy[0], True) if healthy else (counts[-1], False)
+    if healthy:
+        return healthy[0], True
+    return next((n for n in counts if throughput <= bundle["bands"][n][1]), counts[-1]), False
 
 
 def explain(bundle, reading):
@@ -140,7 +147,7 @@ def explain(bundle, reading):
     return out or ["every metric is inside its healthy range for this pod count; only their combination is unusual"]
 
 
-def judge_trajectory(scores, eps, window_full_at, stuck_readings=3):
+def judge_trajectory(scores, eps, judge_from, stuck_readings=3):
     """Verdict on the scores read every 10 s after an action's rollout converged (oldest first): the user's rule
     (2026-10-26, design_decisions.md A28), one reading at a time.
 
@@ -148,13 +155,15 @@ def judge_trajectory(scores, eps, window_full_at, stuck_readings=3):
       UNSTABLE  worse: the score fell by more than eps since the reading before; or not improving: it has not risen by
                 more than eps over the last `stuck_readings` readings;
       WAIT      anomalous but moving back towards healthy, or too early to tell.
-    window_full_at: index of the first reading whose 1 m rate windows hold only post-action data. Before it the
-    readings still mix the old minute in, so only STABLE or WAIT; the comparisons use post-action readings only.
+    judge_from: index of the first reading the comparisons may use (VERIFY_JUDGE_FROM_SECONDS = 10 s after the
+    rollout, v12, A31): the reading right after an action can dip (judged from it, 6 of 61 recorded actions gave a false
+    "worse"). Before it only STABLE or WAIT. The 1 m windows still mix the old minute in for a while, but the direction
+    already means something: a reading moves from the old state towards the new one.
     eps: the measurement noise of a reading in the model's units (bundle["noise_eps"]).
     """
     if scores and scores[-1] >= 0:
         return "STABLE"
-    post = scores[window_full_at:] if window_full_at is not None else []
+    post = scores[judge_from:] if judge_from is not None else []
     if len(post) < 2:
         return "WAIT"
     if post[-1] < post[-2] - eps:

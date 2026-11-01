@@ -1,7 +1,7 @@
 """
 The phase-2 modules shared by the detector, the verification, the memory and the ML scripts: health_model.py (the
 v10 transform in NFR units, the score read as a distance, the minimum healthy pod count, explain, embedding, the
-bundle check; design_decisions.md A28) and nfr_metrics.py (one reading from Prometheus, the NFR values).
+bundle check; design_decisions.md A28; the factorisation the range probes rely on, A31) and nfr_metrics.py (one reading from Prometheus, the NFR values).
 judge_trajectory is tested in test_agent_logic.py with the verification that uses it.
 
 Run from the repo root:  .venv/bin/python3 -m pytest 3-ai-agent/tests -q
@@ -80,7 +80,23 @@ def test_score_is_0_to_1_when_healthy_and_a_distance_that_does_not_flatten_when_
 def test_min_healthy_pods_is_the_smallest_count_the_model_calls_healthy(bundle):
     assert hm.min_healthy_pods(bundle, 40) == (1, True)
     assert hm.min_healthy_pods(bundle, 120) == (2, True)
-    assert hm.min_healthy_pods(bundle, 900) == (2, False)
+    assert hm.min_healthy_pods(bundle, 900) == (2, False)    # above every band: the largest
+    assert hm.min_healthy_pods(bundle, 2) == (1, False)      # below every band: the smallest (v12, A31)
+    assert hm.min_healthy_pods(bundle, 10.0)[0] == 1         # at the bottom edge of the band, healthy or not
+
+
+def test_every_support_vector_sits_on_the_load_axis_so_the_decision_factorises(bundle):
+    """A31: with healthy data within the safe level, the kernel sum of n pods is exp(-gamma r^2) * K_n(load), r = the
+    distance above the safe level; so the latency and errors tolerated follow from one function of the load."""
+    model, g = bundle["model"], bundle["gamma"]
+    assert np.all(model.support_vectors_[:, 1:3] == 0.0)
+    rho = float(model.offset_[0])
+    for rps in (15.0, 40.0, 70.0):
+        k = hm.decision(bundle, reading(rps=rps, p95=0.1))[0] + rho            # K_1(load) at the safe level
+        for p95, err in ((0.3, 0.0), (0.25, 0.004), (0.32, 0.003)):
+            x = hm.transform(PARAMS, reading(rps=rps, p95=p95, err=err))[0]
+            r2 = x[1] ** 2 + x[2] ** 2
+            assert hm.decision(bundle, reading(rps=rps, p95=p95, err=err))[0] + rho == pytest.approx(k * math.exp(-g * r2))
 
 
 def test_embedding_and_bundle_check(bundle, tmp_path):

@@ -153,13 +153,15 @@ def _capacity_context():
 
 CAPACITY_CONTEXT = _capacity_context()
 
-# The agent: v11 (2026-10-27; design_decisions.md A30). As v10 (A28: the score reads as a distance from healthy, and
-# the minimum pod count in the facts is the smallest count the model calls healthy for the load), with the v11 health
-# model: inputs in NFR units with no tuned weights, and the explanation of a score against the model's own bands and
-# the safe level. As v9 (A24) otherwise: one One-Class SVM on the NFR metrics measured at the ingress wakes it; it
-# scales or restarts the whole app; code verifies the result by the model's score. v10: git tag v10-campaign; v9:
+# The agent: v12 (2026-11-01; design_decisions.md A31). As v11 (A30: inputs in NFR units with no tuned weights, the
+# explanation of a score against the model's own bands and the safe level), with a model retrained with the 1-pod low
+# end and tested with range probes (no hole in any band), the minimum pod count below every band = the smallest, and
+# the verification judging the trajectory from 10 s after the rollout. As v10 (A28: the score reads as a distance from
+# healthy, and the minimum pod count in the facts is the smallest count the model calls healthy for the load) and v9
+# (A24) otherwise: one One-Class SVM on the NFR metrics measured at the ingress wakes it; it scales or restarts the
+# whole app; code verifies the result by the model's score. v11: git tag v11-campaign; v10: v10-campaign; v9:
 # v9-campaign; v8.1 and earlier: v8.1-campaign.
-AGENT_VERSION = "v11"
+AGENT_VERSION = "v12"
 
 # The LLM decides and acts; code does everything around it (memory lookup before
 # the run, verification and memory save after it). add_base_tools=False: the
@@ -261,7 +263,8 @@ def _recent_actions_text(now=None):
 # for the load a rising trend reaches in REACTION_MINUTES, the time until new pods serve (detection, the agent, a new
 # pod; added 2026-10-23 after a smoke run in which a ramp at 96% of capacity was called a transient). The headroom is
 # in the model itself: its healthy data stop at the safe level, 0.25 s against the 0.35 s objective. A falling load is
-# not anticipated (scale-downs stay conservative). v9 used 15% headroom over the capacity table instead.
+# not anticipated (scale-downs stay conservative). v9 used 15% headroom over the capacity table instead. When no count
+# is healthy, the facts say whether the load is below every band (the smallest count) or above (the largest; A31).
 REACTION_MINUTES = 1.5
 
 
@@ -302,7 +305,9 @@ def _computed_facts(metrics):
     need, projected, covered = _minimum_pods(rps, trend)
     lines.append(f"- Load: {rps:.1f} rps on {reps} pod(s) ({rps / max(reps, 1):.1f} per pod); trend over the last "
                  f"minute: {trend_text}.")
-    beyond = "" if covered else " (the maximum allowed: no pod count is healthy for this load)"
+    beyond = ("" if covered else
+              " (the smallest count: the load is below every pod count's healthy band)" if need == min(bands) else
+              " (the maximum allowed: no pod count is healthy for this load)")
     trend_note = (f", and for the {projected:.0f} rps the trend reaches in {REACTION_MINUTES * 60:.0f} s (the time "
                   "until new pods serve)") if projected > rps + 0.5 else ""
     lines.append(f"- Minimum pod count the health model calls healthy for this load{trend_note}: {need}{beyond}. "

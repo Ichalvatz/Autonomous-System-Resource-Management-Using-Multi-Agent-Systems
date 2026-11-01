@@ -1,83 +1,228 @@
 {
   "chosen": {
-    "gamma": 0.5,
+    "gamma": 0.1,
     "probe_failures": 0,
     "failed": [],
+    "probes": 34,
+    "intervals": {
+      "1": [
+        [
+          1.001300905269137,
+          87.32060853646402
+        ]
+      ],
+      "2": [
+        [
+          73.49680457397652,
+          162.06530506637841
+        ]
+      ],
+      "3": [
+        [
+          123.25749740060031,
+          251.25396369534423
+        ]
+      ]
+    },
     "monotone": true,
     "mono_flips": 0,
     "mono_worst_rise": 0.0,
+    "on_load_axis": true,
     "noise_eps": 0.1423,
-    "support_vectors": 8,
-    "held_out_flagged": 18,
-    "held_out_total": 181,
+    "support_vectors": 6,
+    "held_out_flagged": 16,
+    "held_out_total": 210,
     "held_out_wakes": 2,
-    "margin_over_noise": 0.905
+    "margin_over_noise": 0.642
   },
-  "top": [
-    {
-      "gamma": 0.5,
-      "probe_failures": 0,
-      "failed": [],
-      "monotone": true,
-      "mono_flips": 0,
-      "mono_worst_rise": 0.0,
-      "noise_eps": 0.1423,
-      "support_vectors": 8,
-      "held_out_flagged": 18,
-      "held_out_total": 181,
-      "held_out_wakes": 2,
-      "margin_over_noise": 0.905
-    },
-    {
-      "gamma": 0.2,
-      "probe_failures": 0,
-      "failed": [],
-      "monotone": true,
-      "mono_flips": 0,
-      "mono_worst_rise": 0.0,
-      "noise_eps": 0.1423,
-      "support_vectors": 6,
-      "held_out_flagged": 18,
-      "held_out_total": 181,
-      "held_out_wakes": 2,
-      "margin_over_noise": 0.781
-    },
+  "candidates": [
     {
       "gamma": 0.1,
       "probe_failures": 0,
       "failed": [],
+      "probes": 34,
+      "intervals": {
+        "1": [
+          [
+            1.001300905269137,
+            87.32060853646402
+          ]
+        ],
+        "2": [
+          [
+            73.49680457397652,
+            162.06530506637841
+          ]
+        ],
+        "3": [
+          [
+            123.25749740060031,
+            251.25396369534423
+          ]
+        ]
+      },
       "monotone": true,
       "mono_flips": 0,
       "mono_worst_rise": 0.0,
+      "on_load_axis": true,
       "noise_eps": 0.1423,
       "support_vectors": 6,
-      "held_out_flagged": 18,
-      "held_out_total": 181,
+      "held_out_flagged": 16,
+      "held_out_total": 210,
       "held_out_wakes": 2,
-      "margin_over_noise": 0.271
+      "margin_over_noise": 0.642
+    },
+    {
+      "gamma": 0.2,
+      "probe_failures": 2,
+      "failed": [
+        "1p HEALTHY across the band 1.1-83.0 rps",
+        "1p ONE healthy interval (no hole, no island)"
+      ],
+      "probes": 34,
+      "intervals": {
+        "1": [
+          [
+            1.001300905269137,
+            7.9807975018335755
+          ],
+          [
+            10.179219376140129,
+            87.32060853646402
+          ]
+        ],
+        "2": [
+          [
+            73.31076432486023,
+            161.65507403793544
+          ]
+        ],
+        "3": [
+          [
+            122.94549940756136,
+            251.25396369534423
+          ]
+        ]
+      },
+      "monotone": true,
+      "mono_flips": 0,
+      "mono_worst_rise": 0.0,
+      "on_load_axis": true,
+      "noise_eps": 0.1423,
+      "support_vectors": 7,
+      "held_out_flagged": 18,
+      "held_out_total": 210,
+      "held_out_wakes": 2,
+      "margin_over_noise": -0.109
+    },
+    {
+      "gamma": 0.5,
+      "probe_failures": 2,
+      "failed": [
+        "1p HEALTHY across the band 1.1-83.0 rps",
+        "1p ONE healthy interval (no hole, no island)"
+      ],
+      "probes": 34,
+      "intervals": {
+        "1": [
+          [
+            0.9987663424274412,
+            4.722796936002379
+          ],
+          [
+            6.907260067969195,
+            14.080088489151658
+          ],
+          [
+            18.049907776718054,
+            87.09957650848311
+          ]
+        ],
+        "2": [
+          [
+            73.31076432486023,
+            162.06530506637841
+          ]
+        ],
+        "3": [
+          [
+            123.25749740060031,
+            251.25396369534423
+          ]
+        ]
+      },
+      "monotone": true,
+      "mono_flips": 0,
+      "mono_worst_rise": 0.0,
+      "on_load_axis": true,
+      "noise_eps": 0.1423,
+      "support_vectors": 14,
+      "held_out_flagged": 27,
+      "held_out_total": 210,
+      "held_out_wakes": 4,
+      "margin_over_noise": -0.106
     },
     {
       "gamma": 1.0,
-      "probe_failures": 0,
-      "failed": [],
+      "probe_failures": 3,
+      "failed": [
+        "1p HEALTHY across the band 1.1-83.0 rps",
+        "1p ONE healthy interval (no hole, no island)",
+        "1p IDLE 1.05-4 rps"
+      ],
+      "probes": 34,
+      "intervals": {
+        "1": [
+          [
+            1.001300905269137,
+            3.148369055397814
+          ],
+          [
+            3.674759823252886,
+            7.840455962747362
+          ],
+          [
+            11.88113138495785,
+            22.163202593026057
+          ],
+          [
+            26.331816039594443,
+            87.09957650848311
+          ]
+        ],
+        "2": [
+          [
+            73.31076432486023,
+            162.06530506637841
+          ]
+        ],
+        "3": [
+          [
+            123.57028714891389,
+            250.61797209995086
+          ]
+        ]
+      },
       "monotone": true,
       "mono_flips": 0,
       "mono_worst_rise": 0.0,
+      "on_load_axis": true,
       "noise_eps": 0.1423,
-      "support_vectors": 12,
-      "held_out_flagged": 36,
-      "held_out_total": 181,
+      "support_vectors": 15,
+      "held_out_flagged": 28,
+      "held_out_total": 210,
       "held_out_wakes": 4,
-      "margin_over_noise": 0.784
+      "margin_over_noise": -0.051
     }
   ],
   "acceptance": {
     "all_probes_pass": true,
-    "monotone_in_latency": true,
-    "held_out_wakes_<=_2": true
+    "monotone_in_latency_and_errors": true,
+    "held_out_wakes_<=_2": true,
+    "support_vectors_on_the_load_axis": true
   },
   "noise_eps": 0.14225427663682688,
-  "decision_noise": 0.01053789330598539,
+  "decision_noise": 0.00553916109651222,
   "params": {
     "safe_p95": 0.25,
     "nfr_p95": 0.35,
@@ -87,30 +232,88 @@
   },
   "bands": {
     "1": [
-      3.9,
-      87.0
+      1.0,
+      87.3
     ],
     "2": [
-      73.3,
-      161.5
+      73.5,
+      162.1
     ],
     "3": [
-      123.7,
-      251.5
+      123.3,
+      251.3
+    ]
+  },
+  "deadbands": {
+    "1-2": [
+      73.5,
+      87.3
+    ],
+    "2-3": [
+      123.3,
+      162.1
     ]
   },
   "pos_ref": {
-    "1": 0.027733992503581772,
-    "2": 0.04022491696279479,
-    "3": 0.033751139399600394
+    "1": 0.06761004652351488,
+    "2": 0.012313224588699545,
+    "3": 0.010012265314281343
+  },
+  "tolerance": {
+    "1": {
+      "max_r": 0.815,
+      "at_rps": 10.8,
+      "max_p95": 0.329,
+      "max_errors": 0.0083,
+      "edge_p95": [
+        0.269,
+        0.27
+      ],
+      "edge_errors": [
+        0.003,
+        0.0031
+      ]
+    },
+    "2": {
+      "max_r": 0.39,
+      "at_rps": 109.1,
+      "max_p95": 0.285,
+      "max_errors": 0.0045,
+      "edge_p95": [
+        0.266,
+        0.267
+      ],
+      "edge_errors": [
+        0.0027,
+        0.0027
+      ]
+    },
+    "3": {
+      "max_r": 0.352,
+      "at_rps": 176.2,
+      "max_p95": 0.281,
+      "max_errors": 0.0042,
+      "edge_p95": [
+        0.266,
+        0.266
+      ],
+      "edge_errors": [
+        0.0026,
+        0.0027
+      ]
+    }
   },
   "memory_similar_max": 0.4159390864305017,
   "train_below_zero": 5,
-  "n_train": 181,
+  "n_train": 210,
+  "n_train_by_segment": {
+    "ramp": 181,
+    "low-end hold": 29
+  },
   "rejected": {
     "above_safe_p95": 7,
     "errors": 0,
-    "low_traffic": 0,
+    "low_traffic": 1,
     "pods_not_ready_or_changing": 0
   },
   "monotonicity": {
@@ -119,243 +322,315 @@
   },
   "probes": [
     {
-      "label": "1p HEALTHY mid-band",
-      "score": 1.0,
-      "decision": 0.04403,
+      "no": 1,
+      "label": "1p HEALTHY across the band 1.1-83.0 rps",
+      "passed": true,
+      "worst_rps": 1.05,
+      "worst_decision": 0.00549,
+      "worst_score": 0.0813,
       "expect_anomaly": false
     },
     {
-      "label": "1p HEALTHY top-band p95 0.16s",
-      "score": 0.3493,
-      "decision": 0.00969,
+      "no": 2,
+      "label": "1p ONE healthy interval (no hole, no island)",
+      "passed": true,
+      "intervals": [
+        [
+          1.001300905269137,
+          87.32060853646402
+        ]
+      ]
+    },
+    {
+      "no": 3,
+      "label": "1p ABOVE the band (>= 1.1x top, 96.1 rps)",
+      "passed": true,
+      "worst_rps": 96.14,
+      "worst_decision": -0.0116,
+      "worst_score": -0.3256,
+      "expect_anomaly": true
+    },
+    {
+      "no": 5,
+      "label": "1p NFR p95 0.35s at every load",
+      "passed": true,
+      "worst_rps": 10.76,
+      "worst_decision": -0.03632,
+      "worst_score": -0.5795,
+      "expect_anomaly": true
+    },
+    {
+      "no": 6,
+      "label": "1p NFR 1% errors at every load",
+      "passed": true,
+      "worst_rps": 10.76,
+      "worst_decision": -0.03632,
+      "worst_score": -0.5795,
+      "expect_anomaly": true
+    },
+    {
+      "no": 7,
+      "label": "2p AFTER scale-up from 1 (87.3-96.1 rps)",
+      "passed": true,
+      "worst_rps": 87.32,
+      "worst_decision": 0.01155,
+      "worst_score": 0.938,
       "expect_anomaly": false
     },
     {
-      "label": "1p FAST low-band (p95 at the floor)",
-      "score": 0.3438,
-      "decision": 0.00953,
+      "no": 9,
+      "label": "1p IDLE 1.05-4 rps",
+      "passed": true,
+      "worst_rps": 1.05,
+      "worst_decision": 0.00549,
+      "worst_score": 0.0812,
       "expect_anomaly": false
     },
     {
-      "label": "1p NFR p95 0.35s low-band",
-      "score": -0.9882,
-      "decision": -0.31328,
-      "expect_anomaly": true
-    },
-    {
-      "label": "1p FAST mid-band (p95 at the floor)",
-      "score": 1.0,
-      "decision": 0.04403,
-      "expect_anomaly": false
-    },
-    {
-      "label": "1p NFR p95 0.35s mid-band",
-      "score": -0.9456,
-      "decision": -0.29235,
-      "expect_anomaly": true
-    },
-    {
-      "label": "1p FAST top-band (p95 at the floor)",
-      "score": 0.3493,
-      "decision": 0.00969,
-      "expect_anomaly": false
-    },
-    {
-      "label": "1p NFR p95 0.35s top-band",
-      "score": -0.9881,
-      "decision": -0.31318,
-      "expect_anomaly": true
-    },
-    {
-      "label": "1p NFR 1% errors",
-      "score": -0.9456,
-      "decision": -0.29235,
-      "expect_anomaly": true
-    },
-    {
-      "label": "1p ABOVE the band (1.1x top)",
-      "score": -0.2328,
-      "decision": -0.02168,
-      "expect_anomaly": true
-    },
-    {
+      "no": 10,
       "label": "1p STUCK p95 3s",
-      "score": -7.378,
-      "decision": -0.81089,
+      "passed": true,
+      "worst_rps": 44.2,
+      "worst_decision": -1.09506,
+      "worst_score": -7.3519,
       "expect_anomaly": true
     },
     {
+      "no": 10,
       "label": "1p OUTAGE 100% 5xx",
-      "score": -110.9995,
-      "decision": -0.81089,
+      "passed": true,
+      "worst_rps": 44.2,
+      "worst_decision": -1.10001,
+      "worst_score": -110.9978,
       "expect_anomaly": true
     },
     {
-      "label": "2p HEALTHY mid-band",
-      "score": 1.0,
-      "decision": 0.05332,
+      "no": 10,
+      "label": "1p STUCK as measured 2026-10-28 (p95 4.6s, 48% 5xx)",
+      "passed": true,
+      "worst_rps": 44.2,
+      "worst_decision": -1.10001,
+      "worst_score": -53.9169,
+      "expect_anomaly": true
+    },
+    {
+      "no": 10,
+      "label": "1p CPUHOG (p95 0.7s, 0% 5xx)",
+      "passed": true,
+      "worst_rps": 44.2,
+      "worst_decision": -0.64705,
+      "worst_score": -2.9787,
+      "expect_anomaly": true
+    },
+    {
+      "no": 1,
+      "label": "2p HEALTHY across the band 76.8-154.0 rps",
+      "passed": true,
+      "worst_rps": 76.84,
+      "worst_decision": 0.00371,
+      "worst_score": 0.3009,
       "expect_anomaly": false
     },
     {
-      "label": "2p HEALTHY top-band p95 0.18s",
-      "score": 0.3177,
-      "decision": 0.01278,
+      "no": 2,
+      "label": "2p ONE healthy interval (no hole, no island)",
+      "passed": true,
+      "intervals": [
+        [
+          73.49680457397652,
+          162.06530506637841
+        ]
+      ]
+    },
+    {
+      "no": 3,
+      "label": "2p ABOVE the band (>= 1.1x top, 178.3 rps)",
+      "passed": true,
+      "worst_rps": 178.33,
+      "worst_decision": -0.00901,
+      "worst_score": -0.2869,
+      "expect_anomaly": true
+    },
+    {
+      "no": 4,
+      "label": "2p WASTE (<= 0.8x bottom, 58.5 rps)",
+      "passed": true,
+      "worst_rps": 58.54,
+      "worst_decision": -0.02418,
+      "worst_score": -0.4714,
+      "expect_anomaly": true
+    },
+    {
+      "no": 5,
+      "label": "2p NFR p95 0.35s at every load",
+      "passed": true,
+      "worst_rps": 109.14,
+      "worst_decision": -0.08942,
+      "worst_score": -0.9208,
+      "expect_anomaly": true
+    },
+    {
+      "no": 6,
+      "label": "2p NFR 1% errors at every load",
+      "passed": true,
+      "worst_rps": 109.14,
+      "worst_decision": -0.08942,
+      "worst_score": -0.9208,
+      "expect_anomaly": true
+    },
+    {
+      "no": 7,
+      "label": "3p AFTER scale-up from 2 (162.1-178.3 rps)",
+      "passed": true,
+      "worst_rps": 162.07,
+      "worst_decision": 0.01298,
+      "worst_score": 1.0,
       "expect_anomaly": false
     },
     {
-      "label": "2p FAST low-band (p95 at the floor)",
-      "score": 0.3027,
-      "decision": 0.01218,
+      "no": 8,
+      "label": "1p AFTER scale-down from 2 (58.5-73.5 rps)",
+      "passed": true,
+      "worst_rps": 73.5,
+      "worst_decision": 0.01875,
+      "worst_score": 0.2773,
       "expect_anomaly": false
     },
     {
-      "label": "2p NFR p95 0.35s low-band",
-      "score": -0.985,
-      "decision": -0.31167,
-      "expect_anomaly": true
-    },
-    {
-      "label": "2p FAST mid-band (p95 at the floor)",
-      "score": 1.0,
-      "decision": 0.05332,
-      "expect_anomaly": false
-    },
-    {
-      "label": "2p NFR p95 0.35s mid-band",
-      "score": -0.9342,
-      "decision": -0.28672,
-      "expect_anomaly": true
-    },
-    {
-      "label": "2p FAST top-band (p95 at the floor)",
-      "score": 0.3177,
-      "decision": 0.01278,
-      "expect_anomaly": false
-    },
-    {
-      "label": "2p NFR p95 0.35s top-band",
-      "score": -0.9842,
-      "decision": -0.31131,
-      "expect_anomaly": true
-    },
-    {
-      "label": "2p NFR 1% errors",
-      "score": -0.9342,
-      "decision": -0.28672,
-      "expect_anomaly": true
-    },
-    {
-      "label": "2p ABOVE the band (1.1x top)",
-      "score": -0.2693,
-      "decision": -0.02887,
-      "expect_anomaly": true
-    },
-    {
-      "label": "2p WASTE (0.8x bottom)",
-      "score": -0.439,
-      "decision": -0.0745,
-      "expect_anomaly": true
-    },
-    {
-      "label": "1p AFTER scale-down",
-      "score": 1.0,
-      "decision": 0.04551,
-      "expect_anomaly": false
-    },
-    {
+      "no": 10,
       "label": "2p STUCK p95 3s",
-      "score": -7.3765,
-      "decision": -0.81089,
+      "passed": true,
+      "worst_rps": 117.65,
+      "worst_decision": -1.09523,
+      "worst_score": -7.3752,
       "expect_anomaly": true
     },
     {
+      "no": 10,
       "label": "2p OUTAGE 100% 5xx",
-      "score": -110.9994,
-      "decision": -0.81089,
+      "passed": true,
+      "worst_rps": 117.65,
+      "worst_decision": -1.10001,
+      "worst_score": -110.9993,
       "expect_anomaly": true
     },
     {
-      "label": "3p HEALTHY mid-band",
-      "score": 1.0,
-      "decision": 0.04507,
+      "no": 10,
+      "label": "2p STUCK as measured 2026-10-28 (p95 4.6s, 48% 5xx)",
+      "passed": true,
+      "worst_rps": 117.65,
+      "worst_decision": -1.10001,
+      "worst_score": -53.9201,
+      "expect_anomaly": true
+    },
+    {
+      "no": 10,
+      "label": "2p CPUHOG (p95 0.7s, 0% 5xx)",
+      "passed": true,
+      "worst_rps": 117.65,
+      "worst_decision": -0.66239,
+      "worst_score": -3.036,
+      "expect_anomaly": true
+    },
+    {
+      "no": 1,
+      "label": "3p HEALTHY across the band 129.5-238.5 rps",
+      "passed": true,
+      "worst_rps": 129.55,
+      "worst_decision": 0.00356,
+      "worst_score": 0.3554,
       "expect_anomaly": false
     },
     {
-      "label": "3p HEALTHY top-band p95 0.23s",
-      "score": 0.3724,
-      "decision": 0.01257,
+      "no": 2,
+      "label": "3p ONE healthy interval (no hole, no island)",
+      "passed": true,
+      "intervals": [
+        [
+          123.25749740060031,
+          251.25396369534423
+        ]
+      ]
+    },
+    {
+      "no": 3,
+      "label": "3p ABOVE the band (>= 1.1x top, 276.2 rps)",
+      "passed": true,
+      "worst_rps": 276.21,
+      "worst_decision": -0.00809,
+      "worst_score": -0.2717,
+      "expect_anomaly": true
+    },
+    {
+      "no": 4,
+      "label": "3p WASTE (<= 0.8x bottom, 98.7 rps)",
+      "passed": true,
+      "worst_rps": 98.7,
+      "worst_decision": -0.02204,
+      "worst_score": -0.4499,
+      "expect_anomaly": true
+    },
+    {
+      "no": 5,
+      "label": "3p NFR p95 0.35s at every load",
+      "passed": true,
+      "worst_rps": 176.2,
+      "worst_decision": -0.09226,
+      "worst_score": -0.936,
+      "expect_anomaly": true
+    },
+    {
+      "no": 6,
+      "label": "3p NFR 1% errors at every load",
+      "passed": true,
+      "worst_rps": 176.2,
+      "worst_decision": -0.09226,
+      "worst_score": -0.936,
+      "expect_anomaly": true
+    },
+    {
+      "no": 8,
+      "label": "2p AFTER scale-down from 3 (98.7-123.3 rps)",
+      "passed": true,
+      "worst_rps": 123.26,
+      "worst_decision": 0.01524,
+      "worst_score": 1.0,
       "expect_anomaly": false
     },
     {
-      "label": "3p FAST low-band (p95 at the floor)",
-      "score": 0.3555,
-      "decision": 0.012,
-      "expect_anomaly": false
-    },
-    {
-      "label": "3p NFR p95 0.35s low-band",
-      "score": -0.9852,
-      "decision": -0.31178,
-      "expect_anomaly": true
-    },
-    {
-      "label": "3p FAST mid-band (p95 at the floor)",
-      "score": 1.0,
-      "decision": 0.04507,
-      "expect_anomaly": false
-    },
-    {
-      "label": "3p NFR p95 0.35s mid-band",
-      "score": -0.9444,
-      "decision": -0.29172,
-      "expect_anomaly": true
-    },
-    {
-      "label": "3p FAST top-band (p95 at the floor)",
-      "score": 0.3724,
-      "decision": 0.01257,
-      "expect_anomaly": false
-    },
-    {
-      "label": "3p NFR p95 0.35s top-band",
-      "score": -0.9845,
-      "decision": -0.31144,
-      "expect_anomaly": true
-    },
-    {
-      "label": "3p NFR 1% errors",
-      "score": -0.9444,
-      "decision": -0.29172,
-      "expect_anomaly": true
-    },
-    {
-      "label": "3p ABOVE the band (1.1x top)",
-      "score": -0.2569,
-      "decision": -0.02631,
-      "expect_anomaly": true
-    },
-    {
-      "label": "3p WASTE (0.8x bottom)",
-      "score": -0.4257,
-      "decision": -0.07023,
-      "expect_anomaly": true
-    },
-    {
-      "label": "2p AFTER scale-down",
-      "score": 1.0,
-      "decision": 0.05195,
-      "expect_anomaly": false
-    },
-    {
+      "no": 10,
       "label": "3p STUCK p95 3s",
-      "score": -7.3778,
-      "decision": -0.81089,
+      "passed": true,
+      "worst_rps": 187.24,
+      "worst_decision": -1.09524,
+      "worst_score": -7.377,
       "expect_anomaly": true
     },
     {
+      "no": 10,
       "label": "3p OUTAGE 100% 5xx",
-      "score": -110.9995,
-      "decision": -0.81089,
+      "passed": true,
+      "worst_rps": 187.24,
+      "worst_decision": -1.10001,
+      "worst_score": -110.9995,
+      "expect_anomaly": true
+    },
+    {
+      "no": 10,
+      "label": "3p STUCK as measured 2026-10-28 (p95 4.6s, 48% 5xx)",
+      "passed": true,
+      "worst_rps": 187.24,
+      "worst_decision": -1.10001,
+      "worst_score": -53.9203,
+      "expect_anomaly": true
+    },
+    {
+      "no": 10,
+      "label": "3p CPUHOG (p95 0.7s, 0% 5xx)",
+      "passed": true,
+      "worst_rps": 187.24,
+      "worst_decision": -0.66354,
+      "worst_score": -3.0403,
       "expect_anomaly": true
     }
   ]

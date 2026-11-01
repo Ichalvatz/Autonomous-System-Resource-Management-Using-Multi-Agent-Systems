@@ -1,6 +1,6 @@
 """
-Thesis comparison, phase 2 (2026-10-22): the agent (label AGENT_LABEL, default llm-v11; llm-v10 for
-campaign-2026-10-26, llm-v9 for campaign-2026-10-23) against the native Kubernetes mechanism (hpa), both on the same deployment with the same
+Thesis comparison, phase 2 (2026-10-22): the agent (label AGENT_LABEL, default llm-v12; llm-v11 for
+campaign-2026-10-28, llm-v10 for campaign-2026-10-26, llm-v9 for campaign-2026-10-23) against the native Kubernetes mechanism (hpa), both on the same deployment with the same
 readiness and liveness probes, measured at the ingress against the NFRs (nfr_metrics.py: p95 < 0.35 s, errors < 1%).
 
 Reads 4-load-testing/results_nfr.csv and results_nfr_<fault>.csv (one row per run, written by evaluate_run.py)
@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(ROOT, "3-ai-agent"))
 import nfr_metrics  # noqa: E402
 
 SLO_P95, MAX_ERR = nfr_metrics.NFR_P95, nfr_metrics.NFR_ERRORS
-AGENT = os.environ.get("AGENT_LABEL", "llm-v11")
+AGENT = os.environ.get("AGENT_LABEL", "llm-v12")
 ORDER = ["hpa", AGENT]
 COLUMNS = [
     ("nfr_violation_s", "NFR violation (s; p95 > 0.35 s or errors > 1%)"),

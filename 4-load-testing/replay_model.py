@@ -1,21 +1,25 @@
 """
-Offline replay of the current health model on recorded data, before any live run (design_decisions.md A28 / A30,
-acceptance criteria 2-5). Uses the runtime's own code: the detector's gates and streak (anomaly_detector), the
+Offline replay of the current health model on recorded data, before any live run (design_decisions.md A28 / A30 /
+A31, acceptance criteria 2-5). Uses the runtime's own code: the detector's gates and streak (anomaly_detector), the
 verification rule (health_model.judge_trajectory with agent_tools' timings) and the agent's minimum pod count
-(agent._minimum_pods). "Recorded" = what the agent of the campaign (v9 or v10) or its validation logged.
+(agent._minimum_pods). "Recorded" = what the agent of the campaign (v9, v10 or v11) or its validation logged;
+"reference" = the previous model (REFERENCE, v11) replayed on the same data.
 
   2. The live detector validations A-I (dry runs): the readings the detector of the time evaluated and the phases,
-     2026-10-23 (v9: 5-ml-training/v9/, archive/detector_validation_v9/) and 2026-10-26 (v10: 5-ml-training/v10/,
-     archive/detector_validation_v10/).
+     2026-10-23 (v9: 5-ml-training/v9/, archive/detector_validation_v9/), 2026-10-26 (v10: 5-ml-training/v10/,
+     archive/detector_validation_v10/) and 2026-10-27 (v11: 5-ml-training/v11/, archive/detector_validation_v11/).
   3. The valid runs of the campaign (results_nfr*.csv, notes = TAG): each run's series.json (10 s readings) through
      the detector logic: wake-ups after each fault, false wake-ups before a fault or in the first 5 min of the normal
-     load, and the first wake-up of the normal load against the recorded one (controller.log).
+     load, and the first wake-up of the normal load against the reference model on the same series (A31: both on the
+     series' 10 s grid) and against the recorded one (controller.log).
   4. The verification of every action of the agent runs: the readings the recorded verification logged in
      controller.log (every 10 s after the rollout), continued from series.json when the current model needs more.
   5. The minimum pod count (agent._minimum_pods) at every wake-up of the agent runs (incident_log.csv), with the
-     load trend of the last minute from series.json, against the right action.
+     load trend of the last minute from series.json, against the right action; and 1 at idle load for 1-3 pods (A31).
+  For information: the user's manual demo run of 2026-11-01 (archive/manual_demo_2026-11-01/series.json, from
+  Prometheus), wake-ups of the current and the reference model.
 
-Usage (repo root):  .venv/bin/python3 4-load-testing/replay_model.py [TAG] > 4-load-testing/replay_v11_<TAG>.md
+Usage (repo root):  .venv/bin/python3 4-load-testing/replay_model.py [TAG] > 4-load-testing/replay_v12_<TAG>.md
 """
 import csv
 import json
@@ -40,7 +44,12 @@ VALIDATIONS = [  # (day, readings the detector of the time evaluated, phases, it
      os.path.join(LT, "archive", "detector_validation_v9", "detector_validation_phases.csv"), "v9"),
     ("2026-10-26", os.path.join(ROOT, "5-ml-training", "v10", "dry_run_readings_validation_2026-10-26.csv"),
      os.path.join(LT, "archive", "detector_validation_v10", "detector_validation_phases.csv"), "v10"),
+    ("2026-10-27", os.path.join(ROOT, "5-ml-training", "v11", "dry_run_readings_validation_2026-10-27.csv"),
+     os.path.join(LT, "archive", "detector_validation_v11", "detector_validation_phases.csv"), "v11"),
 ]
+REFERENCE_NAME = "v11"
+REFERENCE = hm.load(os.path.join(ROOT, "5-ml-training", "v11", "health_model.pkl"))
+DEMO = os.path.join(LT, "archive", "manual_demo_2026-11-01")
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
 SCENARIOS = [("baseline", "results_nfr.csv"), ("stuck", "results_nfr_stuck.csv"), ("cpuhog", "results_nfr_cpuhog.csv")]
 NORMAL_START_S = 300          # the first 5 min of the normal load: 42.8 rps on 1 pod, nothing to do
@@ -61,8 +70,9 @@ def reading(throughput, p95, err, replicas, ready=None):
             "rps_per_pod": throughput / max(replicas, 1), "ready_replicas": replicas if ready is None else ready}
 
 
-def detector(points, gated=True):
+def detector(points, gated=True, bundle=None):
     """Wake-ups of the detector logic over (t, reading or None) points: (wake time, streak start time) pairs."""
+    bundle = bundle or BUNDLE
     wakes, streak, start, last_reps, changed_at, cooldown_until = [], 0, None, None, None, -1e18
     for t, r in points:
         if r is None:
@@ -78,7 +88,7 @@ def detector(points, gated=True):
             if r["throughput"] < ad.MIN_THROUGHPUT_RPS:
                 streak = 0
                 continue
-        if hm.score(BUNDLE, r) < 0:
+        if hm.score(bundle, r) < 0:
             streak += 1
             start = t if streak == 1 else start
         else:
@@ -167,7 +177,7 @@ def judge(block_readings, end, points):
         if elapsed > agent_tools.VERIFY_MAX_SECONDS:
             return "UNSTABLE: still anomalous after 4 min", elapsed, k, max(0, k - len(block_readings))
         scores.append(hm.score(BUNDLE, r))
-        if full_at is None and elapsed >= agent_tools.VERIFY_WINDOW_FULL_SECONDS:
+        if full_at is None and elapsed >= agent_tools.VERIFY_JUDGE_FROM_SECONDS:
             full_at = k
         verdict = hm.judge_trajectory(scores, EPS, full_at)
         if verdict != "WAIT":
@@ -216,41 +226,44 @@ def main():
     # --- 3. campaign runs through the detector
     runs = valid_runs(tag)
     print(f"## 3. Campaign runs through the detector ({len(runs)} valid runs)\n")
-    print("| Run | Method | False wake-ups | Current model: first wake-up | Recorded agent's first wake-up |\n"
-          "|---|---|---|---|---|")
-    false_total, faults_woken, faults, normal_ok, normal_n = 0, 0, 0, 0, 0
+    print(f"| Run | Method | False wake-ups | Current model: first wake-up | {REFERENCE_NAME} model, same series | "
+          "Recorded agent's first wake-up |\n|---|---|---|---|---|---|")
+    false_total, faults_woken, faults, normal_ok, normal_n, normal_rec = 0, 0, 0, 0, 0, 0
     run_points = {}
     for scenario, label, run_dir in runs:
         start, end, fault, day = run_info(run_dir)
         points = series_points(run_dir)
         run_points[run_dir] = (points, day, start, end)
         w10 = detector(points)
+        wref = detector(points, bundle=REFERENCE)
         w9 = recorded_wakes(run_dir, day)
+        after = fault if fault else start + NORMAL_START_S
+        false = [w for w, _ in w10 if w < after]
+        first10 = next((w for w, _ in w10 if w >= after), None)
+        firstref = next((w for w, _ in wref if w >= after), None)
+        first9 = next((w for w in w9 if w >= after), None)
         if fault:
-            false = [w for w, _ in w10 if w < fault]
-            first10 = next((w for w, _ in w10 if w >= fault), None)
-            first9 = next((w for w in w9 if w >= fault), None)
             faults += 1
             faults_woken += first10 is not None
             ref, what = fault, "after the fault"
         else:
-            false = [w for w, _ in w10 if w < start + NORMAL_START_S]
-            first10 = next((w for w, _ in w10 if w >= start + NORMAL_START_S), None)
-            first9 = next((w for w in w9 if w >= start + NORMAL_START_S), None)
             ref, what = start, "after the start"
             if label != "hpa":
                 normal_n += 1
-                normal_ok += first10 is not None and first9 is not None and first10 <= first9
+                normal_ok += first10 is not None and firstref is not None and first10 <= firstref
+                normal_rec += first10 is not None and first9 is not None and first10 <= first9
         false_total += len(false)
         fmt = lambda w: f"{w - ref:.0f} s {what}" if w is not None else "none"
         print(f"| {scenario} {os.path.basename(run_dir)[-13:]} | {label} | {len(false)} | {fmt(first10)} | "
-              f"{fmt(first9) if label != 'hpa' else '(HPA run)'} |")
+              f"{fmt(firstref)} | {fmt(first9) if label != 'hpa' else '(HPA run)'} |")
     verdicts["3. campaign: a wake-up after every fault"] = faults_woken == faults
     verdicts["3. campaign: false wake-ups <= 1"] = false_total <= 1
-    verdicts["3. campaign: normal load, first wake-up not later than the recorded agent's"] = normal_ok == normal_n
+    verdicts[f"3. campaign: normal load, first wake-up not later than the {REFERENCE_NAME} model's on the same series"] = \
+        normal_ok == normal_n
     print(f"\nFaults woken: {faults_woken}/{faults}; false wake-ups: {false_total}; normal-load agent runs with the first "
-          f"wake-up no later than the recorded agent's: {normal_ok}/{normal_n}. After a run's first wake-up the series "
-          "holds what the recorded agent or the HPA did, so later wake-ups are not compared.\n")
+          f"wake-up no later than the {REFERENCE_NAME} model's on the same series: {normal_ok}/{normal_n} (than the recorded "
+          f"agent's, which the live detector timed off the series' 10 s grid: {normal_rec}/{normal_n}). After a run's "
+          "first wake-up the series holds what the recorded agent or the HPA did, so later wake-ups are not compared.\n")
 
     # --- 4. verification of every action
     print("## 4. Verification of the agent's actions (the recorded readings, then series.json)\n")
@@ -294,8 +307,27 @@ def main():
               f"{need} | {right} ({row['actions'] or 'no action'}) | {'✅' if ok else '❌'} |")
     verdicts[f"5. minimum pod count agrees with the right action at all {n} wake-ups"] = agree == n
     print(f"\nAgree: {agree}/{n}.\n")
+    idle = {(reps, rps): agent._minimum_pods(rps, 0.0)[0] for reps in (1, 2, 3) for rps in (1.0, 1.5, 2.0, 3.0, 4.0)}
+    verdicts["5. minimum pod count at idle load (1-4 rps, 1-3 pods) = 1"] = all(v == 1 for v in idle.values())
+    print("Idle load (A31): minimum pod count " + ", ".join(f"{rps:g} rps -> {v}" for (reps, rps), v in idle.items()
+                                                             if reps == 1) + " (the same for 2 and 3 pods: "
+          f"{all(idle[(2, r)] == idle[(1, r)] == idle[(3, r)] for r in (1.0, 1.5, 2.0, 3.0, 4.0))}).\n")
 
-    print("## Acceptance (A28 / A30, criteria 2-5)\n")
+    # --- for information: the user's manual demo run of 2026-11-01
+    if os.path.exists(os.path.join(DEMO, "series.json")):
+        points = series_points(os.path.relpath(DEMO, ROOT))
+        start = points[0][0]
+        print("## For information: the manual demo run of 2026-11-01 (demo.js; series from Prometheus)\n")
+        for name, bundle in (("current", BUNDLE), (REFERENCE_NAME, REFERENCE)):
+            w = detector(points, bundle=bundle)
+            neg1 = [(t, r) for t, r in points if r is not None and r["replicas"] == 1 and 10 <= r["throughput"] <= 80
+                    and hm.score(bundle, r) < 0]
+            print(f"- {name} model: wake-ups at " + (", ".join(f"+{t - start:.0f} s" for t, _ in w) or "none")
+                  + f"; anomalous readings on 1 pod at 10-80 rps: {len(neg1)}"
+                  + (" (" + ", ".join(f"{r['throughput']:.1f} rps" for _, r in neg1[:4]) + ")" if neg1 else ""))
+        print()
+
+    print("## Acceptance (A31, criteria 2-5)\n")
     for k, v in verdicts.items():
         print(f"- {'PASS' if v else '**FAIL**'}: {k}")
 

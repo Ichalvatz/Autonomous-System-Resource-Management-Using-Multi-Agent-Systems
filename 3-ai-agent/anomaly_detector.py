@@ -74,7 +74,7 @@ def print_summary(stats, started_at, dry_run):
 
 
 def load_model():
-    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v11 since 2026-10-27)."""
+    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v12 since 2026-11-01)."""
     try:
         return health_model.load(MODEL_FILENAME)
     except FileNotFoundError:

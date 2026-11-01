@@ -204,3 +204,21 @@ frontend, τα `.DS_Store`, το αδέσποτο `2-target-app/software-fronten
   `defense_qa.md`, `4-load-testing/archive/README.md`.
 - Οι παλιές παραπομπές μέσα στα ημερολόγια και στο ιστορικό μένουν όπως γράφτηκαν.
 
+
+## 11. Agent v12: ό,τι έφυγε με τα probes-εύρη (2026-11-01, Α31)
+
+Ο κώδικας του v11 βρίσκεται στο git tag `v11-campaign`. Τα αρχεία του μοντέλου του είναι στο `5-ml-training/v11/`: το bundle
+(gitignored· το replay του v12 το χρησιμοποιεί ως μοντέλο αναφοράς), το report, τα φιλτραρισμένα δεδομένα και οι μετρήσεις της
+ζωντανής επικύρωσης (27/10). Οι φάσεις και τα logs της επικύρωσης είναι στο `4-load-testing/archive/detector_validation_v11/`.
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| Τα 40 probes-σημεία της Α28 (`build_probes` με HEALTHY mid / top, FAST low / mid / top, NFR σε 3 θέσεις, ABOVE, WASTE, AFTER scale-down, STUCK, OUTAGE) | `train_health_baseline.py` | Probes-εύρη (Α31): κάθε σημείο έγινε το εύρος του, συν «καμία τρύπα, κανένα νησί», μετά από scale-up, αδράνεια, τα σφάλματα όπως μετρήθηκαν, μονοτονία και στα σφάλματα. Τα σημεία έχασαν την τρύπα του 1 pod στα 18 rps. |
+| `VERIFY_WINDOW_FULL_SECONDS = 60` | `agent_tools.py`, `replay_model.py`, όρισμα `window_full_at` του `judge_trajectory` | `VERIFY_JUDGE_FROM_SECONDS = 10`, όρισμα `judge_from`: η πορεία κρίνεται από τα 10 s (πρόταση του χρήστη, replay 61/61 STABLE). |
+| `min_healthy_pods` → ο μεγαλύτερος αριθμός όταν κανένας δεν είναι υγιής | `health_model.py`, `agent._computed_facts` | Ο μικρότερος αν το φορτίο είναι κάτω από κάθε ζώνη, ο μεγαλύτερος μόνο αν είναι πάνω. Τα γεγονότα το λένε. |
+| Η ετικέτα `llm-v11` ως default | `run_experiment.sh`, `compare_results.py`, `campaign_report.py` | `llm-v12`. Για την καμπάνια του v11: `AGENT_LABEL=llm-v11`. |
+| Οι μετρήσεις και τα logs της ζωντανής επικύρωσης του v11 στον βασικό φάκελο | `5-ml-training/dry_run_readings.csv`, `4-load-testing/detector_validation*` | Μεταφέρθηκαν (`git mv`) στο `5-ml-training/v11/` και στο `4-load-testing/archive/detector_validation_v11/`. Το `replay_model.py` τα ξαναπαίζει. |
+
+**Προστέθηκαν, όχι αφαιρέθηκαν:** η σκάλα σταθερού φορτίου του 1 pod στο `collect_healthy_data.py` (`--low-end-only`, στήλη
+`segment`), η χρονοσειρά της δοκιμής του χρήστη της 1/11 (`4-load-testing/archive/manual_demo_2026-11-01/series.json`, από το
+Prometheus) και το `4-load-testing/archive/v12_live_queue.sh`.

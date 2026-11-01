@@ -181,11 +181,16 @@ def test_verify_without_any_usable_reading_is_unverifiable():
     assert text.startswith("UNVERIFIABLE") and agent_tools.run_outcome["verification"] == "UNVERIFIABLE"
 
 
-@pytest.mark.parametrize("scores,full_at,expected", [
+@pytest.mark.parametrize("scores,judge_from,expected", [
     ([0.1], 0, "STABLE"),                                # the user's rule: one healthy reading is STABLE
-    ([-0.5, 0.1], None, "STABLE"),                       # also before the window holds only post-action data
-    ([-0.5, -0.9], None, "WAIT"),                        # before it, a fall may be the old minute: no verdict
-    ([-0.5] * 6 + [-0.6], 6, "WAIT"),                    # one post-action reading: nothing to compare yet
+    ([-0.5, 0.1], None, "STABLE"),                       # also before the comparisons start (+10 s, A31)
+    ([-0.5, -0.9], None, "WAIT"),                        # before it, a fall may be the dip right after the action
+    # the scale 1->2 of campaign-2026-10-28: the reading right after the rollout dips, then the score rises; judged
+    # from it (index 0) this was a false "worse", from +10 s (index 1) it waits and the next reading rises
+    ([-1.58, -3.86], 0, "UNSTABLE: worse"),
+    ([-1.58, -3.86], 1, "WAIT"),
+    ([-1.58, -3.86, -2.9], 1, "WAIT"),
+    ([-0.5] * 6 + [-0.6], 6, "WAIT"),                    # one reading to judge: nothing to compare yet
     ([-0.5] * 6 + [-0.6, -0.62], 6, "WAIT"),             # a fall within the noise
     ([-0.5] * 6 + [-0.6, -0.8], 6, "UNSTABLE: worse"),   # a fall beyond the noise
     ([-1.0] * 10, 6, "UNSTABLE: not improving"),         # no rise beyond the noise over 30 s
@@ -196,8 +201,8 @@ def test_verify_without_any_usable_reading_is_unverifiable():
     ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8], 6, "STABLE"),
     ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1], 6, "WAIT"),
 ])
-def test_judge_trajectory(scores, full_at, expected):
-    assert health_model.judge_trajectory(scores, 0.05, full_at).startswith(expected)
+def test_judge_trajectory(scores, judge_from, expected):
+    assert health_model.judge_trajectory(scores, 0.05, judge_from).startswith(expected)
 
 
 # ---------------------------------------------------------------- incident memory (the model's space)
@@ -560,8 +565,9 @@ def test_deployment_history_after_a_rollback(fake_cluster):
 
 def _fake_min_pods(_bundle, rps):
     """The smallest count whose band (BUNDLE["bands"]) holds rps, as health_model.min_healthy_pods would say."""
-    fits = [n for n, (lo, hi) in sorted(BUNDLE["bands"].items()) if lo <= rps <= hi]
-    return (fits[0], True) if fits else (3, False)
+    bands = sorted(BUNDLE["bands"].items())
+    fits = [n for n, (lo, hi) in bands if lo <= rps <= hi]
+    return (fits[0], True) if fits else (next((n for n, (lo, hi) in bands if rps <= hi), bands[-1][0]), False)
 
 
 def test_facts_take_the_minimum_pod_count_from_the_health_model_and_the_load_trend():
@@ -575,6 +581,8 @@ def test_facts_take_the_minimum_pod_count_from_the_health_model_and_the_load_tre
                                        "explanation": ["64.0% of requests fail (5xx)"]})
         waste = agent._computed_facts({**metrics(3, 105, score=-0.37), "load_trend_rps_per_min": -15.0})
         beyond = agent._computed_facts(metrics(3, 300, score=-0.5))
+        idle = agent._computed_facts(metrics(1, 2, score=-1.4))
+        idle3 = agent._computed_facts(metrics(3, 2, score=-2.0))
     assert "healthy for this load: 2. Current: 1." in over and "for 1 pod(s) is 4-87 rps: the load is ABOVE it" in over
     # the smoke run of 2026-10-23 05:04: 158 rps on 2 pods and rising is a capacity case, not a transient
     assert "RISING +22.0 rps per minute" in ramp and "for the 191 rps the trend reaches in 90 s" in ramp
@@ -583,6 +591,9 @@ def test_facts_take_the_minimum_pod_count_from_the_health_model_and_the_load_tre
     assert "Only 0 of 1 pod(s) are ready" in stuck and "Health score -63.00" in stuck and ": 1. Current: 1." in stuck
     assert ": 2. Current: 3." in waste and "falling" in waste and "BELOW it (over-provisioned)" in waste
     assert "3 (the maximum allowed: no pod count is healthy for this load)" in beyond
+    # below every band (v12, A31): the smallest count, not the largest (v10 / v11 said "minimum 3" for 1 pod at 2 rps)
+    assert ": 1 (the smallest count: the load is below every pod count's healthy band). Current: 1." in idle
+    assert ": 1 (the smallest count" in idle3 and "Current: 3." in idle3
 
 
 def test_prompt_classifies_by_the_minimum_pod_count_and_states_the_nfrs():
