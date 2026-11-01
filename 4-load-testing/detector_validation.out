@@ -1,0 +1,12 @@
+phase  replicas         expected  evaluated  flagged  wakes  first_wake  slo_breach  p95_median  rps_median  score_median
+    A         1           normal         29        1      0         NaN           1       0.092        42.8         0.842
+    B         1 ANOMALY overload         12        9      2        53.0           6       0.355       100.2        -1.114
+    C         2           normal         21        1      0         NaN           1       0.106       104.4         1.000
+    D         2 ANOMALY overload         12        7      1        74.0           4       0.274       176.0        -0.381
+    E         3           normal         21        1      0         NaN           1       0.130       181.7         1.000
+    F         3    ANOMALY waste         18       13      2        76.0           0       0.075       105.4        -0.365
+    G         2           normal         21        0      0         NaN           0       0.110       105.2         1.000
+    H         2    ANOMALY waste         18       14      2        68.0           0       0.076        42.9        -0.831
+    I         1           normal         15        0      0         NaN           0       0.090        42.8         0.842
+
+Anomaly phases detected: 4/4   Normal phases with wake-ups: 0/5 (0 wake-ups, of which in phases with SLO breaches: 0)

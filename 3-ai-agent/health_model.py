@@ -147,7 +147,7 @@ def explain(bundle, reading):
     return out or ["every metric is inside its healthy range for this pod count; only their combination is unusual"]
 
 
-def judge_trajectory(scores, eps, judge_from, stuck_readings=3):
+def judge_trajectory(scores, eps, judge_from, window_full_at, stuck_readings=3):
     """Verdict on the scores read every 10 s after an action's rollout converged (oldest first): the user's rule
     (2026-10-26, design_decisions.md A28), one reading at a time.
 
@@ -155,19 +155,21 @@ def judge_trajectory(scores, eps, judge_from, stuck_readings=3):
       UNSTABLE  worse: the score fell by more than eps since the reading before; or not improving: it has not risen by
                 more than eps over the last `stuck_readings` readings;
       WAIT      anomalous but moving back towards healthy, or too early to tell.
-    judge_from: index of the first reading the comparisons may use (VERIFY_JUDGE_FROM_SECONDS = 10 s after the
-    rollout, v12, A31): the reading right after an action can dip (judged from it, 6 of 61 recorded actions gave a false
-    "worse"). Before it only STABLE or WAIT. The 1 m windows still mix the old minute in for a while, but the direction
-    already means something: a reading moves from the old state towards the new one.
+    judge_from: index of the first reading "worse" may use (VERIFY_JUDGE_FROM_SECONDS = 10 s after the rollout, v12,
+    A31): the reading right after an action can dip (judged from it, 6 of 61 recorded actions gave a false "worse").
+    window_full_at: index of the first reading whose 1 m windows hold only post-action data; "not improving" uses only
+    these (A31.1). A fall is real even while the window still mixes the old minute in (new requests that are faster
+    cannot raise a window's p95, fewer errors cannot raise its error rate), but no rise is not: the p95 of a 1 m window
+    stays at the old level until the slow requests from before the action are below 5% of it (the smoke run of
+    2026-11-01 18:04: p95 0.48 s for 40 s after a right scale-up, then 0.24 s). Before judge_from only STABLE or WAIT.
     eps: the measurement noise of a reading in the model's units (bundle["noise_eps"]).
     """
     if scores and scores[-1] >= 0:
         return "STABLE"
-    post = scores[judge_from:] if judge_from is not None else []
-    if len(post) < 2:
-        return "WAIT"
-    if post[-1] < post[-2] - eps:
-        return f"UNSTABLE: worse (score {post[-2]:+.2f} -> {post[-1]:+.2f} in 10 s)"
+    judged = scores[judge_from:] if judge_from is not None else []
+    if len(judged) >= 2 and judged[-1] < judged[-2] - eps:
+        return f"UNSTABLE: worse (score {judged[-2]:+.2f} -> {judged[-1]:+.2f} in 10 s)"
+    post = scores[window_full_at:] if window_full_at is not None else []
     if len(post) > stuck_readings and post[-1] - post[-1 - stuck_readings] <= eps:
         return (f"UNSTABLE: not improving (score {post[-1 - stuck_readings]:+.2f} -> {post[-1]:+.2f} "
                 f"over the last {stuck_readings * 10} s)")

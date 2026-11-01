@@ -1,0 +1,35 @@
+                       label: llm-v12
+                       start: 2026-11-01 17:34:43
+                         end: 2026-11-01 17:50:44
+                duration_min: 16.0
+             nfr_violation_s: 100
+             slo_violation_s: 100
+                     error_s: 50
+                  errors_pct: 0.4
+                    p95_mean: 0.258
+                     p95_p99: 1.741
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 0
+           liveness_restarts: 0
+                on_battery_s: 960
+                 k6_requests: 54721
+                    k6_p95_s: 0.299
+               k6_failed_pct: 0.42
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 5
+                agent_s_mean: 19.4
+               agent_actions: 17:39 restart (STABLE)
+                       notes: smoke-v12-2026-11-01
+                     run_dir: 4-load-testing/eval_cpuhog_llm_20261101_1732
+                fault_at_min: 4.0
+                  recovery_s: 110
+ nfr_violation_after_fault_s: 100
+    max_replicas_after_fault: 1

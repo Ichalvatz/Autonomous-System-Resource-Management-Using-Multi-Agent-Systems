@@ -172,14 +172,16 @@ def judge(block_readings, end, points):
     last = seq[-1][0] if seq else 0
     for k, (_, r) in enumerate(extra):
         seq.append((last + 10 * (k + 1), r))
-    scores, full_at = [], None
+    scores, judge_from, full_at = [], None, None
     for k, (elapsed, r) in enumerate(seq):
         if elapsed > agent_tools.VERIFY_MAX_SECONDS:
             return "UNSTABLE: still anomalous after 4 min", elapsed, k, max(0, k - len(block_readings))
         scores.append(hm.score(BUNDLE, r))
-        if full_at is None and elapsed >= agent_tools.VERIFY_JUDGE_FROM_SECONDS:
+        if judge_from is None and elapsed >= agent_tools.VERIFY_JUDGE_FROM_SECONDS:
+            judge_from = k
+        if full_at is None and elapsed >= agent_tools.VERIFY_WINDOW_FULL_SECONDS:
             full_at = k
-        verdict = hm.judge_trajectory(scores, EPS, full_at)
+        verdict = hm.judge_trajectory(scores, EPS, judge_from, full_at)
         if verdict != "WAIT":
             return verdict, elapsed, k + 1, max(0, k + 1 - len(block_readings))
     return "WAIT (no more data)", seq[-1][0] if seq else 0, len(seq), 0

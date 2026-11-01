@@ -181,28 +181,33 @@ def test_verify_without_any_usable_reading_is_unverifiable():
     assert text.startswith("UNVERIFIABLE") and agent_tools.run_outcome["verification"] == "UNVERIFIABLE"
 
 
-@pytest.mark.parametrize("scores,judge_from,expected", [
-    ([0.1], 0, "STABLE"),                                # the user's rule: one healthy reading is STABLE
-    ([-0.5, 0.1], None, "STABLE"),                       # also before the comparisons start (+10 s, A31)
-    ([-0.5, -0.9], None, "WAIT"),                        # before it, a fall may be the dip right after the action
+@pytest.mark.parametrize("scores,judge_from,full_at,expected", [
+    ([0.1], 0, None, "STABLE"),                          # the user's rule: one healthy reading is STABLE
+    ([-0.5, 0.1], None, None, "STABLE"),                 # also before the comparisons start (+10 s, A31)
+    ([-0.5, -0.9], None, None, "WAIT"),                  # before it, a fall may be the dip right after the action
     # the scale 1->2 of campaign-2026-10-28: the reading right after the rollout dips, then the score rises; judged
     # from it (index 0) this was a false "worse", from +10 s (index 1) it waits and the next reading rises
-    ([-1.58, -3.86], 0, "UNSTABLE: worse"),
-    ([-1.58, -3.86], 1, "WAIT"),
-    ([-1.58, -3.86, -2.9], 1, "WAIT"),
-    ([-0.5] * 6 + [-0.6], 6, "WAIT"),                    # one reading to judge: nothing to compare yet
-    ([-0.5] * 6 + [-0.6, -0.62], 6, "WAIT"),             # a fall within the noise
-    ([-0.5] * 6 + [-0.6, -0.8], 6, "UNSTABLE: worse"),   # a fall beyond the noise
-    ([-1.0] * 10, 6, "UNSTABLE: not improving"),         # no rise beyond the noise over 30 s
-    ([-0.9, -0.7, -0.5, -0.3], 0, "WAIT"),               # moving back towards healthy
+    ([-1.58, -3.86], 0, None, "UNSTABLE: worse"),
+    ([-1.58, -3.86], 1, None, "WAIT"),
+    ([-1.58, -3.86, -2.9], 1, None, "WAIT"),
+    ([-0.5] * 6 + [-0.6], 6, 6, "WAIT"),                 # one reading to judge: nothing to compare yet
+    ([-0.5] * 6 + [-0.6, -0.62], 6, 6, "WAIT"),          # a fall within the noise
+    ([-0.5] * 6 + [-0.6, -0.8], 6, 6, "UNSTABLE: worse"),  # a fall beyond the noise
+    ([-0.5, -0.6, -0.8], 1, None, "UNSTABLE: worse"),    # a fall is real while the window still mixes (A31.1)
+    ([-1.0] * 10, 1, 6, "UNSTABLE: not improving"),      # no rise beyond the noise over 30 s, on post-action windows
+    # the smoke run of 2026-11-01 18:04 (A31.1): after a right scale 1->2 the window's p95 stayed at 0.48 s for 40 s;
+    # "not improving" waits for windows of post-action data only, and the next reading was healthy
+    ([-2.0, -1.96, -1.93, -1.89, -1.82], 1, None, "WAIT"),
+    ([-2.0, -1.96, -1.93, -1.89, -1.82, 1.0], 1, None, "STABLE"),
+    ([-0.9, -0.7, -0.5, -0.3], 0, 0, "WAIT"),            # moving back towards healthy
     # the smoke run of 2026-10-23 06:32 (v9 called it "worse"): the first post-action reading is already healthy
-    ([-0.537] * 6 + [0.061], 6, "STABLE"),
+    ([-0.537] * 6 + [0.061], 1, 6, "STABLE"),
     # the stuck run of 2026-10-23 18:49 in v10 scores: the distance falls as the errors leave the window
-    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8], 6, "STABLE"),
-    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1], 6, "WAIT"),
+    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8], 1, 6, "STABLE"),
+    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1], 1, None, "WAIT"),
 ])
-def test_judge_trajectory(scores, judge_from, expected):
-    assert health_model.judge_trajectory(scores, 0.05, judge_from).startswith(expected)
+def test_judge_trajectory(scores, judge_from, full_at, expected):
+    assert health_model.judge_trajectory(scores, 0.05, judge_from, full_at).startswith(expected)
 
 
 # ---------------------------------------------------------------- incident memory (the model's space)

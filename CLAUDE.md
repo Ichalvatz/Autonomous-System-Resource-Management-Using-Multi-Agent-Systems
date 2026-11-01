@@ -16,7 +16,8 @@ The comparison is against the native Kubernetes HPA.
   - **Agent v12 is the current code** (branch `nfr-v12`, since 2026-11-01; A31): v11's model tested with **range probes
     that cover every case** (one healthy interval per pod count, no hole: v11 had one at 17.8–19.4 rps on 1 pod), trained
     with the 1-pod low end (1–4 rps), the minimum pod count below every band = the smallest, and the verification judging
-    from 10 s after the rollout. The prediction-based wake was analysed and **rejected by the user** (worklog 1/11).
+    "worse" from 10 s after the rollout ("not improving" still from 60 s, A31.1). The prediction-based wake was analysed
+    and **rejected by the user** (worklog 1/11).
     Replayed offline (`4-load-testing/replay_v12_campaign-2026-10-2[368].md`): every A31 criterion passes except the first
     normal-load wake, +10 s in 1 of 13 runs (accepted by the user). Live checks: `archive/v12_live_queue.sh` (see A31).
     **Not measured in a campaign yet**: the latest measured results are v11's.
@@ -194,10 +195,12 @@ with v12's minimum pod count and verification start):
   - waits for the rollout (≤ 90 s), then reads the detector's features every 10 s and scores them;
   - `health_model.judge_trajectory`, **the user's rule, one reading at a time** (v10):
     - a healthy reading (score ≥ 0) → **STABLE**;
-    - for the first 10 s after the rollout (`VERIFY_JUDGE_FROM_SECONDS`, v12; 60 s before): only STABLE or WAIT, because
-      the first reading after an action can dip (judged from it, 6 of 61 recorded actions gave a false "worse");
-    - after that: a fall by more than `noise_eps` since the reading before → **UNSTABLE: worse**; no rise beyond it over
-      3 readings → **UNSTABLE: not improving**; else WAIT;
+    - from 10 s after the rollout (`VERIFY_JUDGE_FROM_SECONDS`, v12; the first reading after an action can dip): a fall by
+      more than `noise_eps` since the reading before → **UNSTABLE: worse** (a fall is real even while the 1 m window
+      still mixes the old minute in);
+    - from 60 s (`VERIFY_WINDOW_FULL_SECONDS`, windows of post-action data only): no rise beyond `noise_eps` over 3
+      readings → **UNSTABLE: not improving** (A31.1: a window's p95 stays at the old level until the old minute is almost
+      gone; judged from 10 s, a right scale 1→2 was called UNSTABLE in the smoke run of 2026-11-01); else WAIT;
   - gives up after 240 s.
   - A failed scale-down is undone by code (`agent._rollback_failed_scale_down`: restores the pod count, not a version).
     Any other UNSTABLE asks for a re-wake.
@@ -344,7 +347,7 @@ python 3-ai-agent/anomaly_detector.py         # live
 k6 run 4-load-testing/k6/demo.js              # in another terminal
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (90: detector loop, tools and guards, facts and prompt, score
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (93: detector loop, tools and guards, facts and prompt, score
   trajectory, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
 - Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812).
 - After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.

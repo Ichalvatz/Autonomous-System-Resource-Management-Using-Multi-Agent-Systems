@@ -580,9 +580,11 @@ def claim_final_answer_check(final_answer, memory, agent=None):
 # own metrics once the rollout has converged. Since v10 (2026-10-26, A28) the score is the distance from the healthy
 # region, so it does not flatten and its direction has a physical reading: rising = the system moves back towards
 # healthy, falling = it moves away. health_model.judge_trajectory, the user's rule, one reading at a time:
-#   a healthy reading -> STABLE; anomalous but moving back -> wait; from 10 s after the rollout (v12, A31; 60 s before,
-#   when the 1 m windows hold only post-action data), a fall by more than the measurement noise, or no rise beyond it
-#   for 30 s -> UNSTABLE (the detector re-wakes the agent at once); still anomalous after VERIFY_MAX_SECONDS -> UNSTABLE.
+#   a healthy reading -> STABLE; anomalous but moving back -> wait; from 10 s after the rollout (v12, A31; 60 s before),
+#   a fall by more than the measurement noise -> UNSTABLE: worse; once the 1 m windows hold only post-action data, no
+#   rise beyond the noise for 30 s -> UNSTABLE: not improving (A31.1: a window's p95 stays at the old level until the old
+#   minute is almost gone); the detector then re-wakes the agent at once; still anomalous after VERIFY_MAX_SECONDS ->
+#   UNSTABLE.
 # v9 judged a 30 s moving average of the bounded score; phase 1, fixed thresholds on CPU / throttling / p95.
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(REPO_ROOT, "5-ml-training", "health_model.pkl")
@@ -592,7 +594,8 @@ VERIFY_ROLLOUT_TIMEOUT = 90
 VERIFY_INTERVAL_SECONDS = 10
 # The first reading after an action can dip (a new pod's first requests, a restarted pod warming up): judged from it,
 # 6 of the 61 recorded actions of the campaigns gave a false "worse"; from 10 s on, 61/61 STABLE (A31).
-VERIFY_JUDGE_FROM_SECONDS = 10
+VERIFY_JUDGE_FROM_SECONDS = 10       # "worse" from here
+VERIFY_WINDOW_FULL_SECONDS = 60      # "not improving" from here: the 1 m windows hold only post-action data (A31.1)
 VERIFY_MAX_SECONDS = 240
 VERIFY_MIN_RPS = 1.0                 # = anomaly_detector.MIN_THROUGHPUT_RPS
 _bundle = None
@@ -666,7 +669,7 @@ def _check_stabilization(pre_action_metrics_json):
           f"{VERIFY_INTERVAL_SECONDS}s (before the action: {pre_score:+.3f})...")
     eps = float(bundle["noise_eps"])
     started = time.monotonic()
-    scores, readings, judge_from, verdict = [], [], None, None
+    scores, readings, judge_from, window_full_at, verdict = [], [], None, None, None
     while True:
         elapsed = time.monotonic() - started
         reading = nfr_metrics.fetch_reading()
@@ -675,7 +678,9 @@ def _check_stabilization(pre_action_metrics_json):
             readings.append(reading)
             if judge_from is None and elapsed >= VERIFY_JUDGE_FROM_SECONDS:
                 judge_from = len(scores) - 1
-            verdict = health_model.judge_trajectory(scores, eps, judge_from)
+            if window_full_at is None and elapsed >= VERIFY_WINDOW_FULL_SECONDS:
+                window_full_at = len(scores) - 1
+            verdict = health_model.judge_trajectory(scores, eps, judge_from, window_full_at)
             print(f"   +{elapsed:3.0f}s score {scores[-1]:+.3f} ({_describe(reading)}) -> {verdict}")
             if verdict != "WAIT":
                 break

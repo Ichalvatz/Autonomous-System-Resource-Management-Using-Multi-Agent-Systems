@@ -1,0 +1,8 @@
+[17:10:31] scenario=stuck strategy=llm: reset to 1 replica(s)
+[17:10:31] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on LABEL=llm-v12
+[17:10:39] rollout history reset: 1 ReplicaSet(s) left
+[17:10:40] k6 token pool ready
+[17:12:46] k6 stuck.js started
+[17:16:46] inject stuck -> aiops-backend-deployment-5676d48c46-lhrt2: {"stuck":true,"since":"2026-11-01T15:16:46.457Z","delayMs":3000}
+[17:28:46] k6 finished (exit 0)
+[17:29:07] done

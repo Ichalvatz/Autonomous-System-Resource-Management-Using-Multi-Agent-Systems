@@ -1,0 +1,153 @@
+Loading anomaly detection model from: /Users/ioannischalvatzis/Documents/LLM_AGENT/5-ml-training/health_model.pkl
+Model: OneClassSVM-NFR-v11 (gamma 0.1), features ['throughput', 'latency_p95', 'error_rate', 'replicas'], trained 2026-11-01T15:45:55 on 210 readings
+🧪 DRY RUN: anomalies are counted and logged, the agent is never called.
+✅ Model loaded. Starting continuous monitoring...
+Metrics unavailable. Skipping ML prediction and remediation.
+[15:57:09] Low traffic (0.14 rps) — skipping prediction.
+[15:57:19] Low traffic (0.44 rps) — skipping prediction.
+[15:57:29] Low traffic (0.74 rps) — skipping prediction.
+rps: 1.0 (1.0/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.065)
+[15:57:39]  Normal operation.
+rps: 1.3 (1.3/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.417)
+[15:57:49]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.553)
+[15:57:59]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:58:10]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:58:20]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:58:30]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.088s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.582)
+[15:58:40]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.082s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.582)
+[15:58:50]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.077s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:59:00]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:59:10]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:59:20]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.088s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.582)
+[15:59:30]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[15:59:40]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.109s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.582)
+[15:59:50]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.582)
+[16:00:00]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[16:00:10]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.106s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.553)
+[16:00:20]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.582)
+[16:00:30]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.097s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.553)
+[16:00:40]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.096s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.538)
+[16:00:50]  Normal operation.
+rps: 1.5 (1.5/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.568)
+[16:01:00]  Normal operation.
+rps: 1.6 (1.6/pod), p95: 0.096s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.635)
+[16:01:10]  Normal operation.
+rps: 1.9 (1.9/pod), p95: 0.088s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.778)
+[16:01:21]  Normal operation.
+rps: 2.2 (2.2/pod), p95: 0.087s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.886)
+[16:01:31]  Normal operation.
+rps: 2.5 (2.5/pod), p95: 0.088s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.958)
+[16:01:41]  Normal operation.
+rps: 2.8 (2.8/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:01:51]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:02:01]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:02:11]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:02:21]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:02:31]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.083s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:02:41]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.080s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:02:51]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.084s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:03:01]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:03:11]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:03:21]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.094s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:03:31]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.096s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:03:41]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:03:51]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:04:01]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:04:11]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:04:22]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.086s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:04:32]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.089s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:04:42]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:04:52]  Normal operation.
+rps: 3.0 (3.0/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:05:02]  Normal operation.
+rps: 2.9 (2.9/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[16:05:12]  Normal operation.
+rps: 2.5 (2.5/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.958)
+[16:05:22]  Normal operation.
+rps: 2.2 (2.2/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.875)
+[16:05:32]  Normal operation.
+rps: 1.8 (1.8/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.743)
+[16:05:42]  Normal operation.
+rps: 1.4 (1.4/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.506)
+[16:05:52]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:06:02]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:06:12]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:06:22]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:06:32]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.311)
+[16:06:42]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.089s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:06:52]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.090s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.316)
+[16:07:02]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.025s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.316)
+[16:07:12]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.082s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:07:22]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.025s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.311)
+[16:07:32]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.025s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:07:43]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.025s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:07:53]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.075s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:08:03]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.085s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:08:13]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.085s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:08:23]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.085s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.287)
+[16:08:33]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.088s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:08:43]  Normal operation.
+rps: 1.2 (1.2/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.263)
+[16:08:53]  Normal operation.
+
+⏹️ Monitoring stopped by user.
+
+--- Monitor summary (12.0 min, DRY RUN) ---
+  Readings evaluated:          68
+  Anomalous readings:          0 (0.0%)
+  Would have woken the agent:  0 (0.0/hour)
+  Skipped readings:            settling=0 low_traffic=3 missing_metrics=1
+  Per-reading log:             /Users/ioannischalvatzis/Documents/LLM_AGENT/5-ml-training/dry_run_readings.csv

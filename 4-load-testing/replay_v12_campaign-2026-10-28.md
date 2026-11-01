@@ -1,6 +1,6 @@
 # Replay of the health model (campaign-2026-10-28)
 
-*`replay_model.py`, 2026-11-01 15:48. Model OneClassSVM-NFR-v11, trained 2026-11-01T15:45:55: gamma 0.1; noise_eps 0.142; healthy bands (rps) {1: [1.0, 87.3], 2: [73.5, 162.1], 3: [123.3, 251.3]}.*
+*`replay_model.py`, 2026-11-01 18:40. Model OneClassSVM-NFR-v11, trained 2026-11-01T15:45:55: gamma 0.1; noise_eps 0.142; healthy bands (rps) {1: [1.0, 87.3], 2: [73.5, 162.1], 3: [123.3, 251.3]}.*
 
 ## 2. Detector validation A-I (2026-10-23, live readings of the v9 dry run)
 

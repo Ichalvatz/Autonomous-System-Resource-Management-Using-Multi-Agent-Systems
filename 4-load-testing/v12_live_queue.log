@@ -1,0 +1,48 @@
+[2026-11-01 15:53:31] v12 live queue: git HEAD 066ca6c; model 737ef6b5df39; power BATTERY
+saved 24 entries to 4-load-testing/archive/memory_snapshots/chroma_snapshot_2026-11-01_before_v12.json
+Connecting to ChromaDB...
+✅ Collection 'incidents_nfr' successfully deleted.
+✅ Fresh 'incidents_nfr' collection created. Database is now empty.
+[2026-11-01 15:53:33] idle check (dry run): 1 pod at 1.5 / 3 / 1.2 rps; power BATTERY
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import k6_driver; k6_driver.make_token_pool()
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/ioannischalvatzis/Documents/LLM_AGENT/5-ml-training/k6_driver.py", line 31, in make_token_pool
+    r.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/Users/ioannischalvatzis/Documents/LLM_AGENT/.venv/lib/python3.13/site-packages/requests/models.py", line 1028, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 502 Server Error: Bad Gateway for url: http://mwtback.aiops/auth/login
+--- restart 2026-11-01 15:54:36: the first start (15:53) stopped after a 502 on the token pool login
+[2026-11-01 15:54:43] v12 live queue: git HEAD 066ca6c; model 737ef6b5df39; power BATTERY
+[2026-11-01 15:54:43] memory snapshot already saved (4-load-testing/archive/memory_snapshots/chroma_snapshot_2026-11-01_before_v12.json); memory already emptied
+[2026-11-01 15:54:43] idle check (dry run): 1 pod at 1.5 / 3 / 1.2 rps; power BATTERY
+[2026-11-01 16:09:01] idle check done: 68 readings scored, 0 anomalous, 0 would wake; power BATTERY
+[2026-11-01 16:10:01] detector validation (dry run, v12 model); power BATTERY
+16:10:02 phase A: 1 replica(s), normal
+16:15:02 phase B: 1 replica(s), ANOMALY overload
+16:17:02 phase C: 2 replica(s), normal
+16:22:02 phase D: 2 replica(s), ANOMALY overload
+16:24:02 phase E: 3 replica(s), normal
+16:29:02 phase F: 3 replica(s), ANOMALY waste
+16:32:02 phase G: 2 replica(s), normal
+16:37:02 phase H: 2 replica(s), ANOMALY waste
+16:40:03 phase I: 1 replica(s), normal
+done
+[2026-11-01 16:44:06] validation done: 69 battery samples
+[16:47:33] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-11-01 16:47:33] UNSTABLE test (agent live, memory off): 280 rps above the 3-pod ceiling; power BATTERY
+[2026-11-01 17:01:29] UNSTABLE test done: 5 wake-up(s); 1 STABLE, 3 not confirmed
+[17:05:01] llm_ready: gemini/gemini-3.1-flash-lite not ready (Timeout, try 1)
+[2026-11-01 17:05:01] primary model not answering: retry in 5 min
+[17:10:27] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-11-01 17:10:27] smoke stuck llm (memory off); power BATTERY
+[2026-11-01 17:29:08] end smoke stuck (exit 0)
+[17:32:25] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-11-01 17:32:25] smoke cpuhog llm (memory off); power BATTERY
+[2026-11-01 17:51:05] end smoke cpuhog (exit 0)
+[17:54:21] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-11-01 17:54:21] smoke baseline llm (memory on); power BATTERY
+[2026-11-01 18:35:01] end smoke baseline (exit 0)
+[2026-11-01 18:38:01] v12 live queue done
