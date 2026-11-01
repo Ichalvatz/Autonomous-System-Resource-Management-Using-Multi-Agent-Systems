@@ -25,7 +25,11 @@ fresh_one_pod(){
   kubectl scale deployment aiops-backend-deployment --replicas=1 >/dev/null
   kubectl rollout restart deployment aiops-backend-deployment >/dev/null
   kubectl rollout status deployment aiops-backend-deployment --timeout=180s >/dev/null
-  (cd 5-ml-training && ../$PY -c "import k6_driver; k6_driver.make_token_pool()") >> "$LOG" 2>&1
+  sleep 10   # the ingress still routes to the old pod for a few seconds (a login got 502 at 15:53 without this)
+  for try in 1 2 3 4 5; do
+    (cd 5-ml-training && ../$PY -c "import k6_driver; k6_driver.make_token_pool()") >> "$LOG" 2>&1 && break
+    log "token pool: login failed (try $try), retry in 10 s"; sleep 10
+  done
   sleep 120   # past the detector's 90 s settle window, host idle
 }
 series(){  # series.json of [start, now] into $1 (Prometheus keeps 10 days)
@@ -43,8 +47,13 @@ caffeinate -dimsu -w $$ &
 mkdir -p "$IDLE" "$UNST"
 
 log "v12 live queue: git HEAD $(git rev-parse --short HEAD); model $(shasum -a 256 5-ml-training/health_model.pkl | cut -c1-12); power $(power)"
-$PY 3-ai-agent/memory_snapshot.py save 4-load-testing/archive/memory_snapshots/chroma_snapshot_2026-11-01_before_v12.json >> "$LOG" 2>&1
-$PY reset_chroma.py >> "$LOG" 2>&1
+SNAP=4-load-testing/archive/memory_snapshots/chroma_snapshot_2026-11-01_before_v12.json
+if [ -f "$SNAP" ]; then   # a restarted queue must not overwrite the snapshot with the emptied memory
+  log "memory snapshot already saved ($SNAP); memory already emptied"
+else
+  $PY 3-ai-agent/memory_snapshot.py save "$SNAP" >> "$LOG" 2>&1
+  $PY reset_chroma.py >> "$LOG" 2>&1
+fi
 
 # --- 2. idle check
 log "idle check (dry run): 1 pod at 1.5 / 3 / 1.2 rps; power $(power)"

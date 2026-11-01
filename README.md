@@ -30,8 +30,8 @@ Traditional management systems rely on static rules and predefined thresholds. I
 ## How it works (implementation)
 
 The system is built around the service's **non-functional requirements** (NFRs): p95 latency < 0.35 s and errors < 1%,
-measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current version **agent v11**, branch `nfr-v11`, tag `v11-campaign`;
-earlier: v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
+measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current code **agent v12**, branch `nfr-v12`, not measured in a campaign yet; latest measured:
+agent v11, tag `v11-campaign`; earlier: v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
 
 ```
 k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ backend pods (1–3, readiness + liveness probes)
@@ -48,13 +48,14 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
 
 - **Detector:** one One-Class SVM trained on healthy traffic only, with its inputs in NFR units (latency and errors:
   0 = safe level, 1 = objective; no tuned weights) and the pod count as an input. Its score reads as a distance from
-  healthy. It wakes the agent after 3 anomalous readings in a row, and again at once if the verification says the state
+  healthy. Its acceptance tests are ranges that cover every case (one healthy load interval per pod count, the NFRs
+  anomalous at every load). It wakes the agent after 3 anomalous readings in a row, and again at once if the verification says the state
   got worse or is not improving.
-- **Agent v11:** code computes the facts (the minimum pod count the health model calls healthy, and the load trend). The LLM classifies capacity
+- **Agent v12:** code computes the facts (the minimum pod count the health model calls healthy, and the load trend). The LLM classifies capacity
   vs something else, investigates with three observation tools, and acts: scale or a rolling restart. Three
   code-enforced guards apply: evidence before action, no claimed action without a tool call, full diagnosis before a
   restart.
-- **Verification:** by code, from the trajectory of the SVM score.
+- **Verification:** by code, from the trajectory of the SVM score, judged from 10 s after the rollout.
 - **Memory:** ChromaDB with the model's feature vector as embedding.
 - **Comparison:** the native Kubernetes HPA (CPU 60%, from the same capacity measurement), with the same probes.
 - **Scenarios:**
@@ -85,7 +86,7 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
 ./deploy.sh                                        # kind cluster + monitoring + ingress metrics + app + ChromaDB
 source .venv/bin/activate && export GEMINI_API_KEY=...
 python 3-ai-agent/anomaly_detector.py --dry-run    # detector only, no LLM, no cluster changes
-python 3-ai-agent/anomaly_detector.py              # detector + agent v11
+python 3-ai-agent/anomaly_detector.py              # detector + agent v12
 ./4-load-testing/run_experiment.sh llm             # one scored experiment on the normal load (also: hpa)
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm    # fault experiment (also SCENARIO=cpuhog)
 ./4-load-testing/full_campaign.sh my-campaign      # the whole agent-vs-HPA comparison (~14 h)
