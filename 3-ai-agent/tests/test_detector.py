@@ -23,7 +23,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import anomaly_detector as ad  # noqa: E402
 
-BUNDLE = {"model_type": "fake", "features": [], "gamma": 0.2, "bands": {1: [1, 80]}, "noise_eps": 0.05,
+BUNDLE = {"model_type": "fake", "features": [], "gamma": 0.2, "bands": {1: [1, 80]},
+          "window_noise": {"step": {"30": 0.05, "120": 0.05}, "span": {"50": 0.05, "120": 0.05}},
           "params": {"safe_p95": 0.25, "nfr_p95": 0.35, "safe_errors": 0.001, "nfr_errors": 0.01}}
 
 
@@ -58,15 +59,19 @@ class Clock:
         self.t += seconds
 
 
-def run(readings, dry_run=False, trigger=None, csv_path=None):
-    """Run the real loop over these readings (one per 10 s); return the fake trigger_ai_agent."""
+def run(readings, dry_run=False, trigger=None, csv_path=None, windows=None):
+    """Run the real loop over these readings (one per 10 s, the first at t = 1000); return the fake trigger_ai_agent.
+    windows: a list that receives the window of every reading the loop asked for."""
     it = iter(readings)
 
-    def fetch():
+    def fetch(window="1m"):
         try:
-            return next(it)
+            r = next(it)
         except StopIteration:
             raise KeyboardInterrupt  # what Ctrl+C / SIGTERM does: ends the loop, prints the summary
+        if windows is not None:
+            windows.append(window)
+        return r
 
     clock = Clock()
     agent_module = types.ModuleType("agent")
@@ -106,32 +111,43 @@ def test_cooldown_blocks_a_new_wake_up_for_60_s_but_monitoring_continues():
     assert run([A] * 9).call_count == 2
 
 
-# A pod-count change (A32, 2026-11-02; until v12 every change was skipped for 90 s). One the agent's verification did
-# not watch (here: a person or a script, no agent run) is followed with the verification's rule.
+# After a change (A32, A32.1, 2026-11-02; until v12 every pod-count change was skipped for 90 s) the readings hold only
+# data since it took effect, the first one 20 s after it. A pod-count change the agent's verification did not watch
+# (here: a person or a script, no agent run) is followed with the verification's rule from the reading that shows its
+# pods ready: that reading and the next (10 s of data) wait, the third (20 s) is the first one judged.
 A2 = reading(p95=1.0, reps=2)                       # anomalous at 2 pods, score -0.5
+N2 = reading(reps=2)
+
+
+def test_after_a_change_the_readings_hold_only_post_change_data():
+    windows = []
+    run([N, N2, N2, N2, N2, N2, N2, N2, N2], windows=windows)
+    # the change is seen (and its pods ready) at t = 1010: 20 s later the first reading of it, its window growing
+    assert windows == ["1m", "1m", "1m", "20s", "30s", "40s", "50s", "1m", "1m"]
 
 
 def test_a_change_to_a_healthy_state_is_judged_at_once():
-    # The first reading at 2 pods is healthy: the change is settled, and 3 anomalies after it wake the agent.
-    assert run([N, reading(reps=2), A2, A2, A2]).call_count == 1
+    # The first reading of post-change data is healthy: the change is settled, and 3 anomalies after it wake the agent.
+    assert run([N, N2, N2, N2, A2, A2]).call_count == 0
+    assert run([N, N2, N2, N2, A2, A2, A2]).call_count == 1
 
 
 def test_a_change_moving_towards_healthy_waits_and_does_not_wake():
-    # The 1 m window still holds the minute before the change; the distance falls every 10 s, then healthy.
+    # The distance falls every 10 s (by more than the noise), then healthy.
     improving = [reading(p95=p, reps=2) for p in (3.0, 2.6, 2.2, 1.8, 1.4, 1.0, 0.8, 0.6, 0.4)]
-    assert run([N] + improving + [reading(reps=2)]).call_count == 0
+    assert run([N] + improving + [N2]).call_count == 0
 
 
 def test_a_change_that_gets_worse_wakes_at_once():
-    # "worse" from 10 s after the change: -0.5 -> -1.0 is a dip right after it, -1.0 -> -1.5 is worse.
-    assert run([N, A2, reading(p95=2.0, reps=2)]).call_count == 0
-    assert run([N, A2, reading(p95=2.0, reps=2), reading(p95=3.0, reps=2)]).call_count == 1
+    # From the first reading of post-change data (-0.5) to the next (-1.0): worse.
+    assert run([N, A2, A2, A2]).call_count == 0
+    assert run([N, A2, A2, A2, reading(p95=2.0, reps=2)]).call_count == 1
 
 
-def test_a_change_that_does_not_improve_wakes_once_the_window_holds_only_post_change_data():
-    # A flat -0.5: "not improving" needs 30 s of post-change windows (from 60 s), so the 10th reading at 2 pods.
-    assert run([N] + [A2] * 9).call_count == 0
-    assert run([N] + [A2] * 10).call_count == 1
+def test_a_change_that_does_not_improve_wakes_after_three_readings_without_a_rise():
+    # A flat -0.5 from the first reading of post-change data (+20 s): not improving at +50 s, the 6th reading at 2 pods.
+    assert run([N] + [A2] * 5).call_count == 0
+    assert run([N] + [A2] * 6).call_count == 1
 
 
 @pytest.mark.parametrize("outcome, calls", [
@@ -140,10 +156,22 @@ def test_a_change_that_does_not_improve_wakes_once_the_window_holds_only_post_ch
     ({"resolved": True, "rewake": False}, 1),                 # no action, so a change by someone else: followed
 ])
 def test_a_change_the_verification_watched_is_not_followed_again(outcome, calls):
-    # The agent scaled 1 -> 2 at the 3rd reading. Watched: the readings at 2 pods are judged as usual, so the
-    # cooldown (60 s) is all that holds a second wake-up. Not watched: followed, and a flat -0.5 waits for 90 s.
+    # The agent scaled 1 -> 2 at the 3rd reading, then the score moves back towards healthy, slowly. Watched: the
+    # readings at 2 pods are judged as usual, so the cooldown (60 s) is all that holds a second wake-up. Not watched:
+    # followed, and a distance that falls every 10 s waits.
     trigger = mock.Mock(return_value=outcome)
-    assert run([A, A, A] + [A2] * 6, trigger=trigger).call_count == calls
+    improving = [reading(p95=p, reps=2) for p in (3.0, 2.6, 2.2, 1.8, 1.4, 1.0, 0.8, 0.6)]
+    assert run([A, A, A] + improving, trigger=trigger).call_count == calls
+
+
+def test_after_a_verified_action_the_readings_hold_only_data_since_its_rollout():
+    # The agent acted at the 3rd reading (t = 1020) and its rollout converged then (changed_at, the same monotonic
+    # clock): the next reading has 10 s of data and waits, then the window grows from 20 s to the usual minute.
+    trigger = mock.Mock(return_value={"resolved": True, "rewake": False, "verdict": "STABLE", "changed_at": 1020.0})
+    windows = []
+    run([A, A, A] + [N2] * 7, trigger=trigger, windows=windows)
+    assert windows[3:] == ["1m", "20s", "30s", "40s", "50s", "1m", "1m"]
+    assert trigger.call_count == 1
 
 
 def test_a_failed_verification_rewakes_at_once_without_streak_or_cooldown():

@@ -31,7 +31,7 @@ Traditional management systems rely on static rules and predefined thresholds. I
 
 The system is built around the service's **non-functional requirements** (NFRs): p95 latency < 0.35 s and errors < 1%,
 measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current code **agent v13**, branch `nfr-v13`, not measured
-yet: v12 with the detector judging every reading after a pod-count change; last measured **agent v12**, campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
+yet: v12 with the detector judging every reading after a change, and readings of post-change data only after it; last measured **agent v12**, campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
 
 ```
 k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ backend pods (1–3, readiness + liveness probes)
@@ -50,14 +50,16 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
   0 = safe level, 1 = objective; no tuned weights) and the pod count as an input. Its score reads as a distance from
   healthy. Its acceptance tests are ranges that cover every case (one healthy load interval per pod count, the NFRs
   anomalous at every load). It wakes the agent after 3 anomalous readings in a row, and again at once if the verification says the state
-  got worse or is not improving. It judges every reading, also right after a pod-count change: a change no verification
-  watched is followed with the verification's rule (v13).
+  got worse or is not improving. It judges every reading, also right after a change, on data from after it only: a change
+  no verification watched is followed with the verification's rule (v13).
 - **Agent (v12 / v13):** code computes the facts (the minimum pod count the health model calls healthy, and the load trend). The LLM classifies capacity
   vs something else, investigates with three observation tools, and acts: scale or a rolling restart. Three
   code-enforced guards apply: evidence before action, no claimed action without a tool call, full diagnosis before a
   restart.
-- **Verification:** by code, from the trajectory of the SVM score: "worse" judged from 10 s after the rollout, "not
-  improving" from 60 s (once the 1-minute windows hold only post-action data).
+- **Verification:** by code, from the trajectory of the SVM score on data from after the action only (v13: the window
+  starts where the rollout converged and grows to a minute; the first reading 20 s after it): healthy → STABLE, worse or
+  not improving beyond the measured noise of that comparison → UNSTABLE and a re-wake. (v12 judged 1-minute windows,
+  "worse" from 10 s and "not improving" from 60 s.)
 - **Memory:** ChromaDB with the model's feature vector as embedding.
 - **Comparison:** the native Kubernetes HPA (CPU 60%, from the same capacity measurement), with the same probes.
 - **Scenarios:**

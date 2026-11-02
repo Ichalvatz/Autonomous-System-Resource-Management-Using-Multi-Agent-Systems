@@ -153,9 +153,12 @@ def _capacity_context():
 
 CAPACITY_CONTEXT = _capacity_context()
 
-# The agent: v13 (2026-11-02; design_decisions.md A32): v12 with the detector judging every reading after a pod-count
-# change (v12 skipped 90 s; a change no verification watched is now followed with the verification's rule). Prompt,
-# tools, model and verification as v12, measured in campaign-2026-11-01 (git tag v12-campaign).
+# The agent: v13 (2026-11-02; design_decisions.md A32, A32.1): v12 with the detector judging every reading after a
+# pod-count change (v12 skipped 90 s; a change no verification watched is followed with the verification's rule), and
+# after a change both the verification and the detector read only data from after it (the window starts where the change
+# took effect and grows to the usual minute), with the noise of each comparison measured; the verification's fixed
+# times ("worse" from 10 s, "not improving" from 60 s) are gone. Prompt, tools and model as v12, measured in
+# campaign-2026-11-01 (git tag v12-campaign).
 # v12 (2026-11-01; A31): as v11 (A30: inputs in NFR units with no tuned weights, the
 # explanation of a score against the model's own bands and the safe level), with a model retrained with the 1-pod low
 # end and tested with range probes (no hole in any band), the minimum pod count below every band = the smallest, and
@@ -393,9 +396,11 @@ Step 4 - REPORT in a later step than the action: `final_answer("Root cause: <one
 
 def trigger_ai_agent(metrics_json):
     """
-    Called from anomaly_detector.py when an anomaly is confirmed. Returns {"resolved", "rewake", "verdict"}:
-    rewake asks the detector to wake the agent again at once (the verification saw the state get worse or stop
-    improving), except after a failed scale-down, which code has already undone.
+    Called from anomaly_detector.py when an anomaly is confirmed. Returns {"resolved", "rewake", "verdict",
+    "changed_at"}: rewake asks the detector to wake the agent again at once (the verification saw the state get worse or
+    stop improving), except after a failed scale-down, which code has already undone; changed_at is the time
+    (time.monotonic, same process) the action's rollout converged, from which the detector's readings hold only
+    post-change data until they are a minute long (A32.1); None without an action.
     """
     started = time.monotonic()
     woke_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -428,7 +433,7 @@ def trigger_ai_agent(metrics_json):
 
     # Judge success from what the tools recorded, not from the LLM's text.
     actions = list(run_outcome["actions"])
-    verdict, detail, saved, rewake = "", "", "", False
+    verdict, detail, saved, rewake, changed_at = "", "", "", False, None
     if not actions:
         resolved = not agent_error
         print(f"\n [AIOps Agent] No action applied to the cluster.\nAgent Final Output: {response}")
@@ -437,6 +442,7 @@ def trigger_ai_agent(metrics_json):
         print(verify_metrics_stabilization(metrics_json))
         # Kept here: a rollback goes through the scale tool, which resets run_outcome.
         verdict, detail = run_outcome["verification"] or "", run_outcome["detail"]
+        changed_at = run_outcome.get("changed_at")
         recovery_s, score_after = run_outcome["recovery_s"], run_outcome["score_after"]
         resolved = verdict == "STABLE"
         diagnosis = response or f"(no LLM summary: {agent_error[:150]})"
@@ -478,4 +484,5 @@ def trigger_ai_agent(metrics_json):
         "total_seconds": round(time.monotonic() - started, 1),
         "final_answer": response[:500],
     })
-    return {"resolved": resolved, "rewake": rewake, "verdict": detail.split("\n", 1)[0] if detail else verdict}
+    return {"resolved": resolved, "rewake": rewake, "verdict": detail.split("\n", 1)[0] if detail else verdict,
+            "changed_at": changed_at}

@@ -13,15 +13,23 @@ The comparison is against the native Kubernetes HPA.
   summaries: `thesis_notes/results_summary.md` (v12, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
   order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
   current version; superseded ones go to `thesis_notes/history/`).
-  - **Agent v13 is the current code** (branch `nfr-v13`, since 2026-11-02; A32, **not measured yet**): v12 with the
-    detector judging every reading after a pod-count change. v12 skipped 90 s (counted from when the detector saw the
-    change, i.e. after the agent's verification had already watched it with the SVM). Now a change the verification
-    watched is judged as usual, and any other change (a person, the validation script, a rollback) is followed with the
-    verification's own rule (`health_model.follow_verdict`). The user asked for it ("να κρίνει αμέσως αν είμαστε stable, το
-    οποίο καθορίζεται από το SVM"). Offline (`4-load-testing/replay_follow.py` → `replay_v13_follow.md`): the same wake-ups
-    as v12 in 51/51 agent runs of the four campaigns and in the three live validations; of 86 scale actions in phase 2 the
-    90 s hid one real NFR breach (28/10 09:42). The user also **rejected** a fact saying the load exceeds the maximum capacity
-    (2/11). Live check proposed: `detector_validation.sh` + one normal-load smoke run.
+  - **Agent v13 is the current code** (branch `nfr-v13`, since 2026-11-02; A32, A32.1, **not measured yet**): v12's
+    model, prompt and tools, with two changes the user asked for.
+    - **A32:** the detector judges every reading after a pod-count change ("να κρίνει αμέσως αν είμαστε stable, το οποίο
+      καθορίζεται από το SVM"). v12 skipped 90 s, counted from when it saw the change, i.e. after the agent's verification
+      had already watched it. A change the verification watched is judged as usual; any other one (a person, the
+      validation script, a rollback) is followed with the verification's rule.
+    - **A32.1:** no fixed times in the judgement ("δεν μ' αρέσουν τα σκληρά χρονικά όρια, θέλω κάτι πιο δυναμικό"). After
+      a change every reading holds only data since it took effect (the window starts there and grows to the usual
+      minute; the first such reading 20 s after it, two scrapes). The verification is the user's rule on those readings:
+      healthy → STABLE, a fall → worse, no rise over 3 readings → not improving, each against the measured noise of that
+      comparison (`window_noise.json`). v12's "worse from 10 s / not improving from 60 s" existed only because 1 m windows
+      mix the minute before the change in.
+    - Offline (`4-load-testing/replay_v13.py` → `replay_v13.md`): 113/113 right actions of phase 2 STABLE (104 of them at
+      +20 s; recorded 0–70 s), the false "not improving" of 1/11 18:04 now STABLE, the UNSTABLE test 3/3 (30 / 30 / 50 s);
+      the detector's wake-ups as v12's in the validations and in 51/51 agent runs; one real NFR breach the 90 s had hidden
+      (28/10 09:42) now wakes the agent. The user also **rejected** a fact saying the load exceeds the maximum capacity
+      (2/11). Live check proposed: `detector_validation.sh` + one normal-load smoke run.
   - **Agent v12** (A31) = git tag `v12-campaign`: v11's model tested with **range probes
     that cover every case** (one healthy interval per pod count, no hole: v11 had one at 17.8–19.4 rps on 1 pod), trained
     with the 1-pod low end (1–4 rps), the minimum pod count below every band = the smallest, and the verification judging
@@ -141,6 +149,11 @@ Run the steps in order, with the detector **off** and no other traffic. Each scr
    - The method declared first (learn "normal latency for this load" below the safe level, with lower-latency copies)
      **failed** monotonicity and held-out; A28.1 records it and the change.
    - Writes `health_model.pkl` (gitignored), `training_report.json` and `baseline_metrics_healthy_filtered.csv`.
+4. **`measure_window_noise.py`** (seconds from its saved readings; v13, A32.1): the noise of a comparison of readings
+   after a change, in the model's score units, by seconds since the change (a fall 10 s apart: 0.38 at +30 s → 0.10 at
+   +60 s; a rise 30 s apart: 0.47 at +50 s → ~0.25), from the steady anomalous periods of the HPA fault runs (345
+   sequences, 27 runs). Writes `window_noise.json` (loaded with the model, which it must match: rerun after retraining)
+   and keeps its readings in `window_noise_readings.json` (Prometheus keeps 10 days).
 
 **The score (`health_model.score`)** is the SVM's own decision read as a distance: 0..1 when healthy (1 = typical for the
 pod count), below 0 = minus the distance from the healthy region (the log of the RBF kernel sum, so it does not flatten:
@@ -153,17 +166,19 @@ The NFRs are anomalous at every load (R ≤ 0.81 < 1). (v9's score was the raw d
 ## Runtime flow
 **Detector** (`anomaly_detector.run_monitor`, every 10 s):
 - **Skips** a reading if a metric is missing or if throughput < 1 rps (`MIN_THROUGHPUT_RPS`). Nothing else is skipped.
-- **A pod-count change (v13, A32):** the 1 m windows still hold the minute before it.
-  - A change the agent's verification watched (STABLE, or UNSTABLE with a re-wake) → the next reading is judged as usual.
-  - Any other change (a person, the validation script, the rollback of a failed scale-down) is **followed** with the
-    verification's rule (`health_model.follow_verdict`): healthy → normal monitoring at once; anomalous but moving towards
-    healthy → wait, not counted; worse (from 10 s) / not improving (from 60 s) / still anomalous after 4 min → a confirmed
-    anomaly. Column `follow` in the dry-run CSV.
+- **After a change (v13, A32, A32.1)** its readings hold only data since the change took effect
+  (`nfr_metrics.clean_window`: the window starts there and grows to the usual minute; none before 20 s).
+  - A change the agent's verification watched (STABLE, or UNSTABLE with a re-wake; scale or restart): the agent returns
+    `changed_at` (its rollout, `time.monotonic` of the same process), and the readings after it are judged as usual.
+  - Any other pod-count change (a person, the validation script, the rollback of a failed scale-down) is **followed** from
+    the reading that shows its pods ready (or after 90 s) with the verification's rule (`health_model.judge_trajectory`):
+    healthy → normal monitoring at once; anomalous but moving towards healthy → wait, not counted; worse / not improving /
+    still anomalous after 4 min → a confirmed anomaly. Columns `window` and `follow` in the dry-run CSV.
   - v12 skipped every reading for 90 s (`REPLICA_SETTLE_SECONDS`, removed).
 - **Outages are anomalies, not low traffic:** when no pod is ready, the ingress answers fast 503s, and throughput counts
   every status.
 - **Wakes the agent** after 3 anomalous readings in a row (`ANOMALY_STREAK_REQUIRED`); then a 60 s cooldown
-  (`AGENT_COOLDOWN_SECONDS`).
+  (`AGENT_COOLDOWN_SECONDS`, a bound on LLM calls, e.g. while an anomaly the agent answered with "No action" lasts).
 - **The JSON the agent gets** holds the reading, the score, its explanation (`health_model.explain`, in physical units:
   the load against the model's band for the pod count, latency and errors against the safe level, with the objectives)
   and the **load trend** (least-squares slope of throughput over the last
@@ -175,8 +190,8 @@ The NFRs are anomalous at every load (R ≤ 0.81 < 1). (v9's score was the raw d
 - SIGTERM is handled like Ctrl+C (prints a summary).
 - **Blind spot:** a request is counted when it finishes. A process that never answers is seen only when nginx times out.
 
-**Agent v13** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict"}`; prompt and tools as v9, the rest as v10,
-with v12's minimum pod count and verification start; v13 changes only the detector, above):
+**Agent v13** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at"}`; prompt and tools as v9,
+the rest as v10, with v12's minimum pod count; v13 changes the detector, above, and the verification's readings, below):
 - **Computed facts** (`agent._computed_facts`):
   - the score and its explanation (with the objectives); ready vs desired pods;
   - load, load per pod and the trend (steady / RISING / falling);
@@ -208,17 +223,16 @@ with v12's minimum pod count and verification start; v13 changes only the detect
   Each was added after the LLM broke the rule in a measured phase-1 run. `tests/test_final_agent.py` replays those
   incidents through a real CodeAgent.
 - **Verification** (`agent_tools._check_stabilization`, run by code after the LLM, even if it crashed after acting):
-  - waits for the rollout (≤ 90 s), then reads the detector's features every 10 s and scores them;
-  - `health_model.judge_trajectory` through `follow_verdict` (its timings in one place, shared with the detector since
-    v13), **the user's rule, one reading at a time** (v10):
+  - waits for the rollout (≤ 90 s); then reads the detector's features **on data since the rollout only** (v13, A32.1:
+    the first reading 20 s after it, then every 10 s, the window growing to the usual minute) and scores them;
+  - `health_model.judge_trajectory(bundle, points)`, **the user's rule, one reading at a time** (v10), with no fixed times:
     - a healthy reading (score ≥ 0) → **STABLE**;
-    - from 10 s after the rollout (`VERIFY_JUDGE_FROM_SECONDS`, v12; the first reading after an action can dip): a fall by
-      more than `noise_eps` since the reading before → **UNSTABLE: worse** (a fall is real even while the 1 m window
-      still mixes the old minute in);
-    - from 60 s (`VERIFY_WINDOW_FULL_SECONDS`, windows of post-action data only): no rise beyond `noise_eps` over 3
-      readings → **UNSTABLE: not improving** (A31.1: a window's p95 stays at the old level until the old minute is almost
-      gone; judged from 10 s, a right scale 1→2 was called UNSTABLE in the smoke run of 2026-11-01); else WAIT;
-  - gives up after 240 s.
+    - a fall since the reading before by more than the noise of that comparison → **UNSTABLE: worse**;
+    - no rise over the last 3 readings (30 s) by more than the noise of that comparison → **UNSTABLE: not improving**;
+    - else WAIT; still anomalous 240 s after the rollout → UNSTABLE.
+  - The noise depends on how much data the readings hold (`health_model.change_noise`, `window_noise.json`, measured).
+  - v12 judged the usual 1 m readings, which mix the minute before the action in, so it judged "worse" only from 10 s and
+    "not improving" only from 60 s (A31, A31.1; a right scale 1→2 was called UNSTABLE at +40 s in the smoke run of 1/11).
   - A failed scale-down is undone by code (`agent._rollback_failed_scale_down`: restores the pod count, not a version).
     Any other UNSTABLE asks for a re-wake.
   - Success is decided by `agent_tools.run_outcome`, never by parsing the LLM's text.
@@ -301,11 +315,12 @@ with v12's minimum pod count and verification start; v13 changes only the detect
   controller.log, incident_log), with the previous model (`5-ml-training/v11/`) replayed on the same series as the
   reference for the first wake-up → `replay_v12_<TAG>.md` (A31 criteria 2–5; `replay_v11_*.md` = A30's, `replay_v10.md`
   = A28's); also the user's demo run of 1/11 (`archive/manual_demo_2026-11-01/series.json`). Replay times sit on the
-  series' 10 s grid, so they can differ from the live log by up to 10 s. Its detector follows a pod-count change since v13
-  (the `replay_v12_*.md` files were made with v12's 90 s skip).
-- **`replay_follow.py`** (A32): v12's detector (90 s skipped) against v13's on the 86 scale actions of phase 2, the live
-  validations (series from Prometheus, saved as `detector_validation_series.json` next to each validation) and the four
-  campaigns → `replay_v13_follow.md`.
+  series' 10 s grid, so they can differ from the live log by up to 10 s. Since v13 its detector follows a pod-count change
+  and its verification judges readings of post-change data only (`clean_reading`, from Prometheus, kept in
+  `archive/clean_window_readings.json`; the `replay_v12_*.md` files were made with v12's logic).
+- **`replay_v13.py`** (A32, A32.1): v12's detector and verification against v13's on every action of phase 2 with data
+  (117), the detector after the 113 STABLE ones, the live validations (series saved as `detector_validation_series.json`
+  next to each validation) and the four campaigns → `replay_v13.md`. (A32's 1 m version: `archive/a32_replay_follow/`.)
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
@@ -399,8 +414,8 @@ python 3-ai-agent/anomaly_detector.py         # live
 k6 run 4-load-testing/k6/demo.js              # in another terminal
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (105: detector loop and the follow of a pod-count change, tools
-  and guards, facts and prompt, score trajectory, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (100: detector loop, post-change readings and the follow of a
+  pod-count change, tools and guards, facts and prompt, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
 - Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812).
 - After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.
 

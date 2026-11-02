@@ -7,7 +7,8 @@ the memory's "similar" distance comes from the model. Tools, guards and safety b
 A30): the same, with the v11 health model (inputs in NFR units, no tuned weights). Agent v12 (2026-11-01, A31): the
 verification judges the trajectory from 10 s after the rollout instead of 60 s. Agent v13 (2026-11-02, A32): the
 verification's rule and timings come from health_model.follow_verdict, which the detector also uses to follow a
-pod-count change no verification watched.
+pod-count change no verification watched. A32.1 (2026-11-02): the readings of the verification hold only data from
+after the rollout converged, and the noise of each comparison is measured (window_noise.json).
 
 THE 5 LLM TOOLS: the only things the LLM can call (agent.py passes them to the CodeAgent in this order).
   Observe (read-only):
@@ -87,11 +88,11 @@ _last_restart_action_at = 0.0
 #   recovery_s:   seconds from the end of the rollout to the STABLE verdict
 #   score_after:  the last score the verification saw
 run_outcome = {"actions": [], "verification": None, "detail": "", "recovery_s": None, "score_after": None,
-               "rollout": ""}
+               "rollout": "", "changed_at": None}
 
 
 def reset_run_outcome():
-    run_outcome.update(actions=[], verification=None, detail="", recovery_s=None, score_after=None)
+    run_outcome.update(actions=[], verification=None, detail="", recovery_s=None, score_after=None, changed_at=None)
 
 
 def _record_action(description):
@@ -581,24 +582,22 @@ def claim_final_answer_check(final_answer, memory, agent=None):
 # An action is judged by the score of the same One-Class SVM that woke the agent, read every 10 s on the detector's
 # own metrics once the rollout has converged. Since v10 (2026-10-26, A28) the score is the distance from the healthy
 # region, so it does not flatten and its direction has a physical reading: rising = the system moves back towards
-# healthy, falling = it moves away. health_model.judge_trajectory, the user's rule, one reading at a time:
-#   a healthy reading -> STABLE; anomalous but moving back -> wait; from 10 s after the rollout (v12, A31; 60 s before),
-#   a fall by more than the measurement noise -> UNSTABLE: worse; once the 1 m windows hold only post-action data, no
-#   rise beyond the noise for 30 s -> UNSTABLE: not improving (A31.1: a window's p95 stays at the old level until the old
-#   minute is almost gone); the detector then re-wakes the agent at once; still anomalous after VERIFY_MAX_SECONDS ->
-#   UNSTABLE. The rule and its timings live in health_model (follow_verdict), shared with the detector, which follows
-#   with them a pod-count change no verification watched (A32, 2026-11-02).
+# healthy, falling = it moves away. Since A32.1 (2026-11-02) every reading holds only data from after the rollout
+# converged (nfr_metrics.clean_window: the first one 20 s after it, the window growing to the usual minute), so it shows
+# the result of the action and nothing from before it. health_model.judge_trajectory, the user's rule, one reading at a
+# time: a healthy reading -> STABLE; anomalous but moving back -> wait; a fall beyond the noise of that comparison ->
+# UNSTABLE: worse; no rise beyond the noise over 30 s -> UNSTABLE: not improving; the detector then re-wakes the agent at
+# once; still anomalous after VERIFY_MAX_SECONDS -> UNSTABLE. The noise is measured per comparison (window_noise.json):
+# the fewer requests a reading holds, the larger. Until A32.1 the readings were 1 m windows that mix the minute before
+# the action in, so "worse" was judged from 10 s and "not improving" from 60 s (A31, A31.1); the detector follows a
+# pod-count change no verification watched with the same rule (A32).
 # v9 judged a 30 s moving average of the bounded score; phase 1, fixed thresholds on CPU / throttling / p95.
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(REPO_ROOT, "5-ml-training", "health_model.pkl")
 # A new pod is ready in ~10 s; a pod that never becomes ready again (e.g. the stuck one after a scale-up, whose
 # readiness probe keeps failing) would hold a longer wait for nothing, so the trajectory starts after 90 s at most.
-VERIFY_ROLLOUT_TIMEOUT = 90
-VERIFY_INTERVAL_SECONDS = 10
-# The first reading after an action can dip (a new pod's first requests, a restarted pod warming up): judged from it,
-# 6 of the 61 recorded actions of the campaigns gave a false "worse"; from 10 s on, 61/61 STABLE (A31).
-VERIFY_JUDGE_FROM_SECONDS = health_model.JUDGE_FROM_SECONDS       # "worse" from here (10 s)
-VERIFY_WINDOW_FULL_SECONDS = health_model.WINDOW_FULL_SECONDS     # "not improving" from here (60 s, A31.1)
+VERIFY_ROLLOUT_TIMEOUT = health_model.ROLLOUT_WAIT_SECONDS        # 90 s
+VERIFY_INTERVAL_SECONDS = nfr_metrics.SCRAPE_SECONDS              # 10 s
 VERIFY_MAX_SECONDS = health_model.GIVE_UP_SECONDS                 # 240 s
 VERIFY_MIN_RPS = 1.0                 # = anomaly_detector.MIN_THROUGHPUT_RPS
 _bundle = None
@@ -668,19 +667,22 @@ def _check_stabilization(pre_action_metrics_json):
         return f"UNVERIFIABLE: pre-action reading or model unusable: {e}"
 
     ready_seconds = _wait_for_rollout(timeout_seconds=VERIFY_ROLLOUT_TIMEOUT)
-    print(f"⏳ Rollout converged after {ready_seconds:.0f}s; following the health score every "
-          f"{VERIFY_INTERVAL_SECONDS}s (before the action: {pre_score:+.3f})...")
-    eps = float(bundle["noise_eps"])
-    started = time.monotonic()
-    points, readings, verdict = [], [], None     # points: (seconds after the rollout, score)
+    started = time.monotonic()      # the change took effect: every reading below holds only data from here on
+    run_outcome["changed_at"] = started
+    print(f"⏳ Rollout converged after {ready_seconds:.0f}s ({time.strftime('%H:%M:%S')}); following the health score "
+          f"on data since then only, from +{nfr_metrics.MIN_CLEAN_SECONDS}s every {VERIFY_INTERVAL_SECONDS}s "
+          f"(before the action: {pre_score:+.3f})...")
+    points, readings, verdict = [], [], None     # points: (seconds since the rollout converged, score)
+    time.sleep(nfr_metrics.MIN_CLEAN_SECONDS)
     while True:
         elapsed = time.monotonic() - started
-        reading = nfr_metrics.fetch_reading()
+        window = nfr_metrics.clean_window(elapsed)
+        reading = nfr_metrics.fetch_reading(window=window) if window else None
         if reading is not None and reading["throughput"] >= VERIFY_MIN_RPS:
             points.append((elapsed, health_model.score(bundle, reading)))
             readings.append(reading)
-            verdict = health_model.follow_verdict(points, eps)
-            print(f"   +{elapsed:3.0f}s score {points[-1][1]:+.3f} ({_describe(reading)}) -> {verdict}")
+            verdict = health_model.judge_trajectory(bundle, points)
+            print(f"   +{elapsed:3.0f}s [{window}] score {points[-1][1]:+.3f} ({_describe(reading)}) -> {verdict}")
             if verdict != "WAIT":
                 break
         if elapsed >= VERIFY_MAX_SECONDS:
@@ -701,8 +703,8 @@ def _check_stabilization(pre_action_metrics_json):
     why = "" if scores[-1] >= 0 else "\nStill outside the healthy range: " + "; ".join(health_model.explain(bundle, last))
     return (f"{verdict}\n"
             f"Health score: before the action {pre_score:+.2f}; after the rollout ({ready_seconds:.0f} s, "
-            f"{run_outcome.get('rollout') or '?'}) "
-            f"{trajectory} over {len(scores) * VERIFY_INTERVAL_SECONDS} s (>= 0 = healthy, below 0 = distance)\n"
+            f"{run_outcome.get('rollout') or '?'}), on data since then only: "
+            f"{trajectory} by +{points[-1][0]:.0f} s (>= 0 = healthy, below 0 = distance)\n"
             f"First reading: {_describe(first)}\nLast reading:  {_describe(last)}{why}")
 
 

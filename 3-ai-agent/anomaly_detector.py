@@ -22,15 +22,18 @@ DRY_RUN_CSV = os.path.join(REPO_ROOT, "5-ml-training", "dry_run_readings.csv")
 MIN_THROUGHPUT_RPS = 1.0
 # Consecutive anomalous readings required before waking the agent (3 x 10s = 30s).
 ANOMALY_STREAK_REQUIRED = 3
-# A pod-count change: the PromQL windows are 1 m, so for up to a minute the readings still hold the minute before it.
-# Every reading is judged (A32, 2026-11-02; until v12 the detector skipped 90 s from the moment it saw the change, i.e.
-# after the agent's verification had already watched it):
-#   - a change the agent's verification watched (it ended STABLE, or asked for a re-wake) is not followed again: the
-#     next reading is judged as usual;
-#   - any other change (a person, the validation script, the rollback of a failed scale-down) is followed with the
-#     verification's own rule (health_model.follow_verdict): healthy -> normal monitoring at once; anomalous but moving
-#     towards healthy -> wait, not counted; worse / not improving / still anomalous after 4 min -> a confirmed anomaly.
-# Minimum time between two agent runs. Monitoring continues meanwhile.
+# After a change (A32, A32.1, 2026-11-02; until v12 the detector skipped 90 s from the moment it saw a pod-count change,
+# i.e. after the agent's verification had already watched it):
+#   - the readings hold only data from after the change took effect (nfr_metrics.clean_window: the window starts there
+#     and grows to the usual minute; the first such reading exists 20 s after it), so nothing from before it is judged;
+#   - a change the agent's verification watched (it ended STABLE, or asked for a re-wake; a scale or a restart) is not
+#     followed again: the readings after it are judged as usual;
+#   - any other pod-count change (a person, the validation script, the rollback of a failed scale-down) is followed, from
+#     the moment the readings show its pods ready, with the verification's own rule (health_model.judge_trajectory):
+#     healthy -> normal monitoring at once; anomalous but moving towards healthy -> wait, not counted; worse / not
+#     improving / still anomalous after 4 min -> a confirmed anomaly.
+# Minimum time between two agent runs: it limits the LLM calls, e.g. while an anomaly the agent answered with "No action"
+# lasts. Monitoring continues meanwhile.
 AGENT_COOLDOWN_SECONDS = 60
 # Phase 2: when the verification of an action sees the score get worse or stay stuck, the agent is woken
 # again at once (no streak, no cooldown: the verification already watched the change),
@@ -45,10 +48,10 @@ LOGGED_METRICS = ["throughput", "rps_per_pod", "latency_p95", "error_rate", "rep
                   "avg_cpu_per_pod"]
 
 
-def read_metrics():
-    """One reading of the NFR metrics (nfr_metrics.py), or None if a required one is missing."""
+def read_metrics(window=nfr_metrics.WINDOW):
+    """One reading of the NFR metrics (nfr_metrics.py) over `window`, or None if a required one is missing."""
     try:
-        return nfr_metrics.fetch_reading()
+        return nfr_metrics.fetch_reading(window=window)
     except Exception as e:
         print(f"Metrics unavailable: {e}")
         return None
@@ -69,6 +72,7 @@ def print_summary(stats, started_at, dry_run):
         print(f"  Of which re-wakes:           {stats['rewakes']} (verification saw no improvement)")
     print(f"  Pod-count changes followed:  {stats['followed']} ({stats['follow_waits']} readings waited, "
           f"{stats['follow_unstable']} ended UNSTABLE)")
+    print(f"  Waits for post-change data:  {stats['no_clean_data']} (readings before 20 s of data after a change)")
     print(
         f"  Skipped readings:            low_traffic={stats['skipped_low_traffic']} "
         f"missing_metrics={stats['skipped_missing']}"
@@ -110,10 +114,11 @@ def evaluate(bundle, reading):
 
 
 def _outcome(result):
-    """trigger_ai_agent returns {"resolved", "rewake", "verdict"}; a bare bool is read as "resolved"."""
+    """trigger_ai_agent returns {"resolved", "rewake", "verdict", "changed_at"}; a bare bool is read as "resolved"."""
     if isinstance(result, dict):
-        return bool(result.get("resolved")), bool(result.get("rewake")), result.get("verdict", "")
-    return bool(result), False, ""
+        return (bool(result.get("resolved")), bool(result.get("rewake")), result.get("verdict", ""),
+                result.get("changed_at"))
+    return bool(result), False, "", None
 
 
 def run_monitor(dry_run=False):
@@ -137,7 +142,8 @@ def run_monitor(dry_run=False):
         csv_file = open(DRY_RUN_CSV, "w", newline="")
         csv_writer = csv.DictWriter(
             csv_file,
-            fieldnames=["timestamp", *LOGGED_METRICS, "prediction", "score", "streak", "follow", "would_trigger"],
+            fieldnames=["timestamp", *LOGGED_METRICS, "window", "prediction", "score", "streak", "follow",
+                        "would_trigger"],
         )
         csv_writer.writeheader()
     else:
@@ -147,14 +153,14 @@ def run_monitor(dry_run=False):
 
     stats = {
         "evaluated": 0, "anomalous": 0, "triggers": 0, "rewakes": 0,
-        "followed": 0, "follow_waits": 0, "follow_unstable": 0,
+        "followed": 0, "follow_waits": 0, "follow_unstable": 0, "no_clean_data": 0,
         "skipped_low_traffic": 0, "skipped_missing": 0, "agent_errors": 0,
     }
     started_at = time.monotonic()
-    eps = float(bundle["noise_eps"])
     anomaly_streak = 0
     last_replicas = None
-    following = None    # (monotonic time of the first reading at the new count, [(seconds since then, score)])
+    window_from = None   # monotonic time a change took effect: readings hold data since then until they are 1 m long
+    following = None     # a pod-count change no verification watched: {"seen", "start", "points"}
     cooldown_until = 0.0
     rewake_pending = False
     rewakes_in_a_row = 0
@@ -162,7 +168,13 @@ def run_monitor(dry_run=False):
 
     try:
         while True:
-            reading = read_metrics()
+            now = time.monotonic()
+            window = nfr_metrics.WINDOW
+            if window_from is not None:
+                window = nfr_metrics.clean_window(now - window_from)     # None: no post-change reading yet
+                if window == nfr_metrics.WINDOW:
+                    window_from = None
+            reading = read_metrics(window or nfr_metrics.WINDOW)
             if reading is None:
                 print("Metrics unavailable. Skipping ML prediction and remediation.")
                 stats["skipped_missing"] += 1
@@ -173,17 +185,30 @@ def run_monitor(dry_run=False):
             replicas = reading["replicas"]
             throughput = reading["throughput"]
             timestamp = datetime.now().strftime("%H:%M:%S")
-            now = time.monotonic()
+
+            # A pod-count change no verification watched (A32): followed with the verification's rule on post-change
+            # data, from the reading that shows its pods ready (or after ROLLOUT_WAIT_SECONDS: a pod may never become
+            # ready). After a run of the agent whose verification watched its change, last_replicas is None here.
+            if last_replicas is not None and replicas != last_replicas:
+                following = {"seen": now, "start": None, "points": []}
+                window_from = None
+                stats["followed"] += 1
+            last_replicas = replicas
+            if following is not None and following["start"] is None:
+                if ((reading.get("ready_replicas") or 0) >= replicas
+                        or now - following["seen"] >= health_model.ROLLOUT_WAIT_SECONDS):
+                    following["start"] = window_from = now
+                window = None      # this reading still holds data from before the change took effect
+            if window is None:
+                print(f"[{timestamp}] {replicas:.0f} pod(s): waiting for {nfr_metrics.MIN_CLEAN_SECONDS}s of data "
+                      "from after the change.")
+                stats["no_clean_data"] += 1
+                anomaly_streak = 0
+                time.sleep(INTERVAL_SECONDS)
+                continue
             history.append((now, throughput))
             while history and now - history[0][0] > TREND_WINDOW_SECONDS:
                 history.popleft()
-
-            # A pod-count change no verification watched: followed with the verification's rule from this reading on
-            # (A32). After a run of the agent whose verification watched its change, last_replicas is None here.
-            if last_replicas is not None and replicas != last_replicas:
-                following = (now, [])
-                stats["followed"] += 1
-            last_replicas = replicas
 
             # Data quality gate: not enough traffic for a meaningful evaluation.
             if throughput < MIN_THROUGHPUT_RPS:
@@ -207,8 +232,8 @@ def run_monitor(dry_run=False):
 
             follow = None
             if following is not None:
-                following[1].append((now - following[0], score))
-                follow = health_model.follow_verdict(following[1], eps)
+                following["points"].append((now - following["start"], score))
+                follow = health_model.judge_trajectory(bundle, following["points"])
                 if follow != "WAIT":
                     following = None
 
@@ -233,6 +258,7 @@ def run_monitor(dry_run=False):
                 csv_writer.writerow({
                     "timestamp": timestamp,
                     **{name: reading.get(name) for name in LOGGED_METRICS},
+                    "window": window,
                     "prediction": prediction,
                     "score": round(score, 4),
                     "streak": anomaly_streak,
@@ -248,8 +274,9 @@ def run_monitor(dry_run=False):
                 continue
 
             if follow == "WAIT":
-                print(f"[{timestamp}] Pods changed to {replicas:.0f} {following[1][-1][0]:.0f}s ago — anomalous, "
-                      "following the change (WAIT: moving towards healthy or too early to tell).")
+                print(f"[{timestamp}] Pods changed to {replicas:.0f}, {following['points'][-1][0]:.0f}s of data since "
+                      "— anomalous, following the change (WAIT: not worse; improving, or under 30 s of readings to "
+                      "tell).")
                 time.sleep(INTERVAL_SECONDS)
                 continue
             if follow is not None:
@@ -283,20 +310,24 @@ def run_monitor(dry_run=False):
                                            "load_trend_rps_per_min": round(trend, 1) if trend is not None else None})
                 print("Αναμονή ολοκλήρωσης ενεργειών από τον Agent...")
                 try:
-                    resolved, rewake, verdict = _outcome(trigger_ai_agent(metrics_json))
+                    resolved, rewake, verdict, changed_at = _outcome(trigger_ai_agent(metrics_json))
                 except Exception as e:
                     # trigger_ai_agent already survives LLM errors; this catches anything else around it
                     # (e.g. a failed write of incident_log.csv). Without it one such error would end
                     # monitoring in the middle of an experiment. (Added 2026-10-11.)
                     stats["agent_errors"] += 1
                     print(f"⚠️ Agent run failed outside the agent: {type(e).__name__}: {e}. Monitoring continues.")
-                    resolved, rewake, verdict = False, False, ""
+                    resolved, rewake, verdict, changed_at = False, False, "", None
 
                 # The verification watched the change of this run (STABLE, or UNSTABLE with a re-wake): the next
-                # reading is judged as usual, the change is not followed again. Not after the rollback of a failed
-                # scale-down (code restored the pod count, nothing watched it), an unverifiable action or no action.
+                # reading is judged as usual, the change is not followed again, and the readings hold only data from
+                # after it took effect (A32.1). Not after the rollback of a failed scale-down (code restored the pod
+                # count, nothing watched it: it is followed), an unverifiable action or no action.
                 if verdict and (resolved or rewake):
                     last_replicas = None
+                    following = None
+                    if changed_at is not None:
+                        window_from = changed_at
                 now = datetime.now().strftime('%H:%M:%S')
                 if resolved:
                     rewakes_in_a_row = 0

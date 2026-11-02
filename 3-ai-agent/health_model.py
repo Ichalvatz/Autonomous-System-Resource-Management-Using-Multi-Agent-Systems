@@ -29,7 +29,9 @@ The score is the SVM's own decision function d = sum_i a_i * exp(-gamma * |x - x
           of x. Same boundary as the SVM; unlike d itself it does not flatten far away (v9's -0.537 for every fault),
           so a trajectory shows how far the state is and whether it moves back.
 """
+import json
 import math
+import os
 
 import joblib
 import numpy as np
@@ -41,10 +43,20 @@ MODEL_TYPE = "OneClassSVM-NFR-v11"
 POD_SEPARATION = 100.0
 
 
-def load(path):
+def load(path, window_noise=True):
+    """The bundle saved by train_health_baseline.py, with the noise of readings after a change (window_noise.json next
+    to it, measure_window_noise.py, A32.1) as bundle["window_noise"] when window_noise is True."""
     bundle = joblib.load(path)
     if not isinstance(bundle, dict) or bundle.get("model_type") != MODEL_TYPE:
         raise ValueError(f"{path} is not a v11 health model bundle (retrain with train_health_baseline.py)")
+    if window_noise:
+        noise_path = os.path.join(os.path.dirname(path), "window_noise.json")
+        if not os.path.exists(noise_path):
+            raise ValueError(f"{noise_path} is missing: run 5-ml-training/measure_window_noise.py")
+        noise = json.load(open(noise_path))
+        if noise.get("model_trained_at") != bundle.get("trained_at"):
+            raise ValueError(f"{noise_path} was measured with another model: run measure_window_noise.py again")
+        bundle["window_noise"] = noise
     return bundle
 
 
@@ -148,50 +160,53 @@ def explain(bundle, reading):
     return out or ["every metric is inside its healthy range for this pod count; only their combination is unusual"]
 
 
-def judge_trajectory(scores, eps, judge_from, window_full_at, stuck_readings=3):
-    """Verdict on the scores read every 10 s after an action's rollout converged (oldest first): the user's rule
-    (2026-10-26, design_decisions.md A28), one reading at a time.
+# Judging a change (the verification of an action, the detector's follow of a pod-count change; A32.1, 2026-11-02).
+# Every reading is made only of data since the change took effect (nfr_metrics.clean_window): the first one 20 s after
+# it, then every 10 s, its window growing to the usual minute. Until A32.1 the readings were the usual 1 m windows, which
+# for a minute mix the state before the change in, so the rule needed fixed times ("worse" from 10 s, "not improving"
+# from 60 s); with post-change data only, those reasons are gone.
+GIVE_UP_SECONDS = 240         # still anomalous this long after the change -> UNSTABLE (a safety bound)
+# A new pod is ready in ~10 s; one that never becomes ready (the stuck one after a scale-up) must not hold the judgement:
+# the change counts as taken effect after this long at most.
+ROLLOUT_WAIT_SECONDS = 90
+STUCK_READINGS = 3            # "not improving": no rise over this many readings (30 s)
 
+
+def change_noise(bundle, kind, seconds):
+    """The noise of a comparison of readings since a change (window_noise.json): kind "step" (10 s apart) or "span"
+    (STUCK_READINGS readings apart), for the later reading taken `seconds` after the change."""
+    table = bundle["window_noise"][kind]
+    key = min(table, key=lambda k: abs(int(k) - seconds))      # the nearest measured time (past +120 s: +120 s)
+    return float(table[key])
+
+
+def judge_trajectory(bundle, points):
+    """Verdict on the readings after a change: points = (seconds since the change took effect, score), oldest first,
+    every reading made of post-change data only. The user's rule (2026-10-26, design_decisions.md A28), one reading at a
+    time:
       STABLE    the last reading is healthy (score >= 0);
-      UNSTABLE  worse: the score fell by more than eps since the reading before; or not improving: it has not risen by
-                more than eps over the last `stuck_readings` readings;
-      WAIT      anomalous but moving back towards healthy, or too early to tell.
-    judge_from: index of the first reading "worse" may use (VERIFY_JUDGE_FROM_SECONDS = 10 s after the rollout, v12,
-    A31): the reading right after an action can dip (judged from it, 6 of 61 recorded actions gave a false "worse").
-    window_full_at: index of the first reading whose 1 m windows hold only post-action data; "not improving" uses only
-    these (A31.1). A fall is real even while the window still mixes the old minute in (new requests that are faster
-    cannot raise a window's p95, fewer errors cannot raise its error rate), but no rise is not: the p95 of a 1 m window
-    stays at the old level until the slow requests from before the action are below 5% of it (the smoke run of
-    2026-11-01 18:04: p95 0.48 s for 40 s after a right scale-up, then 0.24 s). Before judge_from only STABLE or WAIT.
-    eps: the measurement noise of a reading in the model's units (bundle["noise_eps"]).
-    """
-    if scores and scores[-1] >= 0:
+      UNSTABLE  worse: the score fell since the reading before by more than the noise of that comparison; or not
+                improving: it has not risen over the last STUCK_READINGS readings by more than the noise of that
+                comparison; or still anomalous GIVE_UP_SECONDS after the change;
+      WAIT      anomalous and not worse: moving towards healthy, or too few readings yet to tell (not improving needs
+                STUCK_READINGS + 1 of them).
+    The noise depends on how much data the readings hold (change_noise, measured on the steady anomalous periods of the
+    HPA runs: 10 s apart 0.38 between the readings at +20 and +30 s, 0.10 between +50 and +60 s; 30 s apart 0.47 between
+    +20 and +50 s, ~0.25 once the windows are a minute long)."""
+    if not points:
+        return "WAIT"
+    t, s = points[-1]
+    if s >= 0:
         return "STABLE"
-    judged = scores[judge_from:] if judge_from is not None else []
-    if len(judged) >= 2 and judged[-1] < judged[-2] - eps:
-        return f"UNSTABLE: worse (score {judged[-2]:+.2f} -> {judged[-1]:+.2f} in 10 s)"
-    post = scores[window_full_at:] if window_full_at is not None else []
-    if len(post) > stuck_readings and post[-1] - post[-1 - stuck_readings] <= eps:
-        return (f"UNSTABLE: not improving (score {post[-1 - stuck_readings]:+.2f} -> {post[-1]:+.2f} "
-                f"over the last {stuck_readings * 10} s)")
+    if len(points) >= 2:
+        prev = points[-2][1]
+        if s < prev - change_noise(bundle, "step", t):
+            return f"UNSTABLE: worse (score {prev:+.2f} -> {s:+.2f} in 10 s)"
+    if len(points) > STUCK_READINGS:
+        old = points[-1 - STUCK_READINGS][1]
+        if s - old <= change_noise(bundle, "span", t):
+            return (f"UNSTABLE: not improving (score {old:+.2f} -> {s:+.2f} over the last "
+                    f"{STUCK_READINGS * 10} s)")
+    if t >= GIVE_UP_SECONDS:
+        return f"UNSTABLE: still anomalous after {GIVE_UP_SECONDS // 60} min"
     return "WAIT"
-
-
-# The timings of judge_trajectory, in seconds after a change took effect (A31, A31.1): one source for the agent's
-# verification of its own action (agent_tools, from the converged rollout) and the detector's follow of a pod-count
-# change no verification watched (anomaly_detector, from the first reading at the new count; A32).
-JUDGE_FROM_SECONDS = 10       # "worse" from here: the first reading after a change can dip
-WINDOW_FULL_SECONDS = 60      # "not improving" from here: the 1 m windows hold only post-change data
-GIVE_UP_SECONDS = 240         # still anomalous -> UNSTABLE
-
-
-def follow_verdict(points, eps):
-    """judge_trajectory on (seconds since the change, score) points, oldest first, with the timings above; still
-    anomalous after GIVE_UP_SECONDS -> UNSTABLE."""
-    scores = [s for _, s in points]
-    judge_from = next((i for i, (t, _) in enumerate(points) if t >= JUDGE_FROM_SECONDS), None)
-    window_full_at = next((i for i, (t, _) in enumerate(points) if t >= WINDOW_FULL_SECONDS), None)
-    verdict = judge_trajectory(scores, eps, judge_from, window_full_at)
-    if verdict == "WAIT" and points and points[-1][0] >= GIVE_UP_SECONDS:
-        verdict = f"UNSTABLE: still anomalous after {GIVE_UP_SECONDS // 60} min"
-    return verdict

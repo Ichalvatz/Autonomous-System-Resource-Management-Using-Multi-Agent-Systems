@@ -247,3 +247,17 @@ Prometheus) και το `4-load-testing/archive/v12_live_queue.sh`.
 σειρές των τριών ζωντανών επικυρώσεων από το Prometheus (`detector_validation_series.json` στο
 `archive/detector_validation_v10/`, `archive/detector_validation_v11/` και στο `4-load-testing/` για τον v12), γιατί τα CSV
 του dry run κρατούσαν μόνο όσες μετρήσεις έκρινε ο detector και το Prometheus κρατά 10 μέρες.
+
+**Α32.1 (2026-11-02, βράδυ): μετρήσεις μόνο από μετά την αλλαγή.**
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| `health_model.follow_verdict`, `JUDGE_FROM_SECONDS` (10 s), `WINDOW_FULL_SECONDS` (60 s)· τα ορίσματα `eps`, `judge_from`, `window_full_at` του `judge_trajectory` | `health_model.py` | `judge_trajectory(bundle, points)` πάνω σε μετρήσεις μόνο από μετά την αλλαγή (`nfr_metrics.clean_window`), με τον θόρυβο κάθε σύγκρισης (`change_noise`, `window_noise.json`). Οι χρόνοι υπήρχαν μόνο επειδή το παράθυρο του λεπτού ανακατεύει το πριν με το μετά. Ο χρήστης: «δεν μ' αρέσουν τα σκληρά χρονικά όρια». |
+| `VERIFY_JUDGE_FROM_SECONDS`, `VERIFY_WINDOW_FULL_SECONDS`· η μέτρηση στα +0 s του rollout με το παράθυρο του λεπτού | `agent_tools.py` | Η πρώτη μέτρηση στα 20 s, με παράθυρο από το rollout· `run_outcome["changed_at"]`. |
+| Το `noise_eps` (0.142) ως ανοχή της επαλήθευσης και του detector | `agent_tools.py`, `anomaly_detector.py` | Ο μετρημένος θόρυβος ανά σύγκριση. Το `noise_eps` μένει στο bundle (η εκπαίδευση το χρησιμοποιεί στη μονοτονία). |
+| Ο detector διάβαζε πάντα το τελευταίο λεπτό | `anomaly_detector.py` | `window_from`: μετά από κάθε αλλαγή μόνο δεδομένα από μετά, ως το λεπτό· η ξένη αλλαγή ακολουθείται από τη μέτρηση με έτοιμα pods. |
+| `replay_follow.py` → `replay_v13_follow.md` (η σύγκριση της Α32, με μετρήσεις του λεπτού) | `4-load-testing/` | `4-load-testing/archive/a32_replay_follow/`· τη θέση του παίρνει το `replay_v13.py` → `replay_v13.md`. |
+
+**Προστέθηκαν:** `5-ml-training/measure_window_noise.py` → `window_noise.json` (+ `window_noise_readings.json`, οι μετρήσεις του),
+`4-load-testing/archive/clean_window_readings.json` (οι μετρήσεις μετά από αλλαγή που χρησιμοποίησαν τα replays, από το
+Prometheus), `4-load-testing/replay_v13.py` → `replay_v13.md`.

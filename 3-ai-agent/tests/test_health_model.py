@@ -6,6 +6,7 @@ judge_trajectory is tested in test_agent_logic.py with the verification that use
 
 Run from the repo root:  .venv/bin/python3 -m pytest 3-ai-agent/tests -q
 """
+import json
 import math
 import os
 import sys
@@ -102,10 +103,18 @@ def test_every_support_vector_sits_on_the_load_axis_so_the_decision_factorises(b
 def test_embedding_and_bundle_check(bundle, tmp_path):
     assert hm.embedding(bundle, reading()) == [round(float(v), 5) for v in hm.transform(PARAMS, reading())[0]]
     joblib.dump(bundle, tmp_path / "ok.pkl")
-    assert hm.load(tmp_path / "ok.pkl")["params"] == PARAMS
+    assert hm.load(tmp_path / "ok.pkl", window_noise=False)["params"] == PARAMS
+    with pytest.raises(ValueError):                       # the noise after a change is required at run time (A32.1)
+        hm.load(tmp_path / "ok.pkl")
+    noise = {"model_trained_at": bundle.get("trained_at"), "step": {"30": 0.4}, "span": {"50": 0.5}}
+    (tmp_path / "window_noise.json").write_text(json.dumps(noise))
+    assert hm.load(tmp_path / "ok.pkl")["window_noise"]["step"] == {"30": 0.4}
+    (tmp_path / "window_noise.json").write_text(json.dumps({**noise, "model_trained_at": "another model"}))
+    with pytest.raises(ValueError):                       # measured with another model
+        hm.load(tmp_path / "ok.pkl")
     joblib.dump({"model_type": "OneClassSVM-NFR", "params": {}}, tmp_path / "v9.pkl")
     with pytest.raises(ValueError):
-        hm.load(tmp_path / "v9.pkl")
+        hm.load(tmp_path / "v9.pkl", window_noise=False)
 
 
 def test_explain_uses_the_model_bands_and_the_safe_level_with_the_objectives():

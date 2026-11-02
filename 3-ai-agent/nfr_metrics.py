@@ -38,6 +38,20 @@ HOST = 'host="mwtback.aiops"'
 DEPLOY = 'namespace="default", deployment="aiops-backend-deployment"'
 PODS = 'namespace="default", pod=~"aiops-backend-deployment-.*", container!=""'
 WINDOW = "1m"
+WINDOW_SECONDS = 60
+# After a change (a scale, a restart), the readings hold only data from after it (A32.1, 2026-11-02): the window starts
+# where the change took effect and grows to WINDOW. rate() needs two samples, and Prometheus scrapes every 10 s
+# (1-infrastructure/prometheus-values.yaml and the ServiceMonitors), so the first such reading exists 20 s after it.
+SCRAPE_SECONDS = 10
+MIN_CLEAN_SECONDS = 2 * SCRAPE_SECONDS
+
+
+def clean_window(seconds_since_change):
+    """The window of a reading made only of data since a change: None before MIN_CLEAN_SECONDS (no such reading yet),
+    "<n>s" while the change is younger than WINDOW, then WINDOW."""
+    if seconds_since_change < MIN_CLEAN_SECONDS:
+        return None
+    return WINDOW if seconds_since_change >= WINDOW_SECONDS else f"{int(seconds_since_change)}s"
 
 
 def queries(window=WINDOW):

@@ -1,8 +1,11 @@
 """
 Offline replay of the current health model on recorded data, before any live run (design_decisions.md A28 / A30 /
 A31, acceptance criteria 2-5). Uses the runtime's own code: the detector's gates and streak (anomaly_detector), the
-verification rule (health_model.follow_verdict: judge_trajectory with its timings) and the agent's minimum pod count
-(agent._minimum_pods). "Recorded" = what the agent of the campaign (v9, v10 or v11) or its validation logged;
+verification rule (health_model.judge_trajectory, with the measured noise of each comparison) and the agent's minimum
+pod count (agent._minimum_pods). Since A32.1 (2026-11-02) the readings after a change hold only data since it took
+effect (nfr_metrics.clean_window); a series.json holds 1 m readings only, so those come from Prometheus (clean_reading,
+kept in archive/clean_window_readings.json, because Prometheus keeps 10 days): a change older than that and not kept
+cannot be judged before its readings are a minute long. "Recorded" = what the agent of the campaign (v9, v10 or v11) or its validation logged;
 "reference" = the previous model (REFERENCE, v11) replayed on the same data.
 
   2. The live detector validations A-I (dry runs): the readings the detector of the time evaluated and the phases,
@@ -12,16 +15,16 @@ verification rule (health_model.follow_verdict: judge_trajectory with its timing
      the detector logic: wake-ups after each fault, false wake-ups before a fault or in the first 5 min of the normal
      load, and the first wake-up of the normal load against the reference model on the same series (A31: both on the
      series' 10 s grid) and against the recorded one (controller.log).
-  4. The verification of every action of the agent runs: the readings the recorded verification logged in
-     controller.log (every 10 s after the rollout), continued from series.json when the current model needs more.
+  4. The verification of every action of the agent runs, on readings of data since the rollout converged (the time
+     comes from controller.log: printed since A32.1, else the recorded verification's end minus its last reading).
   5. The minimum pod count (agent._minimum_pods) at every wake-up of the agent runs (incident_log.csv), with the
      load trend of the last minute from series.json, against the right action; and 1 at idle load for 1-3 pods (A31).
   For information: the user's manual demo run of 2026-11-01 (archive/manual_demo_2026-11-01/series.json, from
   Prometheus), wake-ups of the current and the reference model.
 
-Usage (repo root):  .venv/bin/python3 4-load-testing/replay_model.py [TAG] > 4-load-testing/replay_v12_<TAG>.md
-(The replay_v12_*.md files were made with v12's detector, which skipped 90 s after a pod-count change; A32 compares
-the two detectors: replay_follow.py.)
+Usage (repo root):  .venv/bin/python3 4-load-testing/replay_model.py [TAG] > 4-load-testing/replay_v13_<TAG>.md
+(The replay_v12_*.md files were made with v12's detector, which skipped 90 s after a pod-count change, and v12's
+verification on 1 m readings; replay_v13.py compares the two.)
 """
 import csv
 import json
@@ -39,6 +42,7 @@ import agent  # noqa: E402
 import agent_tools  # noqa: E402
 import anomaly_detector as ad  # noqa: E402
 import health_model as hm  # noqa: E402
+import nfr_metrics  # noqa: E402
 
 LT = os.path.join(ROOT, "4-load-testing")
 VALIDATIONS = [  # (day, readings the detector of the time evaluated, phases, its version)
@@ -50,21 +54,28 @@ VALIDATIONS = [  # (day, readings the detector of the time evaluated, phases, it
      os.path.join(LT, "archive", "detector_validation_v11", "detector_validation_phases.csv"), "v11"),
 ]
 REFERENCE_NAME = "v11"
-REFERENCE = hm.load(os.path.join(ROOT, "5-ml-training", "v11", "health_model.pkl"))
+REFERENCE = hm.load(os.path.join(ROOT, "5-ml-training", "v11", "health_model.pkl"), window_noise=False)
 DEMO = os.path.join(LT, "archive", "manual_demo_2026-11-01")
 INCIDENTS = os.path.join(ROOT, "3-ai-agent", "incident_log.csv")
 SCENARIOS = [("baseline", "results_nfr.csv"), ("stuck", "results_nfr_stuck.csv"), ("cpuhog", "results_nfr_cpuhog.csv")]
 NORMAL_START_S = 300          # the first 5 min of the normal load: 42.8 rps on 1 pod, nothing to do
 PHASE_LAG_S = 30              # a wake-up whose streak starts this soon after a phase change: the replica metric lag
-VERIFY_LINE = re.compile(r"\+\s*(\d+)s score \S+ \((\d+) pod\(s\), ([\d.]+) rps \([\d.]+/pod\), p95 ([\d.]+) s, "
-                         r"errors ([\d.]+)%\) -> (.+)$")
+VERIFY_LINE = re.compile(r"\+\s*(\d+)s (?:\[\S+\] )?score \S+ \((\d+) pod\(s\), ([\d.]+) rps \([\d.]+/pod\), "
+                         r"p95 ([\d.]+) s, errors ([\d.]+)%\) -> (.+)$")
+CONVERGED_LINE = re.compile(r"Rollout converged after \d+s(?: \((\d\d:\d\d:\d\d)\))?")
 STAMP = re.compile(r"^\[(\d\d:\d\d:\d\d)\]")
 BUNDLE = agent_tools._health_bundle()
-EPS = float(BUNDLE["noise_eps"])
+# The reference model is compared on the first wake-up of the agent runs, which comes before any pod-count change; a
+# change in a series (an HPA run) is followed with the current model's noise for both.
+REFERENCE["window_noise"] = BUNDLE["window_noise"]
+CLEAN_CACHE = os.path.join(LT, "archive", "clean_window_readings.json")
+_clean = None
 
 
-def ts(day, hms):
-    return datetime.strptime(f"{day} {hms}", "%Y-%m-%d %H:%M:%S").timestamp()
+def ts(day, hms, after=None):
+    """Unix time of a log's HH:MM:SS on that day; with `after` (the run's start), past midnight is the next day."""
+    t = datetime.strptime(f"{day} {hms}", "%Y-%m-%d %H:%M:%S").timestamp()
+    return t + 86400 if after is not None and t < after - 3600 else t
 
 
 def reading(throughput, p95, err, replicas, ready=None):
@@ -72,13 +83,39 @@ def reading(throughput, p95, err, replicas, ready=None):
             "rps_per_pod": throughput / max(replicas, 1), "ready_replicas": replicas if ready is None else ready}
 
 
+def clean_reading(t_from, t):
+    """The reading at t over the data since t_from only (nfr_metrics.clean_window), or None (before 20 s, or no data:
+    Prometheus keeps 10 days). Every answer is kept in CLEAN_CACHE, so the replay reruns after Prometheus forgets."""
+    global _clean
+    window = nfr_metrics.clean_window(t - t_from)
+    if window is None:
+        return None
+    if _clean is None:
+        _clean = json.load(open(CLEAN_CACHE)) if os.path.exists(CLEAN_CACHE) else {}
+    key = f"{int(t)}:{window}"
+    if key not in _clean:
+        r = nfr_metrics.fetch_reading(window=window, at=int(t))
+        _clean[key] = None if r is None else {k: r.get(k) for k in ("throughput", "latency_p95", "error_rate",
+                                                                     "replicas", "ready_replicas")}
+    r = _clean[key]
+    return None if r is None else reading(r["throughput"], r["latency_p95"], r["error_rate"], r["replicas"],
+                                          r["ready_replicas"])
+
+
+def save_clean_cache():
+    if _clean is not None:
+        json.dump(_clean, open(CLEAN_CACHE, "w"))
+
+
 def detector(points, gated=True, bundle=None):
     """Wake-ups of the detector logic over (t, reading or None) points: (wake time, streak start time) pairs. A
-    pod-count change is followed with health_model.follow_verdict (A32): the detector's follow of a change no
-    verification watched, and the same rule as the agent's verification of its own change, after which the readings
-    are judged as usual. (Until v12 the detector skipped 90 s after a change.)"""
+    pod-count change in the series is followed as the detector follows a change no verification watched (A32, A32.1):
+    from the reading that shows its pods ready (or ROLLOUT_WAIT_SECONDS), on readings of post-change data only
+    (clean_reading; none before 20 s), with health_model.judge_trajectory; after a minute the series' own readings.
+    In an agent run the agent's own changes are followed the same way (its verification watched them live with the
+    same rule); only the first wake-up of an agent run, before any change, is compared. (Until v12 the detector
+    skipped 90 s after a change.)"""
     bundle = bundle or BUNDLE
-    eps = float(bundle["noise_eps"])
     wakes, streak, start, last_reps, follow, cooldown_until = [], 0, None, None, None, -1e18
     for t, r in points:
         if r is None:
@@ -86,16 +123,26 @@ def detector(points, gated=True, bundle=None):
             continue
         if gated:
             if last_reps is not None and r["replicas"] != last_reps:
-                follow = (t, [])
+                follow = {"seen": t, "start": None, "points": []}
             last_reps = r["replicas"]
+            if follow is not None and follow["start"] is None:
+                if (r["ready_replicas"] or 0) >= r["replicas"] or t - follow["seen"] >= hm.ROLLOUT_WAIT_SECONDS:
+                    follow["start"] = t
+                streak = 0
+                continue
+            if follow is not None and t - follow["start"] < nfr_metrics.WINDOW_SECONDS:
+                r = clean_reading(follow["start"], t)
+                if r is None:               # before 20 s of post-change data, or no data
+                    streak = 0
+                    continue
             if r["throughput"] < ad.MIN_THROUGHPUT_RPS:
                 streak = 0
                 continue
         s = hm.score(bundle, r)
         verdict = None
-        if follow is not None:
-            follow[1].append((t - follow[0], s))
-            verdict = hm.follow_verdict(follow[1], eps)
+        if follow is not None and follow["start"] is not None:
+            follow["points"].append((t - follow["start"], s))
+            verdict = hm.judge_trajectory(bundle, follow["points"])
             follow = follow if verdict == "WAIT" else None
         if verdict == "WAIT":
             streak = 0
@@ -114,8 +161,8 @@ def detector(points, gated=True, bundle=None):
     return wakes
 
 
-def series_points(run_dir):
-    s = json.load(open(os.path.join(ROOT, run_dir, "series.json")))
+def series_points(run_dir, name="series.json"):
+    s = json.load(open(os.path.join(ROOT, run_dir, name)))
     out = []
     for t in sorted(int(k) for k in s["replicas"]):
         k = str(t)
@@ -154,52 +201,67 @@ def recorded_wakes(run_dir, day):
     path = os.path.join(ROOT, run_dir, "controller.log")
     if not os.path.exists(path):
         return []
-    return [ts(day, m.group(1)) for line in open(path) if (m := STAMP.match(line))
+    start = run_info(run_dir)[0]
+    return [ts(day, m.group(1), start) for line in open(path) if (m := STAMP.match(line))
             and ("ANOMALY DETECTED" in line or "RE-WAKE" in line)]
 
 
 def verification_blocks(run_dir, day):
-    """(actions, [(elapsed s, reading)], end time) for every verification in the run's controller.log."""
+    """(actions, [(elapsed s, reading)] as recorded, verdict as recorded, the time the rollout converged, end time) for
+    every verification in the run's controller.log. The rollout time is printed since A32.1; in older logs it is the
+    verification's end (the next stamped line) minus its last reading's elapsed time minus 1 s (the memory save):
+    within ~2 s."""
     lines = open(os.path.join(ROOT, run_dir, "controller.log")).read().splitlines()
+    start = run_info(run_dir)[0] if os.path.exists(os.path.join(ROOT, run_dir, "window.txt")) else None
     blocks, i = [], 0
     while i < len(lines):
         m = re.search(r"Actions (\[.*?\]) applied", lines[i])
         if not m:
             i += 1
             continue
-        actions, readings, i = m.group(1), [], i + 1
+        actions, readings, recorded, converged, i = m.group(1), [], "", None, i + 1
         while i < len(lines) and not STAMP.match(lines[i]):
+            c = CONVERGED_LINE.search(lines[i])
+            if c and c.group(1):
+                converged = ts(day, c.group(1), start)
             v = VERIFY_LINE.search(lines[i])
             if v:
                 readings.append((int(v.group(1)), reading(float(v.group(3)), float(v.group(4)), float(v.group(5)) / 100,
                                                           float(v.group(2)))))
+                recorded = v.group(6)
             i += 1
-        end = ts(day, STAMP.match(lines[i]).group(1)) if i < len(lines) else None
-        blocks.append((actions, readings, end))
+        end = ts(day, STAMP.match(lines[i]).group(1), start) if i < len(lines) else None
+        if converged is None and end is not None:
+            converged = end - (readings[-1][0] if readings else 0) - 1
+        blocks.append((actions, readings, recorded, converged, end))
     return blocks
 
 
-def judge(block_readings, end, points):
-    """The current verdict on one verification: (verdict, seconds after the rollout, readings used, from series)."""
-    seq = list(block_readings)
-    extra = [(t, r) for t, r in points if end is not None and t > end and r is not None]
-    last = seq[-1][0] if seq else 0
-    for k, (_, r) in enumerate(extra):
-        seq.append((last + 10 * (k + 1), r))
+def judge(converged):
+    """The current verdict on one action, on readings of data since its rollout converged: (verdict, seconds after the
+    rollout, readings used); ("no data", None, 0) when Prometheus no longer holds them (and they were not kept)."""
     followed = []
-    for k, (elapsed, r) in enumerate(seq):
+    for elapsed in range(nfr_metrics.MIN_CLEAN_SECONDS, hm.GIVE_UP_SECONDS + 1, nfr_metrics.SCRAPE_SECONDS):
+        r = clean_reading(converged, converged + elapsed)
+        if r is None:
+            if not followed:
+                return "no data", None, 0
+            continue
+        if r["throughput"] < agent_tools.VERIFY_MIN_RPS:
+            continue
         followed.append((elapsed, hm.score(BUNDLE, r)))
-        verdict = hm.follow_verdict(followed, EPS)     # the verification's rule and timings (A32: one source)
+        verdict = hm.judge_trajectory(BUNDLE, followed)
         if verdict != "WAIT":
-            return verdict, elapsed, k + 1, max(0, k + 1 - len(block_readings))
-    return "WAIT (no more data)", seq[-1][0] if seq else 0, len(seq), 0
+            return verdict, elapsed, len(followed)
+    return "WAIT (no more data)", hm.GIVE_UP_SECONDS, len(followed)
 
 
 def main():
     tag = sys.argv[1] if len(sys.argv) > 1 else "campaign-2026-10-23"
     print(f"# Replay of the health model ({tag})\n")
     print(f"*`replay_model.py`, {datetime.now():%Y-%m-%d %H:%M}. Model {BUNDLE['model_type']}, trained "
-          f"{BUNDLE.get('trained_at')}: gamma {BUNDLE['gamma']}; noise_eps {EPS:.3f}; healthy bands (rps) "
+          f"{BUNDLE.get('trained_at')}: gamma {BUNDLE['gamma']}; noise after a change from window_noise.json; healthy "
+          "bands (rps) "
           f"{BUNDLE['bands']}.*\n")
     verdicts = {}
 
@@ -276,22 +338,25 @@ def main():
           "first wake-up the series holds what the recorded agent or the HPA did, so later wake-ups are not compared.\n")
 
     # --- 4. verification of every action
-    print("## 4. Verification of the agent's actions (the recorded readings, then series.json)\n")
-    print("| Run | Action | Recorded: ended at | Current verdict | at (s after the rollout) | readings from series |\n"
-          "|---|---|---|---|---|---|")
-    stable, actions_n = 0, 0
+    print("## 4. Verification of the agent's actions (readings of data since the rollout converged)\n")
+    print("| Run | Action | Recorded (the verification of the time) | Current verdict | at (s after the rollout) |\n"
+          "|---|---|---|---|---|")
+    stable, actions_n, no_data = 0, 0, 0
     for scenario, label, run_dir in runs:
         if label == "hpa":
             continue
         points, day, _, _ = run_points[run_dir]
-        for actions, readings, end in verification_blocks(run_dir, day):
-            actions_n += 1
-            verdict, at, _, from_series = judge(readings, end, points)
-            stable += verdict == "STABLE"
-            print(f"| {scenario} {os.path.basename(run_dir)[-13:]} | {actions} | {readings[-1][0] if readings else '?'} s "
-                  f"| {verdict} | {at} | {from_series} |")
-    verdicts[f"4. verification: STABLE for all {actions_n} actions"] = stable == actions_n
-    print(f"\nSTABLE: {stable}/{actions_n} (the recorded column is when the recorded verification ended).\n")
+        for actions, readings, recorded, converged, end in verification_blocks(run_dir, day):
+            verdict, at, _ = judge(converged)
+            if verdict == "no data":
+                no_data += 1
+            else:
+                actions_n += 1
+                stable += verdict == "STABLE"
+            print(f"| {scenario} {os.path.basename(run_dir)[-13:]} | {actions} | {recorded.split(' (')[0]} at "
+                  f"{readings[-1][0] if readings else '?'} s | {verdict} | {at if at is not None else '-'} |")
+    verdicts[f"4. verification: STABLE for all {actions_n} actions with data"] = stable == actions_n
+    print(f"\nSTABLE: {stable}/{actions_n}; {no_data} without data (Prometheus keeps 10 days).\n")
 
     # --- 5. minimum pod count at every wake-up
     print("## 5. Minimum pod count at the agent's wake-ups (agent._minimum_pods)\n")
@@ -340,6 +405,7 @@ def main():
     print("## Acceptance (A31, criteria 2-5)\n")
     for k, v in verdicts.items():
         print(f"- {'PASS' if v else '**FAIL**'}: {k}")
+    save_clean_cache()
 
 
 if __name__ == "__main__":

@@ -21,7 +21,10 @@ import agent_tools  # noqa: E402
 import health_model  # noqa: E402
 
 PARAMS = {"safe_p95": 0.25, "nfr_p95": 0.35, "safe_errors": 0.001, "nfr_errors": 0.01, "pod_separation": 100.0}
-BUNDLE = {"params": PARAMS, "noise_eps": 0.15, "memory_similar_max": 0.45,
+# The noise of a comparison after a change, by seconds since it (as measured for the v12 model, window_noise.json).
+WINDOW_NOISE = {"step": {"30": 0.38, "40": 0.22, "50": 0.14, "60": 0.10, "120": 0.13},
+                "span": {"50": 0.47, "60": 0.30, "120": 0.25}}
+BUNDLE = {"params": PARAMS, "noise_eps": 0.15, "memory_similar_max": 0.45, "window_noise": WINDOW_NOISE,
           "bands": {1: [4.0, 87.0], 2: [73.7, 162.4], 3: [123.7, 251.5]}}
 
 
@@ -123,14 +126,21 @@ class FakeClock:
         self.t += seconds
 
 
-def verify_scores(pre_score, scores, rps=40.0):
-    """Run the verification on readings whose health scores are `scores`, one per 10 s after the rollout."""
+def verify_scores(pre_score, scores, rps=40.0, windows=None):
+    """Run the verification on readings whose health scores are `scores`, one per 10 s from 20 s after the rollout;
+    windows receives the window of every reading it asked for."""
     readings = [metrics(1, rps, score=s) for s in scores]
     it = iter(readings)
     clock = FakeClock()
+
+    def fetch(window="1m"):
+        if windows is not None:
+            windows.append(window)
+        return next(it, readings[-1])
+
     with mock.patch.object(agent_tools, "_wait_for_rollout", return_value=12.0), \
          mock.patch.object(agent_tools, "_health_bundle", return_value=BUNDLE), \
-         mock.patch.object(agent_tools.nfr_metrics, "fetch_reading", side_effect=lambda: next(it, readings[-1])), \
+         mock.patch.object(agent_tools.nfr_metrics, "fetch_reading", side_effect=fetch), \
          mock.patch.object(agent_tools.health_model, "score", side_effect=lambda _b, r: r["score"]), \
          mock.patch.object(agent_tools.health_model, "explain", return_value=["p95 latency 3.00 s is above ..."]), \
          mock.patch.object(agent_tools.time, "monotonic", side_effect=clock.monotonic), \
@@ -139,12 +149,14 @@ def verify_scores(pre_score, scores, rps=40.0):
     return agent_tools.run_outcome["verification"], text
 
 
-def test_verify_a_restart_that_fixes_the_app_is_stable_at_the_first_healthy_reading():
-    """The stuck run of 2026-10-23 18:49 in v10 scores: the errors leave the 1 m window step by step (the distance
-    falls), and the first healthy reading is STABLE (the user's rule, A28)."""
-    verdict, text = verify_scores(-63.0, [-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8, 0.9])
-    assert verdict == "STABLE"
-    assert agent_tools.run_outcome["recovery_s"] == 12 + 60 and agent_tools.run_outcome["score_after"] == 0.8
+def test_verify_reads_only_data_since_the_rollout_and_is_stable_at_the_first_healthy_reading():
+    """The readings start 20 s after the rollout converged, their window growing from 20 s (A32.1); the first healthy
+    reading is STABLE (the user's rule, A28). (The stuck restart of 2026-11-02 04:43 was healthy at the first one.)"""
+    windows = []
+    verdict, text = verify_scores(-63.0, [-20.0, -2.1, 0.8, 0.9], windows=windows)
+    assert verdict == "STABLE" and windows == ["20s", "30s", "40s"]
+    assert agent_tools.run_outcome["recovery_s"] == 12 + 40 and agent_tools.run_outcome["score_after"] == 0.8
+    assert agent_tools.run_outcome["changed_at"] == 0.0           # the rollout converged at t = 0 (the fake clock)
     assert "before the action -63.00" in text
 
 
@@ -160,13 +172,14 @@ def test_verify_a_scale_down_that_overloads_is_unstable_worse():
 
 
 def test_verify_waits_while_the_score_keeps_improving():
-    verdict, _ = verify_scores(-0.9, [-0.9 + 0.1 * i for i in range(12)])
+    # +0.3 every 10 s: 0.9 over 30 s, more than the noise of those comparisons
+    verdict, _ = verify_scores(-1.5, [-1.5 + 0.3 * i for i in range(12)])
     assert verdict == "STABLE"
 
 
 def test_verify_still_anomalous_after_the_time_limit_is_unstable():
-    # +0.06 every 10 s: 0.18 over 30 s, more than eps, so always "improving", never healthy within 240 s
-    verdict, text = verify_scores(-2.0, [-2.0 + 0.06 * i for i in range(40)])
+    # +0.2 every 10 s: 0.6 over 30 s, more than the noise, so always "improving", never healthy within 240 s
+    verdict, text = verify_scores(-30.0, [-30.0 + 0.2 * i for i in range(40)])
     assert verdict == "UNSTABLE" and "still anomalous after 4 min" in text
 
 
@@ -181,47 +194,27 @@ def test_verify_without_any_usable_reading_is_unverifiable():
     assert text.startswith("UNVERIFIABLE") and agent_tools.run_outcome["verification"] == "UNVERIFIABLE"
 
 
-@pytest.mark.parametrize("scores,judge_from,full_at,expected", [
-    ([0.1], 0, None, "STABLE"),                          # the user's rule: one healthy reading is STABLE
-    ([-0.5, 0.1], None, None, "STABLE"),                 # also before the comparisons start (+10 s, A31)
-    ([-0.5, -0.9], None, None, "WAIT"),                  # before it, a fall may be the dip right after the action
-    # the scale 1->2 of campaign-2026-10-28: the reading right after the rollout dips, then the score rises; judged
-    # from it (index 0) this was a false "worse", from +10 s (index 1) it waits and the next reading rises
-    ([-1.58, -3.86], 0, None, "UNSTABLE: worse"),
-    ([-1.58, -3.86], 1, None, "WAIT"),
-    ([-1.58, -3.86, -2.9], 1, None, "WAIT"),
-    ([-0.5] * 6 + [-0.6], 6, 6, "WAIT"),                 # one reading to judge: nothing to compare yet
-    ([-0.5] * 6 + [-0.6, -0.62], 6, 6, "WAIT"),          # a fall within the noise
-    ([-0.5] * 6 + [-0.6, -0.8], 6, 6, "UNSTABLE: worse"),  # a fall beyond the noise
-    ([-0.5, -0.6, -0.8], 1, None, "UNSTABLE: worse"),    # a fall is real while the window still mixes (A31.1)
-    ([-1.0] * 10, 1, 6, "UNSTABLE: not improving"),      # no rise beyond the noise over 30 s, on post-action windows
-    # the smoke run of 2026-11-01 18:04 (A31.1): after a right scale 1->2 the window's p95 stayed at 0.48 s for 40 s;
-    # "not improving" waits for windows of post-action data only, and the next reading was healthy
-    ([-2.0, -1.96, -1.93, -1.89, -1.82], 1, None, "WAIT"),
-    ([-2.0, -1.96, -1.93, -1.89, -1.82, 1.0], 1, None, "STABLE"),
-    ([-0.9, -0.7, -0.5, -0.3], 0, 0, "WAIT"),            # moving back towards healthy
-    # the smoke run of 2026-10-23 06:32 (v9 called it "worse"): the first post-action reading is already healthy
-    ([-0.537] * 6 + [0.061], 1, 6, "STABLE"),
-    # the stuck run of 2026-10-23 18:49 in v10 scores: the distance falls as the errors leave the window
-    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1, 0.8], 1, 6, "STABLE"),
-    ([-100.0, -82.6, -62.4, -42.4, -22.6, -2.1], 1, None, "WAIT"),
-])
-def test_judge_trajectory(scores, judge_from, full_at, expected):
-    assert health_model.judge_trajectory(scores, 0.05, judge_from, full_at).startswith(expected)
-
-
 @pytest.mark.parametrize("points,expected", [
-    ([(0, -0.5), (10, -0.9)], "WAIT"),                         # a dip at the first reading is not "worse"
-    ([(0, -0.5), (10, -0.5), (20, -0.9)], "UNSTABLE: worse"),  # from 10 s it is
-    ([(t, -0.5) for t in range(0, 90, 10)], "WAIT"),           # flat: "not improving" needs 30 s of full windows
-    ([(t, -0.5) for t in range(0, 100, 10)], "UNSTABLE: not improving"),
-    ([(t, -30 + t / 10) for t in range(0, 250, 10)], "UNSTABLE: still anomalous after 4 min"),
-    # the 2->3 of 2026-11-02 06:22 seen from the first reading at 3 pods (the 1 m window still held the overload)
-    ([(0, -0.63), (10, -0.77), (20, -0.68), (30, -0.64), (40, -0.35), (50, 1.0)], "STABLE"),
+    ([(20, 0.1)], "STABLE"),                                   # the user's rule: one healthy reading is STABLE
+    ([(20, -0.5)], "WAIT"),                                    # one anomalous reading: nothing to compare yet
+    ([(20, -0.5), (30, -0.8)], "WAIT"),                        # a fall within the noise of +20 -> +30 s (0.38)
+    ([(20, -0.5), (30, -1.0)], "UNSTABLE: worse"),             # a fall beyond it
+    ([(20, -0.5), (30, -0.5), (40, -0.5), (50, -0.45), (60, -0.65)], "UNSTABLE: worse"),   # beyond 0.10 at +60 s
+    ([(20, -1.0), (30, -1.0), (40, -1.0)], "WAIT"),
+    ([(20, -1.0), (30, -1.0), (40, -1.0), (50, -1.0)], "UNSTABLE: not improving"),          # flat for 30 s
+    ([(20, -1.0), (30, -0.9), (40, -0.8), (50, -0.7)], "UNSTABLE: not improving"),          # a rise within the noise
+    ([(20, -1.5), (30, -1.2), (40, -0.9), (50, -0.6)], "WAIT"),                             # a rise beyond it
+    ([(20, -1.5), (30, -1.2), (40, -0.9), (50, -0.6), (60, 0.1)], "STABLE"),
+    ([(t, -30 + 0.02 * t) for t in range(20, 250, 10)], "UNSTABLE: still anomalous after 4 min"),
+    # real readings of post-change data only (Prometheus, 2026-11-01 / 02):
+    ([(20, 1.0)], "STABLE"),                                   # the scale 1->2 of the smoke run 18:04 (1 m: +50 s)
+    ([(20, 0.59)], "STABLE"),                                  # the stuck restart of 04:43 (1 m: +60 s)
+    ([(20, -11.02), (30, -44.40)], "UNSTABLE: worse"),        # the wrong restart at 280 rps (1 m: +30 s)
+    ([(20, -10.96), (30, -10.96), (40, -13.33)], "UNSTABLE: worse"),           # 1->3 at 280 rps (1 m: +60 s)
+    ([(20, -10.63), (30, -10.62), (40, -10.60), (50, -10.67)], "UNSTABLE: not improving"),  # restart, 3 pods (+90 s)
 ])
-def test_follow_verdict_applies_the_verification_timings(points, expected):
-    """The rule with its timings, shared by the verification and the detector's follow of a change (A32)."""
-    assert health_model.follow_verdict(points, 0.142).startswith(expected)
+def test_judge_trajectory(points, expected):
+    assert health_model.judge_trajectory(BUNDLE, points).startswith(expected)
 
 
 # ---------------------------------------------------------------- incident memory (the model's space)
@@ -352,7 +345,8 @@ def test_failed_scale_down_is_rolled_back_logged_saved_as_failed_and_not_rewoken
     """The rollback goes through the scale tool, which resets run_outcome; the logged verdict must still be the
     agent action's (UNSTABLE). Code already undid it, so no re-wake."""
     result, row, save = _trigger(["scale 3->1"], "UNSTABLE", "UNSTABLE: worse than before the action")
-    assert result == {"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse than before the action"}
+    assert result == {"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse than before the action",
+                      "changed_at": None}     # the fake verification sets no rollout time
     assert row["verification"] == "UNSTABLE" and row["actions"] == "scale 3->1; rollback to 3"
     assert save.call_args.args[2] == "UNSTABLE"
 
