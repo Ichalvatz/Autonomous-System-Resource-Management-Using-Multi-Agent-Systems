@@ -1,7 +1,7 @@
 """
 Offline replay of the current health model on recorded data, before any live run (design_decisions.md A28 / A30 /
 A31, acceptance criteria 2-5). Uses the runtime's own code: the detector's gates and streak (anomaly_detector), the
-verification rule (health_model.judge_trajectory with agent_tools' timings) and the agent's minimum pod count
+verification rule (health_model.follow_verdict: judge_trajectory with its timings) and the agent's minimum pod count
 (agent._minimum_pods). "Recorded" = what the agent of the campaign (v9, v10 or v11) or its validation logged;
 "reference" = the previous model (REFERENCE, v11) replayed on the same data.
 
@@ -20,6 +20,8 @@ verification rule (health_model.judge_trajectory with agent_tools' timings) and 
   Prometheus), wake-ups of the current and the reference model.
 
 Usage (repo root):  .venv/bin/python3 4-load-testing/replay_model.py [TAG] > 4-load-testing/replay_v12_<TAG>.md
+(The replay_v12_*.md files were made with v12's detector, which skipped 90 s after a pod-count change; A32 compares
+the two detectors: replay_follow.py.)
 """
 import csv
 import json
@@ -71,28 +73,40 @@ def reading(throughput, p95, err, replicas, ready=None):
 
 
 def detector(points, gated=True, bundle=None):
-    """Wake-ups of the detector logic over (t, reading or None) points: (wake time, streak start time) pairs."""
+    """Wake-ups of the detector logic over (t, reading or None) points: (wake time, streak start time) pairs. A
+    pod-count change is followed with health_model.follow_verdict (A32): the detector's follow of a change no
+    verification watched, and the same rule as the agent's verification of its own change, after which the readings
+    are judged as usual. (Until v12 the detector skipped 90 s after a change.)"""
     bundle = bundle or BUNDLE
-    wakes, streak, start, last_reps, changed_at, cooldown_until = [], 0, None, None, None, -1e18
+    eps = float(bundle["noise_eps"])
+    wakes, streak, start, last_reps, follow, cooldown_until = [], 0, None, None, None, -1e18
     for t, r in points:
         if r is None:
             streak = 0
             continue
         if gated:
             if last_reps is not None and r["replicas"] != last_reps:
-                changed_at = t
+                follow = (t, [])
             last_reps = r["replicas"]
-            if changed_at is not None and t - changed_at < ad.REPLICA_SETTLE_SECONDS:
-                streak = 0
-                continue
             if r["throughput"] < ad.MIN_THROUGHPUT_RPS:
                 streak = 0
                 continue
-        if hm.score(bundle, r) < 0:
+        s = hm.score(bundle, r)
+        verdict = None
+        if follow is not None:
+            follow[1].append((t - follow[0], s))
+            verdict = hm.follow_verdict(follow[1], eps)
+            follow = follow if verdict == "WAIT" else None
+        if verdict == "WAIT":
+            streak = 0
+            continue
+        if s < 0:
             streak += 1
             start = t if streak == 1 else start
         else:
             streak = 0
+        if verdict is not None and verdict.startswith("UNSTABLE"):
+            streak = max(streak, ad.ANOMALY_STREAK_REQUIRED)     # the rule has confirmed it
         if streak >= ad.ANOMALY_STREAK_REQUIRED and t >= cooldown_until:
             wakes.append((t, start))
             streak = 0
@@ -172,16 +186,10 @@ def judge(block_readings, end, points):
     last = seq[-1][0] if seq else 0
     for k, (_, r) in enumerate(extra):
         seq.append((last + 10 * (k + 1), r))
-    scores, judge_from, full_at = [], None, None
+    followed = []
     for k, (elapsed, r) in enumerate(seq):
-        if elapsed > agent_tools.VERIFY_MAX_SECONDS:
-            return "UNSTABLE: still anomalous after 4 min", elapsed, k, max(0, k - len(block_readings))
-        scores.append(hm.score(BUNDLE, r))
-        if judge_from is None and elapsed >= agent_tools.VERIFY_JUDGE_FROM_SECONDS:
-            judge_from = k
-        if full_at is None and elapsed >= agent_tools.VERIFY_WINDOW_FULL_SECONDS:
-            full_at = k
-        verdict = hm.judge_trajectory(scores, EPS, judge_from, full_at)
+        followed.append((elapsed, hm.score(BUNDLE, r)))
+        verdict = hm.follow_verdict(followed, EPS)     # the verification's rule and timings (A32: one source)
         if verdict != "WAIT":
             return verdict, elapsed, k + 1, max(0, k + 1 - len(block_readings))
     return "WAIT (no more data)", seq[-1][0] if seq else 0, len(seq), 0

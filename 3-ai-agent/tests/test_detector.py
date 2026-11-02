@@ -1,10 +1,12 @@
 """
-The detector loop (anomaly_detector.run_monitor): its gates, cooldown, re-wake, dry-run log and error handling.
+The detector loop (anomaly_detector.run_monitor): its gates, the follow of a pod-count change, cooldown, re-wake,
+dry-run log and error handling.
 
 The model and Prometheus are replaced: a fake verdict (anomaly when p95 > 0.35 s or errors > 1%) stands in for
 the One-Class SVM, readings come from a list, and a fake clock replaces time, so a 2-minute scenario runs in
 milliseconds. (The model itself is checked by train_health_baseline.py's probes, not here.) Added 2026-10-11;
-rewritten 2026-10-22 for phase 2 (NFR readings, one model, re-wake after a verification that saw no improvement).
+rewritten 2026-10-22 for phase 2 (NFR readings, one model, re-wake after a verification that saw no improvement);
+2026-11-02 (A32): a pod-count change is followed with the verification's rule instead of skipped for 90 s.
 
 Run from the repo root:  .venv/bin/python3 -m pytest 3-ai-agent/tests -q
 """
@@ -21,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import anomaly_detector as ad  # noqa: E402
 
-BUNDLE = {"model_type": "fake", "features": [], "gamma": 0.2, "bands": {1: [1, 80]},
+BUNDLE = {"model_type": "fake", "features": [], "gamma": 0.2, "bands": {1: [1, 80]}, "noise_eps": 0.05,
           "params": {"safe_p95": 0.25, "nfr_p95": 0.35, "safe_errors": 0.001, "nfr_errors": 0.01}}
 
 
@@ -38,7 +40,11 @@ LOW = reading(p95=1.0, rps=0.5)  # anomalous, but below the 1 rps gate
 
 
 def fake_evaluate(_bundle, m):
-    return (-1, -0.5) if m["latency_p95"] > 0.35 or m["error_rate"] > 0.01 else (1, 0.1)
+    """Anomalous above the NFRs, with a distance that grows with p95 (p95 1.0 s -> -0.5), so a trajectory has a
+    direction; healthy 0.1."""
+    if m["latency_p95"] > 0.35 or m["error_rate"] > 0.01:
+        return -1, -0.5 * max(m["latency_p95"], 1.0 if m["error_rate"] > 0.01 else 0.0)
+    return 1, 0.1
 
 
 class Clock:
@@ -100,14 +106,47 @@ def test_cooldown_blocks_a_new_wake_up_for_60_s_but_monitoring_continues():
     assert run([A] * 9).call_count == 2
 
 
-def test_replica_change_is_settled_for_90_s():
-    # The first reading at 2 replicas starts the 90 s settle: it and the next 8 are skipped,
-    # then 3 anomalous readings are needed.
-    assert run([N] + [reading(p95=1.0, reps=2)] * 11).call_count == 0
-    assert run([N] + [reading(p95=1.0, reps=2)] * 12).call_count == 1
+# A pod-count change (A32, 2026-11-02; until v12 every change was skipped for 90 s). One the agent's verification did
+# not watch (here: a person or a script, no agent run) is followed with the verification's rule.
+A2 = reading(p95=1.0, reps=2)                       # anomalous at 2 pods, score -0.5
 
 
-def test_a_failed_verification_rewakes_at_once_without_streak_cooldown_or_settle():
+def test_a_change_to_a_healthy_state_is_judged_at_once():
+    # The first reading at 2 pods is healthy: the change is settled, and 3 anomalies after it wake the agent.
+    assert run([N, reading(reps=2), A2, A2, A2]).call_count == 1
+
+
+def test_a_change_moving_towards_healthy_waits_and_does_not_wake():
+    # The 1 m window still holds the minute before the change; the distance falls every 10 s, then healthy.
+    improving = [reading(p95=p, reps=2) for p in (3.0, 2.6, 2.2, 1.8, 1.4, 1.0, 0.8, 0.6, 0.4)]
+    assert run([N] + improving + [reading(reps=2)]).call_count == 0
+
+
+def test_a_change_that_gets_worse_wakes_at_once():
+    # "worse" from 10 s after the change: -0.5 -> -1.0 is a dip right after it, -1.0 -> -1.5 is worse.
+    assert run([N, A2, reading(p95=2.0, reps=2)]).call_count == 0
+    assert run([N, A2, reading(p95=2.0, reps=2), reading(p95=3.0, reps=2)]).call_count == 1
+
+
+def test_a_change_that_does_not_improve_wakes_once_the_window_holds_only_post_change_data():
+    # A flat -0.5: "not improving" needs 30 s of post-change windows (from 60 s), so the 10th reading at 2 pods.
+    assert run([N] + [A2] * 9).call_count == 0
+    assert run([N] + [A2] * 10).call_count == 1
+
+
+@pytest.mark.parametrize("outcome, calls", [
+    ({"resolved": True, "rewake": False, "verdict": "STABLE"}, 2),            # watched: judged as usual
+    ({"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse"}, 1),  # a rollback restored the count: followed
+    ({"resolved": True, "rewake": False}, 1),                 # no action, so a change by someone else: followed
+])
+def test_a_change_the_verification_watched_is_not_followed_again(outcome, calls):
+    # The agent scaled 1 -> 2 at the 3rd reading. Watched: the readings at 2 pods are judged as usual, so the
+    # cooldown (60 s) is all that holds a second wake-up. Not watched: followed, and a flat -0.5 waits for 90 s.
+    trigger = mock.Mock(return_value=outcome)
+    assert run([A, A, A] + [A2] * 6, trigger=trigger).call_count == calls
+
+
+def test_a_failed_verification_rewakes_at_once_without_streak_or_cooldown():
     # The agent scaled 1 -> 2 and the verification saw no improvement: the next anomalous reading wakes it again,
     # even though the replica count just changed and the cooldown has not passed.
     outcome = {"resolved": False, "rewake": True, "verdict": "UNSTABLE: not improving"}
@@ -148,6 +187,7 @@ def test_dry_run_logs_every_evaluated_reading_and_never_imports_the_agent(tmp_pa
     assert [r["prediction"] for r in rows] == ["1", "-1", "-1", "-1"]   # the missing reading is not logged
     assert [r["would_trigger"] for r in rows] == ["False", "False", "False", "True"]
     assert list(rows[0])[1:1 + len(ad.LOGGED_METRICS)] == ad.LOGGED_METRICS
+    assert [r["follow"] for r in rows] == ["", "", "", ""]                # no pod-count change to follow
     kept = [p for p in os.listdir(tmp_path) if p.startswith("dry_run_readings_")]
     assert len(kept) == 1 and open(tmp_path / kept[0]).read() == "earlier run\n"   # never overwritten
 

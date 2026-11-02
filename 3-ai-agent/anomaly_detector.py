@@ -22,13 +22,18 @@ DRY_RUN_CSV = os.path.join(REPO_ROOT, "5-ml-training", "dry_run_readings.csv")
 MIN_THROUGHPUT_RPS = 1.0
 # Consecutive anomalous readings required before waking the agent (3 x 10s = 30s).
 ANOMALY_STREAK_REQUIRED = 3
-# The PromQL rate() windows are 1m, so after a replica change the metrics mix old and new pod counts. The
-# training data has no such readings (the collector waits for ready pods and 60s), so we skip them too.
-REPLICA_SETTLE_SECONDS = 90
+# A pod-count change: the PromQL windows are 1 m, so for up to a minute the readings still hold the minute before it.
+# Every reading is judged (A32, 2026-11-02; until v12 the detector skipped 90 s from the moment it saw the change, i.e.
+# after the agent's verification had already watched it):
+#   - a change the agent's verification watched (it ended STABLE, or asked for a re-wake) is not followed again: the
+#     next reading is judged as usual;
+#   - any other change (a person, the validation script, the rollback of a failed scale-down) is followed with the
+#     verification's own rule (health_model.follow_verdict): healthy -> normal monitoring at once; anomalous but moving
+#     towards healthy -> wait, not counted; worse / not improving / still anomalous after 4 min -> a confirmed anomaly.
 # Minimum time between two agent runs. Monitoring continues meanwhile.
 AGENT_COOLDOWN_SECONDS = 60
 # Phase 2: when the verification of an action sees the score get worse or stay stuck, the agent is woken
-# again at once (no streak, no cooldown, no settle: the verification already watched the settled metrics),
+# again at once (no streak, no cooldown: the verification already watched the change),
 # at most this many times in a row; then the normal streak and cooldown apply again.
 MAX_REWAKES = 2
 # The load trend handed to the agent (2026-10-23, the user's "slope" idea): least-squares slope of the throughput
@@ -62,9 +67,10 @@ def print_summary(stats, started_at, dry_run):
     print(f"  {label + ':':<29}{stats['triggers']}{per_hour}")
     if stats["rewakes"]:
         print(f"  Of which re-wakes:           {stats['rewakes']} (verification saw no improvement)")
+    print(f"  Pod-count changes followed:  {stats['followed']} ({stats['follow_waits']} readings waited, "
+          f"{stats['follow_unstable']} ended UNSTABLE)")
     print(
-        f"  Skipped readings:            settling={stats['skipped_settling']} "
-        f"low_traffic={stats['skipped_low_traffic']} "
+        f"  Skipped readings:            low_traffic={stats['skipped_low_traffic']} "
         f"missing_metrics={stats['skipped_missing']}"
     )
     if stats["agent_errors"]:
@@ -74,7 +80,7 @@ def print_summary(stats, started_at, dry_run):
 
 
 def load_model():
-    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v12 since 2026-11-01)."""
+    """The bundle saved by train_health_baseline.py (one One-Class SVM, health_model.py; v12's since 2026-11-01)."""
     try:
         return health_model.load(MODEL_FILENAME)
     except FileNotFoundError:
@@ -131,7 +137,7 @@ def run_monitor(dry_run=False):
         csv_file = open(DRY_RUN_CSV, "w", newline="")
         csv_writer = csv.DictWriter(
             csv_file,
-            fieldnames=["timestamp", *LOGGED_METRICS, "prediction", "score", "streak", "would_trigger"],
+            fieldnames=["timestamp", *LOGGED_METRICS, "prediction", "score", "streak", "follow", "would_trigger"],
         )
         csv_writer.writeheader()
     else:
@@ -141,12 +147,14 @@ def run_monitor(dry_run=False):
 
     stats = {
         "evaluated": 0, "anomalous": 0, "triggers": 0, "rewakes": 0,
-        "skipped_settling": 0, "skipped_low_traffic": 0, "skipped_missing": 0, "agent_errors": 0,
+        "followed": 0, "follow_waits": 0, "follow_unstable": 0,
+        "skipped_low_traffic": 0, "skipped_missing": 0, "agent_errors": 0,
     }
     started_at = time.monotonic()
+    eps = float(bundle["noise_eps"])
     anomaly_streak = 0
     last_replicas = None
-    replicas_changed_at = None
+    following = None    # (monotonic time of the first reading at the new count, [(seconds since then, score)])
     cooldown_until = 0.0
     rewake_pending = False
     rewakes_in_a_row = 0
@@ -170,22 +178,12 @@ def run_monitor(dry_run=False):
             while history and now - history[0][0] > TREND_WINDOW_SECONDS:
                 history.popleft()
 
-            # Stabilization gate: skip readings while a replica change settles (not on a re-wake: the
-            # verification already watched the metrics after the change).
+            # A pod-count change no verification watched: followed with the verification's rule from this reading on
+            # (A32). After a run of the agent whose verification watched its change, last_replicas is None here.
             if last_replicas is not None and replicas != last_replicas:
-                replicas_changed_at = None if rewake_pending else time.monotonic()
+                following = (now, [])
+                stats["followed"] += 1
             last_replicas = replicas
-            if replicas_changed_at is not None:
-                settle_left = REPLICA_SETTLE_SECONDS - (time.monotonic() - replicas_changed_at)
-                if settle_left > 0:
-                    print(
-                        f"[{timestamp}] Replicas changed to {replicas:.0f} — "
-                        f"settling, {settle_left:.0f}s left before evaluating."
-                    )
-                    stats["skipped_settling"] += 1
-                    anomaly_streak = 0
-                    time.sleep(INTERVAL_SECONDS)
-                    continue
 
             # Data quality gate: not enough traffic for a meaningful evaluation.
             if throughput < MIN_THROUGHPUT_RPS:
@@ -207,6 +205,13 @@ def run_monitor(dry_run=False):
                 f"(ready {reading.get('ready_replicas') or 0:.0f}), prediction: {prediction} (score {score:+.3f})"
             )
 
+            follow = None
+            if following is not None:
+                following[1].append((now - following[0], score))
+                follow = health_model.follow_verdict(following[1], eps)
+                if follow != "WAIT":
+                    following = None
+
             if prediction == -1:
                 stats["anomalous"] += 1
                 anomaly_streak += 1
@@ -214,8 +219,14 @@ def run_monitor(dry_run=False):
                 anomaly_streak = 0
                 rewake_pending = False
                 rewakes_in_a_row = 0
+            if follow == "WAIT":
+                anomaly_streak = 0     # anomalous but moving towards healthy since the change, or too early to tell
+                stats["follow_waits"] += 1
+            elif follow is not None and follow.startswith("UNSTABLE"):
+                anomaly_streak = max(anomaly_streak, ANOMALY_STREAK_REQUIRED)   # the rule has confirmed it
+                stats["follow_unstable"] += 1
             cooldown_left = cooldown_until - time.monotonic()
-            rewake_now = rewake_pending and prediction == -1
+            rewake_now = rewake_pending and prediction == -1 and follow != "WAIT"
             should_trigger = rewake_now or (anomaly_streak >= ANOMALY_STREAK_REQUIRED and cooldown_left <= 0)
 
             if dry_run:
@@ -225,14 +236,24 @@ def run_monitor(dry_run=False):
                     "prediction": prediction,
                     "score": round(score, 4),
                     "streak": anomaly_streak,
+                    "follow": follow or "",
                     "would_trigger": should_trigger,
                 })
                 csv_file.flush()
 
             if prediction != -1:
-                print(f"[{timestamp}]  Normal operation.")
+                settled = f" The change to {replicas:.0f} pod(s) is healthy." if follow == "STABLE" else ""
+                print(f"[{timestamp}]  Normal operation.{settled}")
                 time.sleep(INTERVAL_SECONDS)
                 continue
+
+            if follow == "WAIT":
+                print(f"[{timestamp}] Pods changed to {replicas:.0f} {following[1][-1][0]:.0f}s ago — anomalous, "
+                      "following the change (WAIT: moving towards healthy or too early to tell).")
+                time.sleep(INTERVAL_SECONDS)
+                continue
+            if follow is not None:
+                print(f"[{timestamp}] Pods changed to {replicas:.0f}: {follow}.")
 
             if not should_trigger:
                 if anomaly_streak >= ANOMALY_STREAK_REQUIRED:
@@ -271,6 +292,11 @@ def run_monitor(dry_run=False):
                     print(f"⚠️ Agent run failed outside the agent: {type(e).__name__}: {e}. Monitoring continues.")
                     resolved, rewake, verdict = False, False, ""
 
+                # The verification watched the change of this run (STABLE, or UNSTABLE with a re-wake): the next
+                # reading is judged as usual, the change is not followed again. Not after the rollback of a failed
+                # scale-down (code restored the pod count, nothing watched it), an unverifiable action or no action.
+                if verdict and (resolved or rewake):
+                    last_replicas = None
                 now = datetime.now().strftime('%H:%M:%S')
                 if resolved:
                     rewakes_in_a_row = 0

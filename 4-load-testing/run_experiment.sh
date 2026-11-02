@@ -18,7 +18,7 @@
 # SCENARIO=cpuhog: same load and timing, POST /chaos/cpuhog (a never-ending job blocks the event loop 600 ms at
 #   a time). Looks like overload; only a restart fixes it. results_nfr_cpuhog.csv.
 # Env switches passed through to the controller: AIOPS_MEMORY (on|off), AIOPS_ACT_GUARD (on|off), LABEL (result
-#   label; default llm-v12 for the agent, hpa for the HPA).
+#   label; default llm-v13 for the agent, hpa for the HPA).
 # Output: 4-load-testing/eval_[<scenario>_]<strategy>_<time>/ + one row in the results CSV
 # The whole body is one { ... } block: bash parses it completely before running, so editing
 # this file while it runs cannot break the running copy (an edit at 14:44 on 2026-10-03 did).
@@ -29,7 +29,7 @@ STRATEGY=$1
 NOTES=${2:-}
 SCENARIO=${SCENARIO:-baseline}
 DEFAULT_LABEL=$STRATEGY
-[ "$STRATEGY" = "llm" ] && DEFAULT_LABEL=llm-v12
+[ "$STRATEGY" = "llm" ] && DEFAULT_LABEL=llm-v13
 LABEL=${LABEL:-$DEFAULT_LABEL}
 # Phase 2 results go to new files: their metrics are measured at the ingress, not comparable with phase 1's
 # evaluation_results*.csv (backend histogram, login-only closed-model load).
@@ -97,7 +97,7 @@ log "rollout history reset: $(kubectl get rs -l app=aiops-backend --no-headers 2
 TOKENS="$PWD/5-ml-training/k6_tokens.json"
 (cd 5-ml-training && ../$PY -c "import k6_driver; k6_driver.make_token_pool()") >> "$OUT/experiment.log" 2>&1 \
   && log "k6 token pool ready" || { log "could not log the token pool in"; exit 1; }
-sleep 120   # past the detector's 90 s settle window, host idle
+sleep 120   # host idle: the 1 m windows forget the reset before the detector starts
 
 case "$STRATEGY" in
   llm)

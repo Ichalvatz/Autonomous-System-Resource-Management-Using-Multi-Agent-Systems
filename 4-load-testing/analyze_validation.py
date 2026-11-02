@@ -5,7 +5,8 @@ Usage (repo root):
 Defaults: 5-ml-training/dry_run_readings.csv, 4-load-testing/detector_validation_phases.csv
 
 Columns:
-  evaluated   readings the model scored (settling / low-traffic readings are skipped)
+  evaluated   readings the model scored (low-traffic readings are skipped; until v12 also 90 s after a pod-count
+              change, since v13 such readings are scored and the change is followed: column follow, A32)
   flagged     readings the model called anomalous
   wakes       times the detector would have woken the agent (3 in a row + cooldown)
   first_wake  seconds from phase start to the first wake-up

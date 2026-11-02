@@ -210,6 +210,20 @@ def test_judge_trajectory(scores, judge_from, full_at, expected):
     assert health_model.judge_trajectory(scores, 0.05, judge_from, full_at).startswith(expected)
 
 
+@pytest.mark.parametrize("points,expected", [
+    ([(0, -0.5), (10, -0.9)], "WAIT"),                         # a dip at the first reading is not "worse"
+    ([(0, -0.5), (10, -0.5), (20, -0.9)], "UNSTABLE: worse"),  # from 10 s it is
+    ([(t, -0.5) for t in range(0, 90, 10)], "WAIT"),           # flat: "not improving" needs 30 s of full windows
+    ([(t, -0.5) for t in range(0, 100, 10)], "UNSTABLE: not improving"),
+    ([(t, -30 + t / 10) for t in range(0, 250, 10)], "UNSTABLE: still anomalous after 4 min"),
+    # the 2->3 of 2026-11-02 06:22 seen from the first reading at 3 pods (the 1 m window still held the overload)
+    ([(0, -0.63), (10, -0.77), (20, -0.68), (30, -0.64), (40, -0.35), (50, 1.0)], "STABLE"),
+])
+def test_follow_verdict_applies_the_verification_timings(points, expected):
+    """The rule with its timings, shared by the verification and the detector's follow of a change (A32)."""
+    assert health_model.follow_verdict(points, 0.142).startswith(expected)
+
+
 # ---------------------------------------------------------------- incident memory (the model's space)
 
 class FakeCollection:

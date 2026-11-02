@@ -230,3 +230,20 @@ Prometheus) και το `4-load-testing/archive/v12_live_queue.sh`.
 | Η σύγκριση του v11 (`comparison_nfr.md`, 3 γραφήματα) | `4-load-testing/` | `4-load-testing/archive/comparison_campaign-2026-10-28_v11/` (από το git), γιατί η σύγκριση του v12 γράφει στα ίδια ονόματα |
 | Η σύνοψη αποτελεσμάτων του v11 | `thesis_notes/results_summary.md` | `thesis_notes/history/v11/results_summary_v11.md` (`git mv`)· νέα `results_summary.md` για τον v12 |
 | Τα παραδείγματα βήμα-βήμα της παρουσίασης (stuck 28/10, κανονικό 28/10 06:31) | `presentation.md` §8–§9 | Αντικαταστάθηκαν από runs του v12 (stuck 2/11 04:39, κανονικό 2/11 06:06). Τα παλιά: `git show v11-campaign:thesis_notes/presentation.md` |
+
+## 12. Agent v13: ο detector δεν παραλείπει τίποτα μετά από αλλαγή pods (2026-11-02, Α32)
+
+Ο κώδικας του v12 βρίσκεται στο git tag `v12-campaign` (μετρημένος κώδικας `4d48374`).
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| `REPLICA_SETTLE_SECONDS = 90`: καμία κρίση για 90 s μετά από αλλαγή pods, μετρημένα από την πρώτη μέτρηση που την έδειχνε (άρα μετά την επιστροφή του agent) | `anomaly_detector.py` (`replicas_changed_at`, στατιστικό `skipped_settling`) | Αλλαγή που επαλήθευσε ο agent: κρίνεται κανονικά. Κάθε άλλη: `following` με `health_model.follow_verdict`. Στατιστικά `followed`, `follow_waits`, `follow_unstable`· στο CSV του dry run στήλη `follow`. Ο χρήστης: «να κρίνει αμέσως αν είμαστε stable, το οποίο καθορίζεται από το SVM». |
+| Ο υπολογισμός του `judge_from` / `window_full_at` μέσα στην επαλήθευση | `agent_tools._check_stabilization`, `replay_model.judge` | `health_model.follow_verdict` και οι χρόνοι του (`JUDGE_FROM_SECONDS`, `WINDOW_FULL_SECONDS`, `GIVE_UP_SECONDS`), ένα σημείο για την επαλήθευση και τον detector. Τα `VERIFY_*` του `agent_tools` είναι πλέον ψευδώνυμά τους. Ίδια συμπεριφορά. |
+| Το test `test_replica_change_is_settled_for_90_s` | `tests/test_detector.py` | 4 tests για την παρακολούθηση μιας αλλαγής, 3 για τις εκβάσεις του agent, 6 για το `follow_verdict` (`test_agent_logic.py`). |
+| Η ετικέτα `llm-v12` ως default | `run_experiment.sh`, `compare_results.py`, `campaign_report.py` | `llm-v13`. Για την καμπάνια του v12: `AGENT_LABEL=llm-v12`. |
+| Η πρόταση «τα γεγονότα να λένε πότε το φορτίο ξεπερνά τη μέγιστη χωρητικότητα» | `results_summary.md`, `system_overview.md` §10 | Την απέρριψε ο χρήστης (2/11): «υποτίθεται θα το ξέρουμε το κατώφλι τώρα». |
+
+**Προστέθηκαν:** `4-load-testing/replay_follow.py` → `replay_v13_follow.md` (ο detector του v12 έναντι του v13), και οι πλήρεις
+σειρές των τριών ζωντανών επικυρώσεων από το Prometheus (`detector_validation_series.json` στο
+`archive/detector_validation_v10/`, `archive/detector_validation_v11/` και στο `4-load-testing/` για τον v12), γιατί τα CSV
+του dry run κρατούσαν μόνο όσες μετρήσεις έκρινε ο detector και το Prometheus κρατά 10 μέρες.

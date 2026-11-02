@@ -153,15 +153,18 @@ def _capacity_context():
 
 CAPACITY_CONTEXT = _capacity_context()
 
-# The agent: v12 (2026-11-01; design_decisions.md A31). As v11 (A30: inputs in NFR units with no tuned weights, the
+# The agent: v13 (2026-11-02; design_decisions.md A32): v12 with the detector judging every reading after a pod-count
+# change (v12 skipped 90 s; a change no verification watched is now followed with the verification's rule). Prompt,
+# tools, model and verification as v12, measured in campaign-2026-11-01 (git tag v12-campaign).
+# v12 (2026-11-01; A31): as v11 (A30: inputs in NFR units with no tuned weights, the
 # explanation of a score against the model's own bands and the safe level), with a model retrained with the 1-pod low
 # end and tested with range probes (no hole in any band), the minimum pod count below every band = the smallest, and
 # the verification judging the trajectory from 10 s after the rollout. As v10 (A28: the score reads as a distance from
 # healthy, and the minimum pod count in the facts is the smallest count the model calls healthy for the load) and v9
 # (A24) otherwise: one One-Class SVM on the NFR metrics measured at the ingress wakes it; it scales or restarts the
-# whole app; code verifies the result by the model's score. v11: git tag v11-campaign; v10: v10-campaign; v9:
-# v9-campaign; v8.1 and earlier: v8.1-campaign.
-AGENT_VERSION = "v12"
+# whole app; code verifies the result by the model's score. v12: git tag v12-campaign; v11: v11-campaign; v10:
+# v10-campaign; v9: v9-campaign; v8.1 and earlier: v8.1-campaign.
+AGENT_VERSION = "v13"
 
 # The LLM decides and acts; code does everything around it (memory lookup before
 # the run, verification and memory save after it). add_base_tools=False: the

@@ -30,8 +30,8 @@ Traditional management systems rely on static rules and predefined thresholds. I
 ## How it works (implementation)
 
 The system is built around the service's **non-functional requirements** (NFRs): p95 latency < 0.35 s and errors < 1%,
-measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current version **agent v12**, branch `nfr-v12`, measured in
-campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
+measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current code **agent v13**, branch `nfr-v13`, not measured
+yet: v12 with the detector judging every reading after a pod-count change; last measured **agent v12**, campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
 
 ```
 k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ backend pods (1–3, readiness + liveness probes)
@@ -50,8 +50,9 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
   0 = safe level, 1 = objective; no tuned weights) and the pod count as an input. Its score reads as a distance from
   healthy. Its acceptance tests are ranges that cover every case (one healthy load interval per pod count, the NFRs
   anomalous at every load). It wakes the agent after 3 anomalous readings in a row, and again at once if the verification says the state
-  got worse or is not improving.
-- **Agent v12:** code computes the facts (the minimum pod count the health model calls healthy, and the load trend). The LLM classifies capacity
+  got worse or is not improving. It judges every reading, also right after a pod-count change: a change no verification
+  watched is followed with the verification's rule (v13).
+- **Agent (v12 / v13):** code computes the facts (the minimum pod count the health model calls healthy, and the load trend). The LLM classifies capacity
   vs something else, investigates with three observation tools, and acts: scale or a rolling restart. Three
   code-enforced guards apply: evidence before action, no claimed action without a tool call, full diagnosis before a
   restart.
@@ -89,7 +90,7 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
 ./deploy.sh                                        # kind cluster + monitoring + ingress metrics + app + ChromaDB
 source .venv/bin/activate && export GEMINI_API_KEY=...
 python 3-ai-agent/anomaly_detector.py --dry-run    # detector only, no LLM, no cluster changes
-python 3-ai-agent/anomaly_detector.py              # detector + agent v12
+python 3-ai-agent/anomaly_detector.py              # detector + agent v13
 ./4-load-testing/run_experiment.sh llm             # one scored experiment on the normal load (also: hpa)
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm    # fault experiment (also SCENARIO=cpuhog)
 ./4-load-testing/full_campaign.sh my-campaign      # the whole agent-vs-HPA comparison (~14 h)

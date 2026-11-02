@@ -14,8 +14,9 @@ of each pod count (the bands, which the latency set through the safe level), and
 distance above the safe level (A28.1, A30). The only choice in training is gamma. Since every support vector then sits
 on the load axis, the kernel sum of N pods is exp(-gamma * r^2) * K_N(ln rps), r = the distance above the safe level:
 healthy <=> r^2 <= ln(K_N / rho) / gamma, so a scan along the load covers every reading (A31).
-Shared by the detector, the verification of an action, the incident memory (its embedding space), the agent's facts
-(the minimum pod count) and the training script, so they all see a reading the same way.
+Shared by the detector, the verification of an action, the detector's follow of a pod-count change (A32), the incident
+memory (its embedding space), the agent's facts (the minimum pod count) and the training script, so they all see a
+reading the same way.
 
 Inputs (constants in the bundle's params, from nfr_metrics at training time):
   x0 = ln(throughput)                                              1 = e times the load
@@ -174,3 +175,23 @@ def judge_trajectory(scores, eps, judge_from, window_full_at, stuck_readings=3):
         return (f"UNSTABLE: not improving (score {post[-1 - stuck_readings]:+.2f} -> {post[-1]:+.2f} "
                 f"over the last {stuck_readings * 10} s)")
     return "WAIT"
+
+
+# The timings of judge_trajectory, in seconds after a change took effect (A31, A31.1): one source for the agent's
+# verification of its own action (agent_tools, from the converged rollout) and the detector's follow of a pod-count
+# change no verification watched (anomaly_detector, from the first reading at the new count; A32).
+JUDGE_FROM_SECONDS = 10       # "worse" from here: the first reading after a change can dip
+WINDOW_FULL_SECONDS = 60      # "not improving" from here: the 1 m windows hold only post-change data
+GIVE_UP_SECONDS = 240         # still anomalous -> UNSTABLE
+
+
+def follow_verdict(points, eps):
+    """judge_trajectory on (seconds since the change, score) points, oldest first, with the timings above; still
+    anomalous after GIVE_UP_SECONDS -> UNSTABLE."""
+    scores = [s for _, s in points]
+    judge_from = next((i for i, (t, _) in enumerate(points) if t >= JUDGE_FROM_SECONDS), None)
+    window_full_at = next((i for i, (t, _) in enumerate(points) if t >= WINDOW_FULL_SECONDS), None)
+    verdict = judge_trajectory(scores, eps, judge_from, window_full_at)
+    if verdict == "WAIT" and points and points[-1][0] >= GIVE_UP_SECONDS:
+        verdict = f"UNSTABLE: still anomalous after {GIVE_UP_SECONDS // 60} min"
+    return verdict
