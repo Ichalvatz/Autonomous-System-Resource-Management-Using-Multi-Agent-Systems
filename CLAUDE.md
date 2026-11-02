@@ -10,7 +10,7 @@ The comparison is against the native Kubernetes HPA.
 **Two phases.**
 - **Phase 2** (since 2026-10-22, after a meeting with the supervisors): NFRs, request mix, one SVM, HPA-only comparison.
   Decisions and results: `thesis_notes/design_decisions.md` A24–A31. Log: `thesis_notes/phase2_worklog.md`. One-page
-  summaries: `thesis_notes/results_summary.md` (v11, the latest measured); older versions in `thesis_notes/history/<version>/`. **Reading
+  summaries: `thesis_notes/results_summary.md` (v12, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
   order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
   current version; superseded ones go to `thesis_notes/history/`).
   - **Agent v12 is the current code** (branch `nfr-v12`, since 2026-11-01; A31): v11's model tested with **range probes
@@ -20,10 +20,11 @@ The comparison is against the native Kubernetes HPA.
     and **rejected by the user** (worklog 1/11).
     Replayed offline (`4-load-testing/replay_v12_campaign-2026-10-2[368].md`): every A31 criterion passes except the first
     normal-load wake, +10 s in 1 of 13 runs (accepted by the user). Live checks: `archive/v12_live_queue.sh` (see A31).
-    **Not measured in a campaign yet**: the latest measured results are v11's.
+    **Measured in `campaign-2026-11-01`** = git tag `v12-campaign` (measured code `4d48374`; results below).
   - **Agent v11** (A30) = git tag `v11-campaign` (measured code `92b8c51`, **campaign-2026-10-28**, results below): v10's
     design with the health model's inputs in NFR units and no tuned weights (only gamma is chosen) and the explanation
-    from the model. Its model files in `5-ml-training/v11/`, its live validation in `archive/detector_validation_v11/`.
+    from the model. Its model files in `5-ml-training/v11/`, its live validation in `archive/detector_validation_v11/`, its
+    comparison in `4-load-testing/archive/comparison_campaign-2026-10-28_v11/`.
   - **Agent v10** (A28 / A28.1, A29) = git tag `v10-campaign` (measured code `4308c93`, campaign-2026-10-26): one SVM that
     alone decides, the NFRs in its data and input scale, the score read as a distance, the user's verification rule, the
     minimum pod count from the model. Its model files in `5-ml-training/v10/`, its live validation in
@@ -260,7 +261,7 @@ with v12's minimum pod count and verification start):
     `events.txt`, `pods_at_end.txt`, `power.log` (AC or battery every 30 s), window and score;
   - appends one row to `results_nfr.csv` / `results_nfr_stuck.csv` / `results_nfr_cpuhog.csv`;
   - env: `AIOPS_MEMORY`, `AIOPS_ACT_GUARD`, `LABEL` (default `llm-v12` / `hpa`; `*-INVALID` rows are excluded).
-    `compare_results.py` / `campaign_report.py` take `AGENT_LABEL` (default `llm-v12`; `llm-v11` for campaign-2026-10-28,
+    `compare_results.py` / `campaign_report.py` take `AGENT_LABEL` (default `llm-v12`, campaign-2026-11-01; `llm-v11` for campaign-2026-10-28,
     `llm-v10` for campaign-2026-10-26, `llm-v9` for campaign-2026-10-23).
   - Never run two strategies at once (`queue.sh` runs them back to back).
 - **`evaluate_run.py`** scores a window at the ingress:
@@ -288,9 +289,38 @@ with v12's minimum pod count and verification start):
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
-## Results of the phase-2 campaigns (A30 / A29 / A27, `thesis_notes/results_summary.md`)
+## Results of the phase-2 campaigns (A31 / A30 / A29 / A27, `thesis_notes/results_summary.md`)
 
-**`campaign-2026-10-28` (agent v11, the latest measured version; v12 is not measured yet):** 6 + 6 runs planned; the Gemini API was down 17:01–19:56 and the
+**`campaign-2026-11-01` (agent v12, the current version):** 4 + 4 runs per scenario, 2026-11-01 19:07 → 2026-11-02 06:48,
+all 24 on AC power, none invalid.
+
+| | HPA | Agent v12 |
+|---|---|---|
+| Normal load: NFR violation | 27.5 ± 55 s (0 / 110 / 0 / 0) | 72.5 ± 71 s (70 / 170 / 50 / 0), HPA < agent p = 0.19 (not significant) |
+| Normal load: cost | 76.4 replica-min | 72.2 (−5.5%, permutation p = 0.014) |
+| Normal load: correct provisioning | 77.2% | 84.5% |
+| Stuck: recovery | never (0/4), 74% failed requests | 4/4, restart, 138 ± 63 s (230 / 120 / 110 / 90), 8.5% failed |
+| Cpuhog: recovery | never (0/4), scaled to 2 pods (27.8 replica-min) | 4/4, restart, 118 ± 21 s (16.2 replica-min) |
+| Faults pooled | 0/8 | 8/8 (Fisher p = 0.00008); all phase-2 campaigns: agent 33/34, HPA 0/36 |
+
+- **v12 agent decisions:** 28 wake-ups, 25 actions (16 scale, 9 restart), all verified STABLE (A31.1: no false UNSTABLE),
+  right at the first wake-up in 12/12 runs; 0 re-wakes; memory found a same-action incident at 12/12 normal-load wake-ups
+  after the first run. **One unnecessary restart** (normal load, 3 pods at 210 rps, during an ingress slowdown that was
+  already ending; harmless: 0 errors) and **3 wake-ups answered "No action taken"** in such slowdowns (the pods' own p95
+  0.07–0.10 s). Agent time median 11 s, max 185 s; retries in 11/28, fallback in 4.
+- **Where the normal-load violation comes from (A31):** at the 1→2 step it starts *after* the scale, even with a 3.5 s
+  agent: the agent acts at the anomaly boundary (87–105 rps; v11 98–114, v10 100–125), when the single pod is already at
+  its limit (event-loop lag up to 0.74 s), and the 1-minute window keeps the requests queued around the change in the p95
+  for a minute. The HPA scales at 69–87 rps and stays below 0.35 s (14/14 runs). A slow LLM matters at 2→3 (129 s → 120 s).
+- **Ingress slowdowns (new in this campaign):** with the same load the ingress p95 rose to 0.31–0.45 s for 2–3 min and came
+  back by itself, while the backend's handler p95 stayed 0.07 s (event-loop lag and CPU throttling rose). They gave the
+  HPA its first normal-load violation (110 s) and the agent its unnecessary restart. Cause not found; most likely the one
+  machine (8 cores all given to Docker, plus k6, ingress and the VS Code of the session). 3-pod plateau median p95 was
+  elevated in 2/8 runs here, 1/11 on 28/10, 0/16 on 23 and 26/10.
+- The cases v12 fixed (1 pod at 1–4 rps, the 17.8–19.4 rps hole) are not in the campaign scenarios; the campaign shows no
+  regression (v11: cost 72.1, correct 83.9%, cpuhog 118 s). Different days, so not a controlled comparison.
+
+**`campaign-2026-10-28` (agent v11):** 6 + 6 runs planned; the Gemini API was down 17:01–19:56 and the
 user stopped the campaign at 34/36; one battery-touched agent run relabelled `llm-v11-INVALID`. Valid runs: HPA 6, agent 5
 per scenario.
 
@@ -331,8 +361,9 @@ in the same campaign:
   ahead with headroom and pays for it in cost. The difference is no longer significant for v10 (p = 0.071; v9 0.014).
 - **Invalid runs:** two (charger dropped for 26 s and 43 s), relabelled `*-INVALID` and repeated after the campaign
   (`archive/campaign_followup_2026-10-26.sh`).
-- **Limits:** LLM provider dependency, latency below 0.25 s invisible to the model (A28.1), no live UNSTABLE in a campaign,
-  shallow liveness by design, small n, one machine. Fixed in v12 (A31): v11 called 1 pod at 1–3.9 rps and at
+- **Limits:** LLM provider dependency, latency below 0.25 s invisible to the model (A28.1), no live UNSTABLE in a campaign
+  (only in the v12 UNSTABLE test), shallow liveness by design, small n, one machine (v12: ingress slowdowns; the
+  verification judges the state, not whether the action caused it, so the unnecessary restart was STABLE). Fixed in v12 (A31): v11 called 1 pod at 1–3.9 rps and at
   17.8–19.4 rps an anomaly, and its facts then suggested 3 pods (never reached in a measured run). v12's own: γ 0.1
   tolerates p95 up to ~0.33 s in the middle of the 1-pod band before it calls an anomaly; 1 pod at 1.000–1.002 rps is
   still marginally anomalous (the minimum is 1 there).

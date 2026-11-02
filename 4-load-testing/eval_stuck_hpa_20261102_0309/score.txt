@@ -1,0 +1,35 @@
+                       label: hpa
+                       start: 2026-11-02 03:11:55
+                         end: 2026-11-02 03:27:56
+                duration_min: 16.0
+             nfr_violation_s: 720
+             slo_violation_s: 60
+                     error_s: 720
+                  errors_pct: 74.36
+                    p95_mean: 0.338
+                     p95_p99: 4.664
+             replica_minutes: 20.0
+                under_prov_s: 0
+                 over_prov_s: 230
+            correct_prov_pct: 76.0
+               scale_actions: 2
+             replica_changes: 02:20 1->2, 06:10 2->1
+                   unready_s: 710
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 54721
+                    k6_p95_s: 0.095
+               k6_failed_pct: 74.99
+                  k6_dropped: 0
+                   incidents: 
+                      stable: 
+                     rewakes: 
+                   llm_calls: 
+                agent_s_mean: 
+               agent_actions: 
+                       notes: campaign-2026-11-01
+                     run_dir: 4-load-testing/eval_stuck_hpa_20261102_0309
+                fault_at_min: 4.0
+                  recovery_s: never
+ nfr_violation_after_fault_s: 720
+    max_replicas_after_fault: 2

@@ -222,3 +222,11 @@ frontend, τα `.DS_Store`, το αδέσποτο `2-target-app/software-fronten
 **Προστέθηκαν, όχι αφαιρέθηκαν:** η σκάλα σταθερού φορτίου του 1 pod στο `collect_healthy_data.py` (`--low-end-only`, στήλη
 `segment`), η χρονοσειρά της δοκιμής του χρήστη της 1/11 (`4-load-testing/archive/manual_demo_2026-11-01/series.json`, από το
 Prometheus) και το `4-load-testing/archive/v12_live_queue.sh`.
+
+**Μετά την καμπάνια του v12 (2026-11-02):**
+
+| Τι μετακινήθηκε | Από πού | Πού / γιατί |
+|---|---|---|
+| Η σύγκριση του v11 (`comparison_nfr.md`, 3 γραφήματα) | `4-load-testing/` | `4-load-testing/archive/comparison_campaign-2026-10-28_v11/` (από το git), γιατί η σύγκριση του v12 γράφει στα ίδια ονόματα |
+| Η σύνοψη αποτελεσμάτων του v11 | `thesis_notes/results_summary.md` | `thesis_notes/history/v11/results_summary_v11.md` (`git mv`)· νέα `results_summary.md` για τον v12 |
+| Τα παραδείγματα βήμα-βήμα της παρουσίασης (stuck 28/10, κανονικό 28/10 06:31) | `presentation.md` §8–§9 | Αντικαταστάθηκαν από runs του v12 (stuck 2/11 04:39, κανονικό 2/11 06:06). Τα παλιά: `git show v11-campaign:thesis_notes/presentation.md` |

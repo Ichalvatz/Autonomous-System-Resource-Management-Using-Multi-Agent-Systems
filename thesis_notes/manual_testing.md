@@ -201,7 +201,7 @@ SCENARIO=stuck ./4-load-testing/run_experiment.sh hpa manual-2026-10-28         
   .venv/bin/python3 4-load-testing/campaign_report.py manual-2026-10-28 > 4-load-testing/manual-2026-10-28.md
   ```
   Μην τρέξεις το `compare_results.py` με άλλη ετικέτα, γιατί ξαναγράφει το `comparison_nfr.md` της καμπάνιας. Αν το κάνεις,
-  ξανατρέξ' το μετά με `campaign-2026-10-28`.
+  ξανατρέξ' το μετά με `campaign-2026-11-01`.
 
 ---
 

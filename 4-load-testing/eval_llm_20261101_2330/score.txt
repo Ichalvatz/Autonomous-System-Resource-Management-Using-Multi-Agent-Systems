@@ -1,0 +1,31 @@
+                       label: llm-v12
+                       start: 2026-11-01 23:33:03
+                         end: 2026-11-02 00:11:04
+                duration_min: 38.0
+             nfr_violation_s: 170
+             slo_violation_s: 170
+                     error_s: 0
+                  errors_pct: 0.0
+                    p95_mean: 0.15
+                     p95_p99: 0.619
+             replica_minutes: 73.3
+                under_prov_s: 90
+                 over_prov_s: 420
+            correct_prov_pct: 77.5
+               scale_actions: 4
+             replica_changes: 07:40 1->2, 17:00 2->3, 26:30 3->2, 33:20 2->1
+                   unready_s: 20
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 243959
+                    k6_p95_s: 0.183
+               k6_failed_pct: 0.12
+                  k6_dropped: 0
+                   incidents: 4
+                      stable: 4
+                     rewakes: 0
+                   llm_calls: 29
+                agent_s_mean: 103.3
+               agent_actions: 23:40 scale 1->2 (STABLE); 23:48 scale 2->3 (STABLE); 23:58 scale 3->2 (STABLE); 00:04 scale 2->1 (STABLE)
+                       notes: campaign-2026-11-01
+                     run_dir: 4-load-testing/eval_llm_20261101_2330

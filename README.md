@@ -30,8 +30,8 @@ Traditional management systems rely on static rules and predefined thresholds. I
 ## How it works (implementation)
 
 The system is built around the service's **non-functional requirements** (NFRs): p95 latency < 0.35 s and errors < 1%,
-measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current code **agent v12**, branch `nfr-v12`, not measured in a campaign yet; latest measured:
-agent v11, tag `v11-campaign`; earlier: v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
+measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current version **agent v12**, branch `nfr-v12`, measured in
+campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
 
 ```
 k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ backend pods (1–3, readiness + liveness probes)
@@ -55,7 +55,8 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
   vs something else, investigates with three observation tools, and acts: scale or a rolling restart. Three
   code-enforced guards apply: evidence before action, no claimed action without a tool call, full diagnosis before a
   restart.
-- **Verification:** by code, from the trajectory of the SVM score, judged from 10 s after the rollout.
+- **Verification:** by code, from the trajectory of the SVM score: "worse" judged from 10 s after the rollout, "not
+  improving" from 60 s (once the 1-minute windows hold only post-action data).
 - **Memory:** ChromaDB with the model's feature vector as embedding.
 - **Comparison:** the native Kubernetes HPA (CPU 60%, from the same capacity measurement), with the same probes.
 - **Scenarios:**
@@ -63,12 +64,14 @@ k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ b
   - `stuck` (leaked DB pool: 503s, the pod leaves the Service; only a restart fixes it);
   - `cpuhog` (a runaway job blocks the event loop; only a restart fixes it).
 
-**Results (campaign-2026-10-28, agent v11; valid runs: HPA 6, agent 5 per scenario):**
-- **Faults:** the agent recovered in 10/10 runs (stuck in 114 s, cpuhog in 118 s, by a rolling restart at the first
-  wake-up); the HPA in 0/12 (Fisher p = 1.5e-6).
-- **Normal load:** the agent is 5.1% cheaper (72.1 vs 76.0 replica-min, p = 0.002) and better provisioned (83.9% vs 78.8%),
-  but spends 60 s outside the NFRs, mostly while the LLM answers at the first scale-up; the HPA 0 s.
-- 30/30 agent actions right at the first wake-up and verified STABLE; 0 false wake-ups.
+**Results (campaign-2026-11-01, agent v12; 4 + 4 runs per scenario, all valid):**
+- **Faults:** the agent recovered in 8/8 runs (stuck in 138 s, cpuhog in 118 s, by a rolling restart at the first
+  wake-up); the HPA in 0/8 (Fisher p = 0.00008). Across all phase-2 campaigns: agent 33/34, HPA 0/36.
+- **Normal load:** the agent is 5.5% cheaper (72.2 vs 76.4 replica-min, p = 0.014) and better provisioned (84.5% vs 77.2%),
+  but spends 72.5 s outside the NFRs (HPA 27.5 s; not significant, p = 0.19). Most of it follows the first scale-up: the
+  agent acts at the anomaly boundary, when the single pod is already at its limit.
+- 25 agent actions, all verified STABLE; 24 right and 1 unnecessary but harmless restart during a short slowdown of the
+  ingress that also hit an HPA run (one machine runs everything).
 - Details: `thesis_notes/results_summary.md` and `4-load-testing/comparison_nfr.md`; earlier versions in
   `thesis_notes/history/`.
 

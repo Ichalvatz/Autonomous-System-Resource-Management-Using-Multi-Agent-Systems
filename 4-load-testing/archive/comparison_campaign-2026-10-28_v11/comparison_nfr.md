@@ -1,0 +1,108 @@
+# Agent v11 vs Kubernetes HPA (phase 2: NFRs at the ingress, request mix, open-model load)
+
+Generated 2026-10-28 20:16 from the runs of campaign `campaign-2026-10-28` only. Both strategies on the same deployment with the same readiness and liveness probes. Lower is better except correct provisioning.
+
+# Normal load (k6/baseline.js: 1 -> 2 -> 3 -> 2 -> 1 pods needed)
+
+11 runs from `results_nfr.csv`.
+
+| Metric | hpa (n=6) | llm-v11 (n=5) |
+|---|---|---|
+| NFR violation (s; p95 > 0.35 s or errors > 1%) | 0 ± 0 | 60 ± 40 |
+|   of which p95 > 0.35 s (s) | 0 ± 0 | 60 ± 40 |
+|   of which errors > 1% (s) | 0 ± 0 | 10 ± 22 |
+| Failed requests (%) | 0 ± 0 | 0.034 ± 0.076 |
+| p95 mean (s, ingress) | 0.116 ± 0.0015 | 0.144 ± 0.019 |
+| p95 over the run (s, k6 client) | 0.13 ± 0.0019 | 0.161 ± 0.013 |
+| Requests k6 could not start (dropped) | 0 ± 0 | 5 ± 11 |
+| Replica-minutes (cost) | 76 ± 0.56 | 72.1 ± 0.94 |
+| Correct provisioning (%) | 78.8 ± 1.3 | 83.9 ± 2.8 |
+| Under-provisioned (s) | 0 ± 0 | 60 ± 14 |
+| Over-provisioned (s) | 478 ± 29 | 304 ± 58 |
+| Scale actions | 4 ± 0 | 4 ± 0 |
+| Pods not ready (s) | 10 ± 8.9 | 6 ± 5.5 |
+| Liveness restarts | 0 ± 0 | 0 ± 0 |
+| Agent wake-ups | – | 4 ± 0 |
+|   verified STABLE | – | 4 ± 0 |
+|   re-wakes | – | 0 ± 0 |
+| LLM calls | – | 12.8 ± 4.9 |
+
+# Stuck dependency (POST /chaos/stuck at t = 4 min)
+
+11 runs from `results_nfr_stuck.csv`. Every request of the old process waits 3 s for a leaked DB connection, then fails (503); its /ready fails, so the readiness probe takes it out of service. New pods are healthy: only a restart fixes the old process.
+
+| Metric | hpa (n=6) | llm-v11 (n=5) |
+|---|---|---|
+| Recovery after the fault (s; NFRs met for 60 s) | never (6/6) | 114 ± 5.5 |
+| NFR violation after the fault (s) | 717 ± 5.2 | 102 ± 4.5 |
+| Failed requests (%) | 74.3 ± 0.12 | 5.83 ± 0.44 |
+| p95 over the run (s, k6 client) | 0.0753 ± 0.0048 | 0.123 ± 0.0056 |
+| Max replicas after the fault | 1 ± 0 | 1 ± 0 |
+| Replica-minutes (cost) | 16.2 ± 0 | 16.2 ± 0 |
+| Pods not ready (s) | 708 ± 4.1 | 38 ± 4.5 |
+| Liveness restarts | 0 ± 0 | 0 ± 0 |
+| Agent wake-ups | – | 1 ± 0 |
+|   verified STABLE | – | 1 ± 0 |
+|   re-wakes | – | 0 ± 0 |
+| LLM calls | – | 6 ± 0 |
+
+Agent wake-ups per run (time, actions, verification):
+
+- 10-28 01:02: recovery 110 s; 01:07 restart (STABLE)
+- 10-28 04:19: recovery 120 s; 04:24 restart (STABLE)
+- 10-28 07:36: recovery 120 s; 07:41 restart (STABLE)
+- 10-28 10:31: recovery 110 s; 10:36 restart (STABLE)
+- 10-28 14:11: recovery 110 s; 14:16 restart (STABLE)
+
+HPA replica changes per run (mm:ss from the start):
+
+- 10-28 01:24: recovery never s; none; liveness restarts 0
+- 10-28 03:57: recovery never s; none; liveness restarts 0
+- 10-28 06:09: recovery never s; none; liveness restarts 0
+- 10-28 09:04: recovery never s; none; liveness restarts 0
+- 10-28 11:38: recovery never s; none; liveness restarts 0
+- 10-28 14:33: recovery never s; none; liveness restarts 0
+
+# Runaway background job (POST /chaos/cpuhog at t = 4 min)
+
+11 runs from `results_nfr_cpuhog.csv`. A never-ending job blocks the event loop 600 ms at a time: it looks like CPU overload at a fraction of the capacity; only a restart stops it. Measured at the ingress, the queueing behind the blocked loop is visible.
+
+| Metric | hpa (n=6) | llm-v11 (n=5) |
+|---|---|---|
+| Recovery after the fault (s; NFRs met for 60 s) | never (6/6) | 118 ± 13 |
+| NFR violation after the fault (s) | 713 ± 5.2 | 102 ± 11 |
+| Failed requests (%) | 0.117 ± 0.18 | 0.34 ± 0.22 |
+| p95 over the run (s, k6 client) | 0.713 ± 0.032 | 0.409 ± 0.12 |
+| Max replicas after the fault | 2 ± 0 | 1 ± 0 |
+| Replica-minutes (cost) | 27.8 ± 0.16 | 16.2 ± 0 |
+| Pods not ready (s) | 6.67 ± 8.2 | 0 ± 0 |
+| Liveness restarts | 0 ± 0 | 0 ± 0 |
+| Agent wake-ups | – | 1 ± 0 |
+|   verified STABLE | – | 1 ± 0 |
+|   re-wakes | – | 0 ± 0 |
+| LLM calls | – | 5.8 ± 0.84 |
+
+Agent wake-ups per run (time, actions, verification):
+
+- 10-28 02:08: recovery 110 s; 02:12 restart (STABLE)
+- 10-28 05:47: recovery 110 s; 05:51 restart (STABLE)
+- 10-28 08:42: recovery 120 s; 08:47 restart (STABLE)
+- 10-28 12:00: recovery 140 s; 12:04 restart (STABLE)
+- 10-28 14:55: recovery 110 s; 15:00 restart (STABLE)
+
+HPA replica changes per run (mm:ss from the start):
+
+- 10-28 01:46: recovery never s; 04:30 1->2; liveness restarts 0
+- 10-28 04:41: recovery never s; 04:30 1->2; liveness restarts 0
+- 10-28 07:14: recovery never s; 04:20 1->2; liveness restarts 0
+- 10-28 10:10: recovery never s; 04:30 1->2; liveness restarts 0
+- 10-28 12:21: recovery never s; 04:50 1->2; liveness restarts 0
+- 10-28 15:17: recovery never s; 04:30 1->2; liveness restarts 0
+
+# Statistics (exact tests; small n)
+
+- Normal load, cost (replica_minutes): agent (n=5, mean 72.1) < hpa (n=6, mean 76.0): one-sided exact permutation p = 0.002; the other way p = 1.000
+- Normal load, NFR violation (nfr_violation_s): agent (n=5, mean 60.0) < hpa (n=6, mean 0.0): one-sided exact permutation p = 1.000; the other way p = 0.015
+- stuck: recovered, agent 5/5 vs hpa 0/6: one-sided Fisher exact p = 0.0022
+- cpuhog: recovered, agent 5/5 vs hpa 0/6: one-sided Fisher exact p = 0.0022
+- Faults pooled: agent 10/10 vs hpa 0/12: one-sided Fisher exact p = 0.00000

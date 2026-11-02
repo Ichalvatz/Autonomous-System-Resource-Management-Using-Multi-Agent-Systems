@@ -1,0 +1,35 @@
+                       label: llm-v12
+                       start: 2026-11-02 05:45:00
+                         end: 2026-11-02 06:01:00
+                duration_min: 16.0
+             nfr_violation_s: 120
+             slo_violation_s: 120
+                     error_s: 60
+                  errors_pct: 0.36
+                    p95_mean: 0.274
+                     p95_p99: 1.626
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 0
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 54720
+                    k6_p95_s: 0.681
+               k6_failed_pct: 0.39
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 6
+                agent_s_mean: 36.6
+               agent_actions: 05:49 restart (STABLE)
+                       notes: campaign-2026-11-01
+                     run_dir: 4-load-testing/eval_cpuhog_llm_20261102_0542
+                fault_at_min: 4.0
+                  recovery_s: 140
+ nfr_violation_after_fault_s: 120
+    max_replicas_after_fault: 1

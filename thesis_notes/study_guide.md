@@ -5,7 +5,8 @@
 
 Άλλα αρχεία:
 - `system_overview.md`: η εικόνα σε ένα σημείο, μαζί με το «τι είχαμε πριν».
-- `design_decisions.md` (Α24–Α30: v9 Α24–Α27, v10 Α28–Α29, v11 Α30): οι αποφάσεις με τα στοιχεία τους.
+- `design_decisions.md` (Α24–Α31: v9 Α24–Α27, v10 Α28–Α29, v11 Α30, v12 Α31): οι αποφάσεις με τα στοιχεία τους.
+- `results_summary.md`: τα αποτελέσματα της τελευταίας καμπάνιας (v12) σε μία σελίδα.
 - `defense_qa.md`: οι ερωτήσεις των εξεταστών.
 - `manual_testing.md`: οι χειροκίνητες δοκιμές.
 - `history/phase1/study_guide_phase1.md`: ο οδηγός της φάσης 1 (Isolation Forest, prompt v3–v8, badconfig, rollback).
