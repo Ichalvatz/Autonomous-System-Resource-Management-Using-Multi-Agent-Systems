@@ -18,7 +18,7 @@
 # SCENARIO=cpuhog: same load and timing, POST /chaos/cpuhog (a never-ending job blocks the event loop 600 ms at
 #   a time). Looks like overload; only a restart fixes it. results_nfr_cpuhog.csv.
 # Env switches passed through to the controller: AIOPS_MEMORY (on|off), AIOPS_ACT_GUARD (on|off), LABEL (result
-#   label; default llm-v13 for the agent, hpa for the HPA).
+#   label; default llm-v14 for the agent, hpa for the HPA).
 # Output: 4-load-testing/eval_[<scenario>_]<strategy>_<time>/ + one row in the results CSV
 # The whole body is one { ... } block: bash parses it completely before running, so editing
 # this file while it runs cannot break the running copy (an edit at 14:44 on 2026-10-03 did).
@@ -29,7 +29,7 @@ STRATEGY=$1
 NOTES=${2:-}
 SCENARIO=${SCENARIO:-baseline}
 DEFAULT_LABEL=$STRATEGY
-[ "$STRATEGY" = "llm" ] && DEFAULT_LABEL=llm-v13
+[ "$STRATEGY" = "llm" ] && DEFAULT_LABEL=llm-v14
 LABEL=${LABEL:-$DEFAULT_LABEL}
 # Phase 2 results go to new files: their metrics are measured at the ingress, not comparable with phase 1's
 # evaluation_results*.csv (backend histogram, login-only closed-model load).

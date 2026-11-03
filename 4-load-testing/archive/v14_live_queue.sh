@@ -1,0 +1,34 @@
+#!/bin/bash
+# Agent v14 (A33, the final prompt), smoke runs before its campaign (2026-11-03/04): one-off queue, started once the
+# prompt evaluation (prompt_eval.py) passed its criteria. The user gave full autonomy for this and the campaign after it
+# ("μην σταματήσεις για τίποτα").
+#   stuck and cpuhog (memory off) and the normal load (memory on: the incidents of campaign-2026-11-01 and the v13 smoke
+#   runs, in the same model's space), notes smoke-v14-2026-11-04: the new prompt live, with the verification and the
+#   detector of v13.
+# Every run waits for AC power and until llm_ready.py gets 3/3 answers. The campaign is started separately.
+# Run from the repo root:  nohup ./4-load-testing/archive/v14_live_queue.sh &   (log: 4-load-testing/v14_live_queue.log)
+{
+set -u
+cd "$(dirname "$0")/../.."
+LOG=4-load-testing/v14_live_queue.log
+PY=.venv/bin/python3
+TAG=smoke-v14-2026-11-04
+log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"; }
+power(){ pmset -g batt | head -1 | grep -q "AC Power" && echo AC || echo BATTERY; }
+wait_ac(){ until [ "$(power)" = AC ]; do log "on battery: waiting for AC power"; sleep 60; done; }
+caffeinate -dimsu -w $$ &
+
+log "v14 smoke queue: git HEAD $(git rev-parse --short HEAD); model $(shasum -a 256 5-ml-training/health_model.pkl | cut -c1-12); power $(power)"
+for scenario in stuck cpuhog baseline; do
+  memory=on; [ "$scenario" != baseline ] && memory=off
+  wait_ac
+  until $PY 4-load-testing/llm_ready.py >> "$LOG" 2>&1; do log "primary model not answering: retry in 5 min"; sleep 300; done
+  log "smoke $scenario llm (memory $memory); power $(power)"
+  env SCENARIO="$scenario" AIOPS_MEMORY="$memory" ./4-load-testing/run_experiment.sh llm "$TAG" >> "$LOG.runs" 2>&1
+  log "end smoke $scenario (exit $?)"
+  sleep 180
+done
+kubectl scale deployment aiops-backend-deployment --replicas=1 >/dev/null
+log "v14 smoke queue done"
+exit
+}
