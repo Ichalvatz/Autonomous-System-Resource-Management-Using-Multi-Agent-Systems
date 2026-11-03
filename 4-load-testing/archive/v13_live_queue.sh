@@ -1,12 +1,12 @@
 #!/bin/bash
 # Agent v13, live checks before its campaign (2026-11-03, design_decisions.md A32, A32.1): one-off queue.
-#   0. wait DELAY seconds (default 3600: the user said "in one hour"), then for AC power before every step;
+#   0. wait for AC power before every step (DELAY seconds first, default 0);
 #   1. live detector validation with v13's detector (detector_validation.sh, ~34 min, dry run, no agent): the script
 #      scales by hand, so every change is one no verification watched: the detector follows it on readings of
 #      post-change data only (A32, A32.1); expected as v12: the anomaly phases caught, no wake-up in the normal ones;
-#   2. smoke runs of the agent, notes smoke-v13-2026-11-03: the normal load (memory on: the incidents of
-#      campaign-2026-11-01, in the same model's space) and stuck (memory off): the verification on post-change
-#      readings (expected STABLE ~20 s after the rollout) and the detector right after it.
+#   2. a smoke run of the agent on the normal load (memory on: the incidents of campaign-2026-11-01, in the same model's
+#      space), notes smoke-v13-2026-11-03: the verification on post-change readings (expected STABLE ~20 s after the
+#      rollout) and the detector right after it. (The user asked for a check of about an hour: no fault run.)
 # An agent run waits until llm_ready.py gets 3/3 answers. The campaign is started separately, only after the user's OK.
 # Run from the repo root:  nohup ./4-load-testing/archive/v13_live_queue.sh &   (log: 4-load-testing/v13_live_queue.log)
 {
@@ -20,8 +20,8 @@ power(){ pmset -g batt | head -1 | grep -q "AC Power" && echo AC || echo BATTERY
 wait_ac(){ until [ "$(power)" = AC ]; do log "on battery: waiting for AC power"; sleep 60; done; }
 caffeinate -dimsu -w $$ &
 
-log "v13 live queue: git HEAD $(git rev-parse --short HEAD); model $(shasum -a 256 5-ml-training/health_model.pkl | cut -c1-12); noise $(shasum -a 256 5-ml-training/window_noise.json | cut -c1-12); starting in ${DELAY:-3600} s"
-sleep "${DELAY:-3600}"
+log "v13 live queue: git HEAD $(git rev-parse --short HEAD); model $(shasum -a 256 5-ml-training/health_model.pkl | cut -c1-12); noise $(shasum -a 256 5-ml-training/window_noise.json | cut -c1-12); starting in ${DELAY:-0} s"
+sleep "${DELAY:-0}"
 
 # --- 1. detector validation
 wait_ac
@@ -47,8 +47,8 @@ EOF
 log "validation done: $(grep -c BATTERY 4-load-testing/detector_validation_power.log) battery samples; $(tail -n +2 5-ml-training/dry_run_readings.csv | wc -l | tr -d ' ') readings, $(grep -c ',True$' 5-ml-training/dry_run_readings.csv) would wake"
 sleep 180
 
-# --- 2. smoke runs
-for scenario in baseline stuck; do
+# --- 2. smoke run
+for scenario in baseline; do
   memory=on; [ "$scenario" != baseline ] && memory=off
   wait_ac
   until $PY 4-load-testing/llm_ready.py >> "$LOG" 2>&1; do log "primary model not answering: retry in 5 min"; sleep 300; done
