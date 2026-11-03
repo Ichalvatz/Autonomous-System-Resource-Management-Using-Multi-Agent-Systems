@@ -13,7 +13,7 @@ The comparison is against the native Kubernetes HPA.
   summaries: `thesis_notes/results_summary.md` (v12, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
   order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
   current version; superseded ones go to `thesis_notes/history/`).
-  - **Agent v13 is the current code** (branch `nfr-v13`, since 2026-11-02; A32, A32.1, **not measured yet**): v12's
+  - **Agent v13 is the current code** (branch `nfr-v13`, since 2026-11-02; A32, A32.1, **live-checked 2026-11-03, no campaign yet**): v12's
     model, prompt and tools, with two changes the user asked for.
     - **A32:** the detector judges every reading after a pod-count change ("να κρίνει αμέσως αν είμαστε stable, το οποίο
       καθορίζεται από το SVM"). v12 skipped 90 s, counted from when it saw the change, i.e. after the agent's verification
@@ -29,7 +29,13 @@ The comparison is against the native Kubernetes HPA.
       +20 s; recorded 0–70 s), the false "not improving" of 1/11 18:04 now STABLE, the UNSTABLE test 3/3 (30 / 30 / 50 s);
       the detector's wake-ups as v12's in the validations and in 51/51 agent runs; one real NFR breach the 90 s had hidden
       (28/10 09:42) now wakes the agent. The user also **rejected** a fact saying the load exceeds the maximum capacity
-      (2/11). Live check proposed: `detector_validation.sh` + one normal-load smoke run.
+      (2/11).
+    - **Live check (2026-11-03, `archive/v13_live_queue.sh`, `archive/v13_live_stuck.sh`; A32.1):** validation 4/4 anomaly
+      phases (63 / 75 / 76 / 67 s), 0 false wakes (the G wake is a real ingress breach: 1 m p95 0.54 s for 50 s, backend
+      0.074 s); after each hand change the first judgement 28–36 s after the command (v12 ~100 s); replay = live to 10 s.
+      Smoke runs (`smoke-v13-2026-11-03`): normal load 4/4 actions STABLE at +20 s (v12's 1→2: 40–50 s), NFR violation 120 s
+      all at 1→2 (2 × ServiceUnavailable, agent 70 s), cost 71.3; stuck: restart, STABLE at +20 s (v12: 60 s), recovery
+      130 s, 7.0% errors. No live UNSTABLE (no wrong action). Next: the v13 campaign, with the user's OK.
   - **Agent v12** (A31) = git tag `v12-campaign`: v11's model tested with **range probes
     that cover every case** (one healthy interval per pod count, no hole: v11 had one at 17.8–19.4 rps on 1 pod), trained
     with the 1-pod low end (1–4 rps), the minimum pod count below every band = the smallest, and the verification judging

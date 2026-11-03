@@ -1,0 +1,27 @@
+[2026-11-03 18:05:37] v13 live queue: git HEAD ec427cc; model 737ef6b5df39; noise 64d1510b1f38; starting in 3600 s
+[2026-11-03 18:06:29] v13 live queue: git HEAD 0c9f252; model 737ef6b5df39; noise 64d1510b1f38; starting in 0 s
+[2026-11-03 18:06:29] detector validation (dry run, v13 detector); power AC
+18:06:30 phase A: 1 replica(s), normal
+[2026-11-03 18:08:53] stuck smoke queued: waits for v13_live_queue.sh to finish
+18:11:30 phase B: 1 replica(s), ANOMALY overload
+18:13:30 phase C: 2 replica(s), normal
+18:18:30 phase D: 2 replica(s), ANOMALY overload
+18:20:30 phase E: 3 replica(s), normal
+18:25:30 phase F: 3 replica(s), ANOMALY waste
+18:28:31 phase G: 2 replica(s), normal
+18:33:31 phase H: 2 replica(s), ANOMALY waste
+18:36:31 phase I: 1 replica(s), normal
+done
+[2026-11-03 18:40:35] validation done: 0 battery samples; 195 readings, 0 would wake
+[18:43:51] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 3)
+[2026-11-03 18:43:52] primary model not answering: retry in 5 min
+[18:48:54] llm_ready: gemini/gemini-3.1-flash-lite not ready (ServiceUnavailableError, try 1)
+[2026-11-03 18:48:54] primary model not answering: retry in 5 min
+[18:54:09] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-11-03 18:54:09] smoke baseline llm (memory on); power AC
+[2026-11-03 19:34:50] end smoke baseline (exit 0)
+[2026-11-03 19:37:50] v13 live queue done
+[19:38:21] llm_ready: gemini/gemini-3.1-flash-lite answered 3/3
+[2026-11-03 19:38:21] smoke stuck llm (memory off); git HEAD e3b2143; power AC
+[2026-11-03 19:57:01] end smoke stuck (exit 0)
+[2026-11-03 19:57:01] v13 stuck smoke done

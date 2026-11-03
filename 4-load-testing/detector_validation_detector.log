@@ -1,0 +1,446 @@
+Loading anomaly detection model from: /Users/ioannischalvatzis/Documents/LLM_AGENT/5-ml-training/health_model.pkl
+Model: OneClassSVM-NFR-v11 (gamma 0.1), features ['throughput', 'latency_p95', 'error_rate', 'replicas'], trained 2026-11-01T15:45:55 on 210 readings
+🧪 DRY RUN: anomalies are counted and logged, the agent is never called.
+✅ Model loaded. Starting continuous monitoring...
+[18:06:32] Low traffic (0.16 rps) — skipping prediction.
+rps: 3.9 (3.9/pod), p95: 0.444s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.506)
+[18:06:42] Anomalous reading 1/3 — waiting for confirmation.
+rps: 12.5 (12.5/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[18:06:52]  Normal operation.
+rps: 21.0 (21.0/pod), p95: 0.108s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[18:07:02]  Normal operation.
+rps: 29.6 (29.6/pod), p95: 0.109s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)
+[18:07:12]  Normal operation.
+rps: 38.0 (38.0/pod), p95: 0.098s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.914)
+[18:07:22]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:07:32]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:07:42]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.839)
+[18:07:52]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.097s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:08:02]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.101s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:08:12]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.108s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:08:22]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.112s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:08:32]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.128s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:08:42]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.113s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:08:52]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.230s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:09:02]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.230s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:09:12]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.229s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:09:22]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.193s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:09:32]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.174s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:09:43]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:09:53]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:10:03]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:10:13]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:10:23]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:10:33]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:10:43]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.842)
+[18:10:53]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.094s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:11:03]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.093s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:11:13]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:11:23]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:11:33]  Normal operation.
+rps: 48.4 (48.4/pod), p95: 0.118s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.748)
+[18:11:43]  Normal operation.
+rps: 60.6 (60.6/pod), p95: 0.175s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.528)
+[18:11:53]  Normal operation.
+rps: 72.7 (72.7/pod), p95: 0.270s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.206)
+[18:12:03]  Normal operation.
+rps: 85.4 (85.4/pod), p95: 0.290s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -0.415)
+[18:12:13] Anomalous reading 1/3 — waiting for confirmation.
+rps: 97.8 (97.8/pod), p95: 0.309s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -0.721)
+[18:12:23] Anomalous reading 2/3 — waiting for confirmation.
+rps: 104.3 (104.3/pod), p95: 0.379s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.316)
+
+[18:12:33] ANOMALY DETECTED!
+Score -1.316: load 104.3 rps (104.3 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.38 s is above the safe level 0.25 s (objective 0.35 s)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 104.8 (104.8/pod), p95: 0.378s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.315)
+[18:12:43] Anomalous reading 1/3 — waiting for confirmation.
+rps: 104.4 (104.4/pod), p95: 0.372s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.269)
+[18:12:53] Anomalous reading 2/3 — waiting for confirmation.
+rps: 104.6 (104.6/pod), p95: 0.368s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.236)
+[18:13:03] Anomaly confirmed, but agent cooldown has 30s left.
+rps: 104.0 (104.0/pod), p95: 0.395s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.433)
+[18:13:13] Anomaly confirmed, but agent cooldown has 20s left.
+rps: 104.5 (104.5/pod), p95: 0.404s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.495)
+[18:13:23] Anomaly confirmed, but agent cooldown has 10s left.
+rps: 104.4 (104.4/pod), p95: 0.414s, errors: 0.0%, replicas: 1 (ready 1), prediction: -1 (score -1.564)
+
+[18:13:33] ANOMALY DETECTED!
+Score -1.564: load 104.4 rps (104.4 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.41 s is above the safe level 0.25 s (objective 0.35 s)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+[18:13:43] 2 pod(s): waiting for 20s of data from after the change.
+[18:13:53] 2 pod(s): waiting for 20s of data from after the change.
+rps: 105.4 (52.7/pod), p95: 0.107s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:14:03]  Normal operation. The change to 2 pod(s) is healthy.
+rps: 103.6 (51.8/pod), p95: 0.098s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:14:13]  Normal operation.
+rps: 103.6 (51.8/pod), p95: 0.107s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:14:23]  Normal operation.
+rps: 103.8 (51.9/pod), p95: 0.109s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:14:33]  Normal operation.
+rps: 103.9 (52.0/pod), p95: 0.104s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:14:44]  Normal operation.
+rps: 103.7 (51.9/pod), p95: 0.101s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:14:54]  Normal operation.
+rps: 104.3 (52.1/pod), p95: 0.109s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:15:04]  Normal operation.
+rps: 104.3 (52.1/pod), p95: 0.110s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:15:14]  Normal operation.
+rps: 104.0 (52.0/pod), p95: 0.118s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:15:24]  Normal operation.
+rps: 104.1 (52.1/pod), p95: 0.131s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:15:34]  Normal operation.
+rps: 103.3 (51.6/pod), p95: 0.133s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:15:44]  Normal operation.
+rps: 103.5 (51.7/pod), p95: 0.129s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:15:54]  Normal operation.
+rps: 103.7 (51.9/pod), p95: 0.120s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:16:04]  Normal operation.
+rps: 103.9 (52.0/pod), p95: 0.111s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:16:14]  Normal operation.
+rps: 103.9 (51.9/pod), p95: 0.099s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:16:24]  Normal operation.
+rps: 104.8 (52.4/pod), p95: 0.102s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:16:34]  Normal operation.
+rps: 104.5 (52.3/pod), p95: 0.105s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:16:44]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.107s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:16:54]  Normal operation.
+rps: 104.7 (52.3/pod), p95: 0.110s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:17:04]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.111s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:17:14]  Normal operation.
+rps: 104.5 (52.3/pod), p95: 0.106s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:17:24]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.109s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:17:34]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.106s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:17:44]  Normal operation.
+rps: 104.5 (52.3/pod), p95: 0.098s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:17:54]  Normal operation.
+rps: 104.7 (52.3/pod), p95: 0.099s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:18:04]  Normal operation.
+rps: 104.7 (52.4/pod), p95: 0.104s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:18:14]  Normal operation.
+rps: 104.7 (52.3/pod), p95: 0.099s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:18:24]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.101s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:18:34]  Normal operation.
+rps: 110.8 (55.4/pod), p95: 0.142s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:18:44]  Normal operation.
+rps: 126.2 (63.1/pod), p95: 0.236s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:18:54]  Normal operation.
+rps: 141.3 (70.6/pod), p95: 0.255s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +0.749)
+[18:19:04]  Normal operation.
+rps: 156.9 (78.5/pod), p95: 0.259s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +0.110)
+[18:19:14]  Normal operation.
+rps: 172.4 (86.2/pod), p95: 0.274s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.355)
+[18:19:25] Anomalous reading 1/3 — waiting for confirmation.
+rps: 181.7 (90.9/pod), p95: 0.267s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.373)
+[18:19:35] Anomalous reading 2/3 — waiting for confirmation.
+rps: 181.5 (90.8/pod), p95: 0.239s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.315)
+
+[18:19:45] ANOMALY DETECTED!
+Score -0.315: load 181.5 rps (90.8 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 182.0 (91.0/pod), p95: 0.241s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.320)
+[18:19:55] Anomalous reading 1/3 — waiting for confirmation.
+rps: 181.7 (90.8/pod), p95: 0.258s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.330)
+[18:20:05] Anomalous reading 2/3 — waiting for confirmation.
+rps: 181.7 (90.8/pod), p95: 0.240s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.317)
+[18:20:15] Anomaly confirmed, but agent cooldown has 30s left.
+rps: 181.6 (90.8/pod), p95: 0.276s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.434)
+[18:20:25] Anomaly confirmed, but agent cooldown has 20s left.
+rps: 181.8 (90.9/pod), p95: 0.271s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.396)
+[18:20:35] Anomaly confirmed, but agent cooldown has 10s left.
+[18:20:45] 3 pod(s): waiting for 20s of data from after the change.
+[18:20:55] 3 pod(s): waiting for 20s of data from after the change.
+rps: 181.8 (60.6/pod), p95: 0.118s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:21:05]  Normal operation. The change to 3 pod(s) is healthy.
+rps: 181.2 (60.4/pod), p95: 0.125s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:21:15]  Normal operation.
+rps: 181.8 (60.6/pod), p95: 0.153s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:21:25]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.148s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:21:35]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.141s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:21:45]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.143s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:21:55]  Normal operation.
+rps: 182.0 (60.7/pod), p95: 0.138s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:22:05]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.127s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:22:15]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.121s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:22:25]  Normal operation.
+rps: 181.6 (60.5/pod), p95: 0.125s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:22:35]  Normal operation.
+rps: 181.6 (60.5/pod), p95: 0.125s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:22:45]  Normal operation.
+rps: 181.5 (60.5/pod), p95: 0.132s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:22:55]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.128s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:23:06]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.130s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:23:16]  Normal operation.
+rps: 181.8 (60.6/pod), p95: 0.122s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:23:26]  Normal operation.
+rps: 181.8 (60.6/pod), p95: 0.118s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:23:36]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.115s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:23:46]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.118s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:23:56]  Normal operation.
+rps: 181.6 (60.5/pod), p95: 0.126s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:24:06]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.130s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:24:16]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.136s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:24:26]  Normal operation.
+rps: 181.8 (60.6/pod), p95: 0.143s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:24:36]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.142s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:24:46]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.138s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:24:56]  Normal operation.
+rps: 181.5 (60.5/pod), p95: 0.135s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:25:06]  Normal operation.
+rps: 181.6 (60.5/pod), p95: 0.141s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:25:16]  Normal operation.
+rps: 181.7 (60.6/pod), p95: 0.137s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:25:26]  Normal operation.
+rps: 181.6 (60.5/pod), p95: 0.137s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:25:36]  Normal operation.
+rps: 174.9 (58.3/pod), p95: 0.136s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:25:46]  Normal operation.
+rps: 159.8 (53.3/pod), p95: 0.136s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +1.000)
+[18:25:56]  Normal operation.
+rps: 144.4 (48.1/pod), p95: 0.115s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +0.946)
+[18:26:06]  Normal operation.
+rps: 129.2 (43.1/pod), p95: 0.105s, errors: 0.0%, replicas: 3 (ready 3), prediction: 1 (score +0.336)
+[18:26:16]  Normal operation.
+rps: 113.9 (38.0/pod), p95: 0.086s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.246)
+[18:26:26] Anomalous reading 1/3 — waiting for confirmation.
+rps: 105.4 (35.1/pod), p95: 0.074s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.364)
+[18:26:36] Anomalous reading 2/3 — waiting for confirmation.
+rps: 105.2 (35.1/pod), p95: 0.076s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.366)
+
+[18:26:46] ANOMALY DETECTED!
+Score -0.366: load 105.2 rps (35.1 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 105.3 (35.1/pod), p95: 0.079s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.365)
+[18:26:56] Anomalous reading 1/3 — waiting for confirmation.
+rps: 105.2 (35.1/pod), p95: 0.081s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.366)
+[18:27:07] Anomalous reading 2/3 — waiting for confirmation.
+rps: 105.3 (35.1/pod), p95: 0.083s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.365)
+[18:27:17] Anomaly confirmed, but agent cooldown has 30s left.
+rps: 105.2 (35.1/pod), p95: 0.083s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.366)
+[18:27:27] Anomaly confirmed, but agent cooldown has 20s left.
+rps: 105.5 (35.2/pod), p95: 0.078s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.363)
+[18:27:37] Anomaly confirmed, but agent cooldown has 10s left.
+rps: 105.3 (35.1/pod), p95: 0.076s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.365)
+
+[18:27:47] ANOMALY DETECTED!
+Score -0.365: load 105.3 rps (35.1 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 105.4 (35.1/pod), p95: 0.074s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.364)
+[18:27:57] Anomalous reading 1/3 — waiting for confirmation.
+rps: 105.3 (35.1/pod), p95: 0.074s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.365)
+[18:28:07] Anomalous reading 2/3 — waiting for confirmation.
+rps: 105.4 (35.1/pod), p95: 0.074s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.364)
+[18:28:17] Anomaly confirmed, but agent cooldown has 30s left.
+rps: 105.2 (35.1/pod), p95: 0.073s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.366)
+[18:28:27] Anomaly confirmed, but agent cooldown has 20s left.
+rps: 105.3 (35.1/pod), p95: 0.073s, errors: 0.0%, replicas: 3 (ready 3), prediction: -1 (score -0.365)
+[18:28:37] Anomaly confirmed, but agent cooldown has 10s left.
+[18:28:47] 2 pod(s): waiting for 20s of data from after the change.
+[18:28:57] 2 pod(s): waiting for 20s of data from after the change.
+rps: 105.1 (52.6/pod), p95: 0.119s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:29:07]  Normal operation. The change to 2 pod(s) is healthy.
+rps: 103.8 (51.9/pod), p95: 0.111s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:29:17]  Normal operation.
+rps: 104.5 (52.2/pod), p95: 0.108s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:29:27]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.108s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:29:37]  Normal operation.
+rps: 104.7 (52.3/pod), p95: 0.105s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:29:47]  Normal operation.
+rps: 104.8 (52.4/pod), p95: 0.104s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:29:57]  Normal operation.
+rps: 105.4 (52.7/pod), p95: 0.104s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:30:07]  Normal operation.
+rps: 105.3 (52.6/pod), p95: 0.104s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:30:17]  Normal operation.
+rps: 104.9 (52.5/pod), p95: 0.099s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:30:27]  Normal operation.
+rps: 105.1 (52.5/pod), p95: 0.103s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:30:37]  Normal operation.
+rps: 105.0 (52.5/pod), p95: 0.105s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:30:47]  Normal operation.
+rps: 104.9 (52.5/pod), p95: 0.102s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:30:57]  Normal operation.
+rps: 104.5 (52.2/pod), p95: 0.097s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:31:07]  Normal operation.
+rps: 104.6 (52.3/pod), p95: 0.112s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:31:17]  Normal operation.
+rps: 104.1 (52.0/pod), p95: 0.105s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:31:27]  Normal operation.
+rps: 104.1 (52.0/pod), p95: 0.095s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:31:38]  Normal operation.
+rps: 104.3 (52.2/pod), p95: 0.541s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -2.259)
+[18:31:48] Anomalous reading 1/3 — waiting for confirmation.
+rps: 104.8 (52.4/pod), p95: 0.537s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -2.241)
+[18:31:58] Anomalous reading 2/3 — waiting for confirmation.
+rps: 105.2 (52.6/pod), p95: 0.534s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -2.222)
+
+[18:32:08] ANOMALY DETECTED!
+Score -2.222: p95 latency 0.53 s is above the safe level 0.25 s (objective 0.35 s)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 105.6 (52.8/pod), p95: 0.531s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -2.206)
+[18:32:18] Anomalous reading 1/3 — waiting for confirmation.
+rps: 105.6 (52.8/pod), p95: 0.531s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -2.206)
+[18:32:28] Anomalous reading 2/3 — waiting for confirmation.
+rps: 105.3 (52.7/pod), p95: 0.101s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:32:38]  Normal operation.
+rps: 105.4 (52.7/pod), p95: 0.097s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:32:48]  Normal operation.
+rps: 105.2 (52.6/pod), p95: 0.096s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:32:58]  Normal operation.
+rps: 105.2 (52.6/pod), p95: 0.098s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:33:08]  Normal operation.
+rps: 105.3 (52.7/pod), p95: 0.100s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:33:18]  Normal operation.
+rps: 105.3 (52.7/pod), p95: 0.103s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:33:28]  Normal operation.
+rps: 105.3 (52.7/pod), p95: 0.106s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:33:38]  Normal operation.
+rps: 100.2 (50.1/pod), p95: 0.102s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +1.000)
+[18:33:48]  Normal operation.
+rps: 87.9 (43.9/pod), p95: 0.097s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +0.962)
+[18:33:58]  Normal operation.
+rps: 75.3 (37.6/pod), p95: 0.092s, errors: 0.0%, replicas: 2 (ready 2), prediction: 1 (score +0.173)
+[18:34:08]  Normal operation.
+rps: 62.8 (31.4/pod), p95: 0.084s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.377)
+[18:34:18] Anomalous reading 1/3 — waiting for confirmation.
+rps: 50.3 (25.1/pod), p95: 0.080s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.654)
+[18:34:28] Anomalous reading 2/3 — waiting for confirmation.
+rps: 42.9 (21.5/pod), p95: 0.079s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.830)
+
+[18:34:38] ANOMALY DETECTED!
+Score -0.830: load 42.9 rps (21.5 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 42.9 (21.4/pod), p95: 0.079s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.832)
+[18:34:48] Anomalous reading 1/3 — waiting for confirmation.
+rps: 42.8 (21.4/pod), p95: 0.080s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.832)
+[18:34:58] Anomalous reading 2/3 — waiting for confirmation.
+rps: 42.9 (21.4/pod), p95: 0.079s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.832)
+[18:35:08] Anomaly confirmed, but agent cooldown has 30s left.
+rps: 42.8 (21.4/pod), p95: 0.078s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.833)
+[18:35:18] Anomaly confirmed, but agent cooldown has 20s left.
+rps: 42.9 (21.4/pod), p95: 0.076s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.832)
+[18:35:28] Anomaly confirmed, but agent cooldown has 10s left.
+rps: 42.9 (21.4/pod), p95: 0.076s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.832)
+
+[18:35:38] ANOMALY DETECTED!
+Score -0.832: load 42.9 rps (21.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)
+🧪 [DRY RUN] The agent would be woken up now — not calling it.
+Agent cooldown 60s (monitoring continues).
+rps: 42.8 (21.4/pod), p95: 0.076s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.832)
+[18:35:48] Anomalous reading 1/3 — waiting for confirmation.
+rps: 42.9 (21.5/pod), p95: 0.080s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.830)
+[18:35:59] Anomalous reading 2/3 — waiting for confirmation.
+rps: 42.9 (21.5/pod), p95: 0.078s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.830)
+[18:36:09] Anomaly confirmed, but agent cooldown has 30s left.
+rps: 42.9 (21.5/pod), p95: 0.078s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.830)
+[18:36:19] Anomaly confirmed, but agent cooldown has 20s left.
+rps: 42.9 (21.4/pod), p95: 0.077s, errors: 0.0%, replicas: 2 (ready 2), prediction: -1 (score -0.831)
+[18:36:29] Anomaly confirmed, but agent cooldown has 10s left.
+[18:36:39] 1 pod(s): waiting for 20s of data from after the change.
+[18:36:49] 1 pod(s): waiting for 20s of data from after the change.
+rps: 42.4 (42.4/pod), p95: 0.117s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.848)
+[18:36:59]  Normal operation. The change to 1 pod(s) is healthy.
+rps: 42.8 (42.8/pod), p95: 0.107s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:37:09]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.099s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.842)
+[18:37:19]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.098s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:37:29]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.097s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:37:39]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.094s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:37:49]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:37:59]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:38:09]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.089s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:38:19]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.089s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:38:29]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.087s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:38:39]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.087s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.842)
+[18:38:49]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.088s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:38:59]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.089s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:39:09]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.094s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.842)
+[18:39:19]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.095s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:39:29]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.096s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:39:39]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.094s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:39:49]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.098s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:39:59]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.092s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.840)
+[18:40:09]  Normal operation.
+rps: 42.9 (42.9/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:40:19]  Normal operation.
+rps: 42.8 (42.8/pod), p95: 0.091s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +0.841)
+[18:40:29]  Normal operation.
+
+⏹️ Monitoring stopped by user.
+
+--- Monitor summary (34.0 min, DRY RUN) ---
+  Readings evaluated:          195
+  Anomalous readings:          51 (26.2%)
+  Would have woken the agent:  8 (14.1/hour)
+  Pod-count changes followed:  4 (0 readings waited, 0 ended UNSTABLE)
+  Waits for post-change data:  8 (readings before 20 s of data after a change)
+  Skipped readings:            low_traffic=1 missing_metrics=0
+  Per-reading log:             /Users/ioannischalvatzis/Documents/LLM_AGENT/5-ml-training/dry_run_readings.csv

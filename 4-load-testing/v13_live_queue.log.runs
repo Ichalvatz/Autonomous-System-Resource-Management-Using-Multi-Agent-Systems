@@ -1,0 +1,80 @@
+[18:54:13] scenario=baseline strategy=llm: reset to 1 replica(s)
+[18:54:13] env: AIOPS_MEMORY=on AIOPS_ACT_GUARD=on LABEL=llm-v13
+[18:54:20] rollout history reset: 1 ReplicaSet(s) left
+[18:54:22] k6 token pool ready
+[18:56:28] k6 baseline.js started
+[19:34:29] k6 finished (exit 0)
+                       label: llm-v13
+                       start: 2026-11-03 18:56:28
+                         end: 2026-11-03 19:34:29
+                duration_min: 38.0
+             nfr_violation_s: 120
+             slo_violation_s: 120
+                     error_s: 0
+                  errors_pct: 0.0
+                    p95_mean: 0.162
+                     p95_p99: 1.531
+             replica_minutes: 71.3
+                under_prov_s: 70
+                 over_prov_s: 260
+            correct_prov_pct: 85.4
+               scale_actions: 4
+             replica_changes: 09:00 1->2, 15:50 2->3, 25:40 3->2, 32:20 2->1
+                   unready_s: 0
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 243959
+                    k6_p95_s: 0.163
+               k6_failed_pct: 0.11
+                  k6_dropped: 0
+                   incidents: 4
+                      stable: 4
+                     rewakes: 0
+                   llm_calls: 11
+                agent_s_mean: 28.5
+               agent_actions: 19:04 scale 1->2 (STABLE); 19:12 scale 2->3 (STABLE); 19:21 scale 3->2 (STABLE); 19:28 scale 2->1 (STABLE)
+                       notes: smoke-v13-2026-11-03
+                     run_dir: 4-load-testing/eval_llm_20261103_1854
+[19:34:50] done
+[19:38:25] scenario=stuck strategy=llm: reset to 1 replica(s)
+[19:38:25] env: AIOPS_MEMORY=off AIOPS_ACT_GUARD=on LABEL=llm-v13
+[19:38:32] rollout history reset: 1 ReplicaSet(s) left
+[19:38:34] k6 token pool ready
+[19:40:39] k6 stuck.js started
+[19:56:40] k6 finished (exit 0)
+                       label: llm-v13
+                       start: 2026-11-03 19:40:39
+                         end: 2026-11-03 19:56:40
+                duration_min: 16.0
+             nfr_violation_s: 110
+             slo_violation_s: 60
+                     error_s: 110
+                  errors_pct: 7.0
+                    p95_mean: 0.385
+                     p95_p99: 4.607
+             replica_minutes: 16.2
+                under_prov_s: 0
+                 over_prov_s: 0
+            correct_prov_pct: 100.0
+               scale_actions: 0
+             replica_changes: 
+                   unready_s: 50
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 54720
+                    k6_p95_s: 0.126
+               k6_failed_pct: 6.82
+                  k6_dropped: 0
+                   incidents: 1
+                      stable: 1
+                     rewakes: 0
+                   llm_calls: 6
+                agent_s_mean: 22.8
+               agent_actions: 19:45 restart (STABLE)
+                       notes: smoke-v13-2026-11-03
+                     run_dir: 4-load-testing/eval_stuck_llm_20261103_1938
+                fault_at_min: 4.0
+                  recovery_s: 130
+ nfr_violation_after_fault_s: 110
+    max_replicas_after_fault: 1
+[19:57:01] done

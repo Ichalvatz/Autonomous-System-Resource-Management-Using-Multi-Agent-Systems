@@ -30,8 +30,8 @@ Traditional management systems rely on static rules and predefined thresholds. I
 ## How it works (implementation)
 
 The system is built around the service's **non-functional requirements** (NFRs): p95 latency < 0.35 s and errors < 1%,
-measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current code **agent v13**, branch `nfr-v13`, not measured
-yet: v12 with the detector judging every reading after a change, and readings of post-change data only after it; last measured **agent v12**, campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
+measured at the ingress as users see them, with at most 3 pods (phase 2 since 2026-10-22; current code **agent v13**, branch `nfr-v13`, live-checked
+2026-11-03, no campaign yet: v12 with the detector judging every reading after a change, and readings of post-change data only after it; last measured **agent v12**, campaign-2026-11-01, tag `v12-campaign`; earlier: v11 `v11-campaign`, v10 `v10-campaign`, v9 `v9-campaign`; phase 1, the CPU-based design with prompts v3–v8, is git tag `v8.1-campaign`).
 
 ```
 k6 (open-model load, 7-endpoint request mix) ──▶ ingress-nginx ──▶ backend pods (1–3, readiness + liveness probes)

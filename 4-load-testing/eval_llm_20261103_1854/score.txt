@@ -1,0 +1,31 @@
+                       label: llm-v13
+                       start: 2026-11-03 18:56:28
+                         end: 2026-11-03 19:34:29
+                duration_min: 38.0
+             nfr_violation_s: 120
+             slo_violation_s: 120
+                     error_s: 0
+                  errors_pct: 0.0
+                    p95_mean: 0.162
+                     p95_p99: 1.531
+             replica_minutes: 71.3
+                under_prov_s: 70
+                 over_prov_s: 260
+            correct_prov_pct: 85.4
+               scale_actions: 4
+             replica_changes: 09:00 1->2, 15:50 2->3, 25:40 3->2, 32:20 2->1
+                   unready_s: 0
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 243959
+                    k6_p95_s: 0.163
+               k6_failed_pct: 0.11
+                  k6_dropped: 0
+                   incidents: 4
+                      stable: 4
+                     rewakes: 0
+                   llm_calls: 11
+                agent_s_mean: 28.5
+               agent_actions: 19:04 scale 1->2 (STABLE); 19:12 scale 2->3 (STABLE); 19:21 scale 3->2 (STABLE); 19:28 scale 2->1 (STABLE)
+                       notes: smoke-v13-2026-11-03
+                     run_dir: 4-load-testing/eval_llm_20261103_1854
