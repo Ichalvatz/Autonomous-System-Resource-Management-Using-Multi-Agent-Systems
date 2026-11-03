@@ -33,3 +33,4 @@ To re-run one, copy it back there first.
 | `clean_window_readings.json` | readings of post-change data only (windows from 20 s to 1 min after a change), fetched from Prometheus by `../replay_model.py` (`clean_reading`) for the replays of v13 (A32.1); Prometheus keeps 10 days, so the replays rerun from here |
 | `detector_validation_v12/` | the live detector validation of v12 (2026-11-01: phases, logs, `detector_validation.out`, series), moved on 2026-11-03 before v13's (`../../5-ml-training/v12/` has its dry-run readings) |
 | `v13_live_queue.sh` | v13's live checks (2026-11-03): the detector validation and two smoke runs (normal load, stuck), after a 1 h delay and on AC power |
+| `v13_live_stuck.sh` | the stuck smoke run of v13 the user added (2026-11-03), after `v13_live_queue.sh` |
