@@ -10,7 +10,8 @@ cannot be judged before its readings are a minute long. "Recorded" = what the ag
 
   2. The live detector validations A-I (dry runs): the readings the detector of the time evaluated and the phases,
      2026-10-23 (v9: 5-ml-training/v9/, archive/detector_validation_v9/), 2026-10-26 (v10: 5-ml-training/v10/,
-     archive/detector_validation_v10/) and 2026-10-27 (v11: 5-ml-training/v11/, archive/detector_validation_v11/).
+     archive/detector_validation_v10/), 2026-10-27 (v11: 5-ml-training/v11/, archive/detector_validation_v11/) and
+     2026-11-01 (v12: 5-ml-training/v12/, archive/detector_validation_v12/).
   3. The valid runs of the campaign (results_nfr*.csv, notes = TAG): each run's series.json (10 s readings) through
      the detector logic: wake-ups after each fault, false wake-ups before a fault or in the first 5 min of the normal
      load, and the first wake-up of the normal load against the reference model on the same series (A31: both on the
@@ -52,6 +53,8 @@ VALIDATIONS = [  # (day, readings the detector of the time evaluated, phases, it
      os.path.join(LT, "archive", "detector_validation_v10", "detector_validation_phases.csv"), "v10"),
     ("2026-10-27", os.path.join(ROOT, "5-ml-training", "v11", "dry_run_readings_validation_2026-10-27.csv"),
      os.path.join(LT, "archive", "detector_validation_v11", "detector_validation_phases.csv"), "v11"),
+    ("2026-11-01", os.path.join(ROOT, "5-ml-training", "v12", "dry_run_readings_validation_2026-11-01.csv"),
+     os.path.join(LT, "archive", "detector_validation_v12", "detector_validation_phases.csv"), "v12"),
 ]
 REFERENCE_NAME = "v11"
 REFERENCE = hm.load(os.path.join(ROOT, "5-ml-training", "v11", "health_model.pkl"), window_noise=False)

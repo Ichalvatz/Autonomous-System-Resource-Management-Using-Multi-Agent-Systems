@@ -42,7 +42,7 @@ SHIFT_S = 3                   # section 1: the rollout taken this much later
 TAGS = ["campaign-2026-10-23", "campaign-2026-10-26", "campaign-2026-10-28", "campaign-2026-11-01"]
 VALIDATIONS = [("2026-10-26", os.path.join(rm.LT, "archive", "detector_validation_v10"), "v10"),
                ("2026-10-27", os.path.join(rm.LT, "archive", "detector_validation_v11"), "v11"),
-               ("2026-11-01", rm.LT, "v12")]
+               ("2026-11-01", os.path.join(rm.LT, "archive", "detector_validation_v12"), "v12")]
 B = rm.BUNDLE
 
 

@@ -245,7 +245,7 @@ Prometheus) και το `4-load-testing/archive/v12_live_queue.sh`.
 
 **Προστέθηκαν:** `4-load-testing/replay_follow.py` → `replay_v13_follow.md` (ο detector του v12 έναντι του v13), και οι πλήρεις
 σειρές των τριών ζωντανών επικυρώσεων από το Prometheus (`detector_validation_series.json` στο
-`archive/detector_validation_v10/`, `archive/detector_validation_v11/` και στο `4-load-testing/` για τον v12), γιατί τα CSV
+`archive/detector_validation_v10/`, `archive/detector_validation_v11/` και `archive/detector_validation_v12/`), γιατί τα CSV
 του dry run κρατούσαν μόνο όσες μετρήσεις έκρινε ο detector και το Prometheus κρατά 10 μέρες.
 
 **Α32.1 (2026-11-02, βράδυ): μετρήσεις μόνο από μετά την αλλαγή.**
@@ -261,3 +261,8 @@ Prometheus) και το `4-load-testing/archive/v12_live_queue.sh`.
 **Προστέθηκαν:** `5-ml-training/measure_window_noise.py` → `window_noise.json` (+ `window_noise_readings.json`, οι μετρήσεις του),
 `4-load-testing/archive/clean_window_readings.json` (οι μετρήσεις μετά από αλλαγή που χρησιμοποίησαν τα replays, από το
 Prometheus), `4-load-testing/replay_v13.py` → `replay_v13.md`.
+
+**Πριν από τους ζωντανούς ελέγχους του v13 (2026-11-03):** η ζωντανή επικύρωση του v12 (1/11) πήγε (`git mv`) στο
+`4-load-testing/archive/detector_validation_v12/` (φάσεις, logs, `detector_validation.out`, σειρά) και στο
+`5-ml-training/v12/dry_run_readings_validation_2026-11-01.csv`, όπως του v11, γιατί η νέα επικύρωση γράφει στα ίδια ονόματα.
+Το `replay_model.py` την ξαναπαίζει μαζί με τις τρεις προηγούμενες.
