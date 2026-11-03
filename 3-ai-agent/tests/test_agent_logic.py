@@ -262,20 +262,21 @@ def memory_for(state, items=STORED):
 
 def test_memory_returns_the_waste_incident_for_a_waste_state():
     text = memory_for(metrics(2, 32))
-    assert "scale 2->1 -> verified STABLE" in text.split("\n")[1] + text.split("\n")[2]
-    assert "FAILED" not in text
+    assert "Action: scale 2->1, verified STABLE in 70 s." in text.split("\n")[2]
+    assert "FAILED" not in text and agent_tools.MEMORY_HIT.match(text)
 
 
 def test_memory_returns_the_overload_incident_for_an_overload_state():
     text = memory_for(metrics(2, 165, p95=0.5))
-    assert text.splitlines()[0].startswith("1 similar verified past incident(s) of 3 stored")
+    assert text.splitlines()[0].startswith("1 of the 3 verified past incidents is close to this state")
     assert "scale 2->3" in text.splitlines()[2] and "scale 2->1" not in text   # the far one is not listed
 
 
 def test_memory_says_no_similar_incident_for_a_different_situation():
     """A stuck app at 3 pods must not be shown 2-pod capacity incidents as similar (the pod count is far apart)."""
     text = memory_for(metrics(3, 120, p95=3.0, err=0.3))
-    assert text.startswith("NO similar past incident")
+    assert text.startswith("No similar past incident") and "does not carry over" in text
+    assert not agent_tools.MEMORY_HIT.match(text) and "These are hints" not in text
 
 
 def test_memory_without_verified_incidents_and_unreachable():
@@ -547,7 +548,7 @@ def test_recent_actions_show_failed_action_and_expire():
     agent.RECENT_ACTIONS.append({"t": now - 20 * 60, "woke_at": "2026-10-03 09:42:00",
                                  "actions": ["scale 1->2"], "verdict": "STABLE", "error": "", "answer": ""})
     text = agent._recent_actions_text(now)
-    assert "scale 3->1; rollback to 3 -> verification UNSTABLE" in text and "2 min ago" in text
+    assert "scale 3->1; rollback to 3; verification: UNSTABLE." in text and "2 min ago" in text
     assert "09:42" not in text
     agent.RECENT_ACTIONS.clear()
     assert agent._recent_actions_text(now).startswith("None")
@@ -596,25 +597,43 @@ def test_facts_take_the_minimum_pod_count_from_the_health_model_and_the_load_tre
         beyond = agent._computed_facts(metrics(3, 300, score=-0.5))
         idle = agent._computed_facts(metrics(1, 2, score=-1.4))
         idle3 = agent._computed_facts(metrics(3, 2, score=-2.0))
-    assert "healthy for this load: 2. Current: 1." in over and "for 1 pod(s) is 4-87 rps: the load is ABOVE it" in over
+    assert "healthy for this load: 2. Current: 1." in over and "for 1 pod(s) is 4-87 rps: the load is above it" in over
     # the smoke run of 2026-10-23 05:04: 158 rps on 2 pods and rising is a capacity case, not a transient
-    assert "RISING +22.0 rps per minute" in ramp and "for the 191 rps the trend reaches in 90 s" in ramp
+    assert "for the 191 rps the trend reaches in 90 s" in ramp
     assert ": 3. Current: 2." in ramp
-    assert "steady" in steady and ": 2. Current: 2." in steady and "inside it, so the load alone does not" in steady
+    assert ": 2. Current: 2." in steady and "inside it, so the load alone does not" in steady
     assert "Only 0 of 1 pod(s) are ready" in stuck and "Health score -63.00" in stuck and ": 1. Current: 1." in stuck
-    assert ": 2. Current: 3." in waste and "falling" in waste and "BELOW it (over-provisioned)" in waste
+    assert ": 2. Current: 3." in waste and "below it (over-provisioned)" in waste
     assert "3 (the maximum allowed: no pod count is healthy for this load)" in beyond
     # below every band (v12, A31): the smallest count, not the largest (v10 / v11 said "minimum 3" for 1 pod at 2 rps)
     assert ": 1 (the smallest count: the load is below every pod count's healthy band). Current: 1." in idle
     assert ": 1 (the smallest count" in idle3 and "Current: 3." in idle3
 
 
-def test_prompt_classifies_by_the_minimum_pod_count_and_states_the_nfrs():
+def test_system_prompt_classifies_by_the_minimum_pod_count_and_states_the_nfrs():
     import agent
-    p = agent.AGENT_PROMPT
+    p = agent.SYSTEM_PROMPT
     assert "the minimum pod count in the facts differs from the current count" in p
-    assert "The minimum is HIGHER than now" in p and "you MUST scale DOWN" in p
-    assert "at least one more than now" not in p
-    filled = p.format(metrics_json="{}", signature="s", capacity="c", facts="f", recent="r", memory="m",
-                      nfr_p95=0.35, nfr_errors_pct=1.0, max_pods=3)
-    assert "p95 < 0.35 s" in filled and "fewer than 1% of requests" in filled and "at most 3 pods" in filled
+    assert "Scale up when the minimum is higher than now" in p and "Scale down when it is lower" in p
+    assert "p95 below 0.35 s" in p and "fewer than 1% of requests fail" in p and "at most 3 pods" in p
+    # one capacity source: the model's bands next to the measured break points (v13 listed 95 / 165 / 255 rps too)
+    assert "| 2 | 73.5-162.1 rps | ~195 rps |" in p and "~165 rps" not in p
+
+
+def test_incident_message_states_the_reading_its_window_and_ends_with_the_task():
+    import agent
+    m = {**metrics(2, 169.7, p95=0.22, score=-0.19), "load_trend_rps_per_min": 21.6, "timestamp": "19:12:10",
+         "avg_cpu_per_pod": 0.71}
+    with mock.patch.object(agent, "_health_bundle", return_value=BUNDLE), \
+         mock.patch.object(agent.health_model, "min_healthy_pods", side_effect=_fake_min_pods):
+        full = agent.incident_message({**m, "window": "1m"}, "MEMORY", "RECENT")
+        short = agent.incident_message({**m, "window": "40s"}, "MEMORY", "RECENT")
+        unknown = agent.incident_message({**m, "load_trend_rps_per_min": None}, "MEMORY", "RECENT")
+    assert full.startswith("## Incident at 19:12:10") and "at the ingress, over the last minute)" in full
+    assert "over the 40 s since the last change to the pods took effect" in short
+    assert "169.7 rps on 2 pod(s) (84.8 per pod); trend over the last minute: rising, +21.6 rps per minute." in full
+    assert "Pods ready: 2 of 2. CPU: 0.71 cores per pod." in full and "p95 latency: 0.22 s. Errors: 0.0%." in full
+    assert "trend over the last minute: unknown" in unknown
+    assert full.index("Computed facts") < full.index("RECENT") < full.index("MEMORY")
+    assert full.splitlines()[-1].startswith("Classify this incident and act on it")
+    assert "{" not in full and "Signature" not in full       # no raw JSON, no signature (until v13)

@@ -306,7 +306,9 @@ def run_monitor(dry_run=False):
                 print("🧪 [DRY RUN] The agent would be woken up now — not calling it.")
             else:
                 trend = load_trend(history)
-                metrics_json = json.dumps({**reading, "score": round(score, 4), "explanation": explanation,
+                # window: the reading's span, "1m" or the seconds since the last change took effect (A32.1); the
+                # agent's prompt states it (v14, A33)
+                metrics_json = json.dumps({**reading, "window": window, "score": round(score, 4), "explanation": explanation,
                                            "load_trend_rps_per_min": round(trend, 1) if trend is not None else None})
                 print("Αναμονή ολοκλήρωσης ενεργειών από τον Agent...")
                 try:

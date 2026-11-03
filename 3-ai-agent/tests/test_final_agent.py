@@ -1,5 +1,5 @@
 """
-The final agent (v10, thesis phase 2, 2026-10-26; prompt and tools as v9): its toolset (3 observation tools, scale,
+The final agent (v14, thesis phase 2, 2026-11-03; decision procedure and tools as v9): its toolset (3 observation tools, scale,
 rolling restart of the whole app) and tool descriptions, the prompt's rules, the three code-enforced guards (evidence before action; no
 claimed action without a tool call; full diagnosis before a restart), and replays of the three measured incidents
 that motivated the guards (phase 1, agents v6/v7), run through a real smolagents CodeAgent with a scripted model.
@@ -35,17 +35,27 @@ def test_agent_has_the_five_tools_and_the_guards():
 
 
 def test_prompt_classifies_first_and_has_no_fault_specific_hint():
-    p = agent.AGENT_PROMPT.format(metrics_json="{}", signature="s", capacity="c", facts="F", recent="r", memory="m",
-                                  nfr_p95=0.35, nfr_errors_pct=1.0, max_pods=3)
-    assert "you MUST scale DOWN" in p and "minimum pod count in the facts" in p
-    assert "Look at ALL THREE observation tools" in p
-    assert "p95 < 0.35 s" in p and "fewer than 1% of requests fail" in p and "at most 3 pods" in p
-    assert "not evidence of a cause" in p and "may be a transient" in p
+    p = agent.SYSTEM_PROMPT
+    assert "Classify the incident with the computed facts" in p and "minimum pod count in the facts" in p
+    assert "investigate with all three observation tools" in p
+    assert "p95 below 0.35 s" in p and "fewer than 1% of requests fail" in p and "at most 3 pods" in p
+    assert "not evidence of a cause" in p and "it may be transient" in p
     assert "you have no tool to undo a change" in p
     assert "wakes you again at once if it gets worse or stops improving" in p
     assert "over ~2x" not in p and "MANDATORY" not in p and "0.75" not in p and "throttling <" not in p
     for tool in OBSERVE + ACT:
         assert tool in p
+
+
+def test_one_code_format_in_the_whole_system_prompt():
+    """Until v13 smolagents' system prompt asked for <code> blocks and ours for ```python: 15 of 581 phase-2 steps
+    failed on a stray "python" line (A33). v14: our own system prompt, markdown code blocks only, no generic examples."""
+    sp = agent.sre_agent.initialize_system_prompt()
+    assert agent.sre_agent.code_block_tags == ("```python", "```")
+    assert "<code>" not in sp and "Thought:" not in sp and "```python" in sp
+    assert "oldest person" not in sp and "notional tools" not in sp
+    for tool in OBSERVE + ACT:
+        assert f"def {tool}(" in sp
 
 
 def test_tool_descriptions_agree_with_the_prompt():
@@ -114,8 +124,8 @@ def test_diagnosis_rule_never_blocks_scaling():
 # ---------------------------------------------------------------- replays of measured incidents
 
 def _run_scripted(blocks, replicas_now=2):
-    """Run a real CodeAgent (the final tools and hooks) on a scripted model; return the applied k8s calls."""
-    from smolagents import CodeAgent
+    """Run the real CodeAgent (agent.make_sre_agent: the final tools, prompt and hooks) on a scripted model; return the
+    applied k8s calls."""
     from smolagents.models import ChatMessage, Model
     it = iter(blocks)
 
@@ -137,10 +147,7 @@ def _run_scripted(blocks, replicas_now=2):
         agent_tools._last_restart_action_at = 0.0
         agent_tools._last_scale_action_at = 0.0
         agent_tools.reset_run_outcome()
-        a = CodeAgent(tools=[getattr(agent_tools, t) for t in OBSERVE + ACT],
-                      model=Scripted(), add_base_tools=False, max_steps=7,
-                      step_callbacks=[agent_tools.guard_step_done],
-                      final_answer_checks=[agent_tools.guard_final_answer_check, agent_tools.claim_final_answer_check])
+        a = agent.make_sre_agent(Scripted())
         agent_tools.guard_start(enforce=True)
         answer = a.run("incident")
         agent_tools.guard_stop()

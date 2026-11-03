@@ -767,26 +767,36 @@ def query_knowledge_base(metrics: dict) -> str:
     # ChromaDB's "l2" distance is the squared Euclidean distance.
     matches = [(math.sqrt(max(d, 0.0)), doc, meta) for d, doc, meta in
                zip(found["distances"][0], found["documents"][0], found["metadatas"][0])]
-    limit = _similar_max()
+    return format_memory(matches, resolved, _similar_max())
+
+
+# The memory section of the incident message. v14 (A33): the same content as v9-v13 in the system prompt's calm
+# register. The "no similar incident" case still says plainly that the closest one does not carry over: on 2026-10-01
+# a stuck app was shown far-away scale-down incidents under a neutral header, and the agent reused "scale 3->1".
+MEMORY_HIT = re.compile(r"\d+ of the \d+ verified past incidents (is|are) close to this state")
+
+
+def format_memory(matches, resolved, limit):
+    """matches: (distance, document, metadata) of the nearest resolved incidents, nearest first."""
     similar = [m for m in matches if m[0] <= limit]
     if not similar:
-        # 2026-10-01: a stuck app was shown far-away scale-down incidents under a neutral header, and the agent
-        # reused "scale 3->1". Say it plainly, and show only the closest one.
-        lines = [f"NO similar past incident: the closest (distance {matches[0][0]:.1f}, >{limit:.1f} = a "
-                 "different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the "
-                 "current metrics. For reference only:"]
+        lines = [f"No similar past incident: the closest verified one (distance {matches[0][0]:.1f}; similar means up "
+                 f"to {limit:.2f}) is a different situation, so its action does not carry over to this one; decide "
+                 "from the current reading. For reference only:"]
         matches = matches[:1]
     else:
-        lines = [f"{len(similar)} similar verified past incident(s) of {resolved} stored; most similar first "
-                 f"(distance ~0-1 = nearly the same state):"]
+        lines = [f"{len(similar)} of the {resolved} verified past incidents {'is' if len(similar) == 1 else 'are'} "
+                 f"close to this state (distance up to {limit:.2f} in the health model's space; 0 = the same state). "
+                 "Most similar first:"]
         matches = similar
     for distance, doc, meta in matches:
-        lines.append(f"  - distance {distance:.1f} | {meta.get('time', '?')} | {doc}\n"
-                     f"    Action taken: {meta.get('actions')} -> verified STABLE"
-                     f"{' in ' + str(meta.get('recovery_s')) + ' s' if meta.get('recovery_s') not in (None, '') else ''}\n"
-                     f"    Diagnosis then: {meta.get('diagnosis')}")
-    lines.append("These are hints only: always check them against the current metrics.")
-    return "\n".join(lines)
+        recovery = meta.get("recovery_s")
+        lines.append(f"- {str(meta.get('time', '?')).replace('T', ' ')[:16]} (distance {distance:.1f}): {doc.rstrip('.')}.\n"
+                     f"  Action: {meta.get('actions')}, verified STABLE"
+                     f"{' in ' + str(recovery) + ' s' if recovery not in (None, '') else ''}.\n"
+                     f"  Diagnosis then: {meta.get('diagnosis')}")
+    lines.append("These are hints: check them against the current reading." if similar else "")
+    return "\n".join(lines).rstrip()
 
 
 def save_incident(metrics: dict, actions: list, verdict: str, diagnosis: str, agent_version: str) -> str:
