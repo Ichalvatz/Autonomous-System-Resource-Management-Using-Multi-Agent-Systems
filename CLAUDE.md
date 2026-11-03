@@ -196,25 +196,34 @@ The NFRs are anomalous at every load (R ≤ 0.81 < 1). (v9's score was the raw d
 - SIGTERM is handled like Ctrl+C (prints a summary).
 - **Blind spot:** a request is counted when it finishes. A process that never answers is seen only when nginx times out.
 
-**Agent v13** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at"}`; prompt and tools as v9,
-the rest as v10, with v12's minimum pod count; v13 changes the detector, above, and the verification's readings, below):
+**Agent v14** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at"}`; decision procedure and
+tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and verification, and A33's prompt):
 - **Computed facts** (`agent._computed_facts`):
   - the score and its explanation (with the objectives); ready vs desired pods;
-  - load, load per pod and the trend (steady / RISING / falling);
   - the **minimum pod count** = the smallest count the **health model** calls healthy for max(rps, rps + max(0, trend)
-    × 1.5 min) (`health_model.min_healthy_pods`; the headroom is in the model's safe-level data). When no count is
-    healthy: the smallest count whose band does not end below the load, i.e. 1 below every band and 3 above them (v12;
-    v10 / v11 said 3 in both cases). v9 used 15% over the capacity table;
-  - where the load sits in the model's healthy band of the current count: ABOVE / BELOW / inside.
-- **Prompt v9** (objectives from `nfr_metrics`):
-  - NFR objectives, the capacity table (1–3 pods), the facts, "YOUR RECENT ACTIONS" (the last 15 min with their
-    verdicts, in-process: `agent.RECENT_ACTIONS`) and the incident memory.
-  - Step 1 classifies: (A) capacity, when the minimum ≠ current and the pods are ready: scale to the minimum, no
-    investigation, and scale down when over-provisioned; (B) anything else.
-  - In (B) the agent looks at all three observation tools, then acts on the cause: restart on evidence of a bad process
-    state (ERROR lines or a stuck / runaway job in the logs, unready pods, event-loop lag or CPU per request several
-    times healthy); scale if it is capacity after all. A recent deployment change → "No action taken … needs a human
-    decision", because there is no undo tool. A short breach without evidence → no action.
+    × 1.5 min) (`health_model.min_healthy_pods`; the headroom is in the model's safe-level data; the 1.5 min spans the
+    1 m window's lag on a ramp, the agent and a new pod). When no count is healthy: the smallest count whose band does
+    not end below the load, i.e. 1 below every band and 3 above them (v12; v10 / v11 said 3 in both cases). v9 used 15%
+    over the capacity table. The trend changed the minimum in 3 of 113 wake-ups since v10, all right;
+  - where the load sits in the model's healthy band of the current count: above / below / inside.
+- **Prompt v14** (A33, 2026-11-03; v9–v13's in `4-load-testing/archive/prompt_v13/`):
+  - **our own system prompt** (`agent.SYSTEM_PROMPT`, in place of smolagents' generic one; `make_sre_agent` builds the
+    CodeAgent with it and `code_block_tags="markdown"`): the role, the NFR objectives, what each pod count serves (the
+    model's healthy band next to the measured load where the p95 objective breaks), how to decide, how to work (one
+    ```` ```python ```` block per step, one tool per step, reasoning as comments), the tools from their docstrings;
+  - **one message per wake-up with the incident only** (`agent.incident_message`): the reading in units with its window
+    (the detector sends `window`), the facts, "Your recent actions" (the last 15 min with their verdicts, in-process:
+    `agent.RECENT_ACTIONS`), the incident memory, and as the last line the task with its three key constraints;
+  - how to decide (v9's procedure): classify (A) capacity, when the minimum ≠ current and the pods are ready: scale to
+    the minimum, no investigation, and scale down when over-provisioned; (B) anything else: all three observation tools,
+    then act on the cause: restart on evidence of a bad process state (ERROR lines or a stuck / runaway job in the logs,
+    unready pods, event-loop lag or CPU per request several times healthy); scale if it is capacity after all. A recent
+    deployment change → "No action taken … needs a human decision", because there is no undo tool. A short breach
+    without evidence → no action;
+  - why (A33): until v13 smolagents asked for `<code>` blocks and our prompt for ```` ```python ````, and 15 of 581
+    phase-2 steps (9 runs) failed on a stray `python` line; plus two capacity numbers for one thing, raw JSON, the
+    phase-1 "signature", generic examples and shouting. Evaluated against v13's prompt on 47 recorded wake-ups with the
+    real LLM before any live run (`4-load-testing/prompt_eval.py` → `prompt_eval.md`).
 - **5 tools** (top of `agent_tools.py`): `get_pod_breakdown`, `get_deployment_history`, `get_kubernetes_logs`,
   `scale_kubernetes_deployment`, `restart_kubernetes_deployment` (rolling).
   - Guards: namespace and deployment hard-coded; replicas 1–3 (`MAX_REPLICAS`); at most ±2 per call; cooldowns 30 s
@@ -420,8 +429,8 @@ python 3-ai-agent/anomaly_detector.py         # live
 k6 run 4-load-testing/k6/demo.js              # in another terminal
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (100: detector loop, post-change readings and the follow of a
-  pod-count change, tools and guards, facts and prompt, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (102: detector loop, post-change readings and the follow of a
+  pod-count change, tools and guards, facts, the system prompt and the incident message, one code format, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
 - Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812).
 - After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.
 

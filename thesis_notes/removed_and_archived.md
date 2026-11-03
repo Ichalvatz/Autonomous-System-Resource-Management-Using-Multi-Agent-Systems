@@ -266,3 +266,17 @@ Prometheus), `4-load-testing/replay_v13.py` → `replay_v13.md`.
 `4-load-testing/archive/detector_validation_v12/` (φάσεις, logs, `detector_validation.out`, σειρά) και στο
 `5-ml-training/v12/dry_run_readings_validation_2026-11-01.csv`, όπως του v11, γιατί η νέα επικύρωση γράφει στα ίδια ονόματα.
 Το `replay_model.py` την ξαναπαίζει μαζί με τις τρεις προηγούμενες.
+
+**Α33 (2026-11-03): το τελικό prompt (agent v14).**
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| `AGENT_PROMPT`: ένα κείμενο εργασίας με τα πάντα, πάνω στο γενικό system prompt του smolagents (`<code>`, «Thought:», παραδείγματα όπως «η ηλικία του Πάπα») | `3-ai-agent/agent.py` | `SYSTEM_PROMPT` (δικό μας) + `incident_message` (μόνο το περιστατικό) με `code_block_tags="markdown"`. Η αντίφαση `<code>` / ```` ```python ```` έριξε 15 από 581 βήματα της φάσης 2. Το παλιό, αυτούσιο: `4-load-testing/archive/prompt_v13/prompt_v13.py`. |
+| `_capacity_context` / `CAPACITY_CONTEXT`: οι ασφαλείς ρυθμοί του πίνακα (95 / 165 / 255 rps) | `agent.py` | `_capacity_table`: η ζώνη του μοντέλου (αυτή αποφασίζει το ελάχιστο) δίπλα στο μετρημένο σημείο όπου σπάει η NFR. Ήταν δύο αριθμοί για το ίδιο πράγμα. |
+| Το JSON του detector και η «Assigned Signature» μέσα στο prompt | `agent.py` | `_reading_section`: η μέτρηση σε μονάδες, με το παράθυρό της. Η «υπογραφή» μένει μόνο στο `incident_log.csv`. |
+| Η γραμμή «Load … trend» στα γεγονότα | `agent._computed_facts` | Στη μέτρηση (`_reading_section`, `_trend_text`). |
+| Η κεφαλίδα της μνήμης «N similar verified past incident(s) of M stored» / «NO similar … Do NOT reuse its action» | `agent_tools.query_knowledge_base` | `format_memory`, με το ίδιο περιεχόμενο σε ήρεμο ύφος· το `memory_hit` του `incident_log.csv` από το `MEMORY_HIT`. |
+
+**Προστέθηκαν:** `4-load-testing/prompt_eval.py` (η σύγκριση των δύο prompts σε καταγεγραμμένες αφυπνίσεις, με το πραγματικό
+LLM) → `prompt_eval_cases.json`, `prompt_eval_results.jsonl`, `prompt_eval.md`· `4-load-testing/archive/v14_live_queue.sh` (τα
+δοκιμαστικά runs του v14).

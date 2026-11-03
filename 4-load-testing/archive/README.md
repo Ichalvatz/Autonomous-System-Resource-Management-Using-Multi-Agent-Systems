@@ -34,3 +34,5 @@ To re-run one, copy it back there first.
 | `detector_validation_v12/` | the live detector validation of v12 (2026-11-01: phases, logs, `detector_validation.out`, series), moved on 2026-11-03 before v13's (`../../5-ml-training/v12/` has its dry-run readings) |
 | `v13_live_queue.sh` | v13's live checks (2026-11-03): the detector validation and two smoke runs (normal load, stuck), after a 1 h delay and on AC power |
 | `v13_live_stuck.sh` | the stuck smoke run of v13 the user added (2026-11-03), after `v13_live_queue.sh` |
+| `prompt_v13/` | the prompt of agents v9-v13 (`AGENT_PROMPT`, the capacity context, the "signature", the computed facts), verbatim, replaced by v14's on 2026-11-03 (A33); `../prompt_eval.py` runs it against v14's |
+| `v14_live_queue.sh` | v14's smoke runs (2026-11-04): stuck, cpuhog, normal load, after the prompt evaluation |
