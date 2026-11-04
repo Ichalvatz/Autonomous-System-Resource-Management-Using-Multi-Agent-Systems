@@ -110,8 +110,10 @@ def _tool_outputs(section):
             if body[0].startswith("Execution logs:"):
                 end = next((n for n, l in enumerate(body) if l.startswith("Out: ")), len(body))
                 text = body[1:end]
-            else:
+            elif body[0].startswith("Out: "):
                 text = [body[0][len("Out: "):]] + body[1:]
+            else:   # a failed step ("Code execution failed at line ..."), not the tool's output (fixed 2026-11-04)
+                text = []
             if called[0] not in outs and text and not text[0].startswith("Refused"):
                 outs[called[0]] = "\n".join(_unwrap(text)).strip()
         i = k
@@ -278,6 +280,8 @@ def run_case(case, variant):
     return {"case": case["id"], "variant": variant, "expected": case["expected"], "applied": applied,
             "answer": answer[:300], "error": error, "steps": len(steps),
             "format_failures": sum(("Error in code parsing" in e or "variable `python`" in e) for e in errors),
+            "failed_outputs": [str(s.model_output or "")[:500] + " || " + e[:200] for e, s in zip(errors, steps)
+                               if "Error in code parsing" in e or "variable `python`" in e],
             "refusals": sum("Refused" in e or "Refused" in str(getattr(s, "observations", "") or "")
                             for e, s in zip(errors, steps)),
             "llm_calls": agent.model.stats["calls"], "retries": agent.model.stats["retries"],
@@ -305,7 +309,7 @@ def main_run(reps, passes=3):
     the same number of whole runs."""
     cases = [c for c in extract_cases() if c["expected"]]
     json.dump(cases, open(CASES, "w"), indent=1)
-    done = Counter((r["case"], r["variant"]) for r in load_results() if not r["error"])
+    done = Counter((r["case"], r["variant"]) for r in load_results() if not r["error"] and not r.get("superseded"))
     for _ in range(passes):
         for rep in range(1, reps + 1):
             for c in cases:
@@ -330,7 +334,8 @@ def main_run(reps, passes=3):
 
 def report():
     cases = {c["id"]: c for c in json.load(open(CASES))}
-    results = [r for r in load_results() if r["case"] in cases]
+    superseded = [r for r in load_results() if r.get("superseded")]
+    results = [r for r in load_results() if r["case"] in cases and not r.get("superseded")]
     primary = [r for r in results if not r["fallback_calls"] and not r["error"]]
     by = defaultdict(lambda: defaultdict(list))
     for r in primary:
@@ -339,6 +344,9 @@ def report():
     print(f"*`prompt_eval.py --report`, {datetime.now():%Y-%m-%d %H:%M}. {len(cases)} recorded wake-ups "
           f"(1-3/11, the current health model), {len(results)} runs with {agent.PRIMARY_MODEL}; {len(primary)} used "
           f"only the primary model and are counted ({len(results) - len(primary)} used the fallback or failed).*\n")
+    if superseded:
+        print(f"*{len(superseded)} earlier runs are superseded and not counted: "
+              + "; ".join(f"{n} × {why}" for why, n in Counter(r["superseded"] for r in superseded).items()) + ".*\n")
     draft = any(r["variant"] == DRAFT for r in primary)
     if draft:
         print(f"*{DRAFT}: the first draft of v14's prompt (reasoning as comments inside the code block), stopped after "

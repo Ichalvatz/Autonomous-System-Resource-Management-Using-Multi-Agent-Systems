@@ -411,7 +411,13 @@ def test_bare_code_reply_gets_its_fence_and_prose_does_not():
     assert out.content == f"```python\n{bare}\n```" and agent.model.stats["fenced"] == 1
     from smolagents.utils import parse_code_blobs
     assert parse_code_blobs(out.content + "```", ("```python", "```")).strip() == bare   # what CodeAgent then does
+    thoughts = "Thoughts: The logs are clean and the load is inside the band.\nfinal_answer(\"No action taken: transient.\")"
+    msg = ChatMessage(role="assistant", content=thoughts)   # 2026-11-04: the "Thoughts:" line, then unfenced code
+    assert agent._fence_bare_code(msg)
+    assert msg.content == ("Thoughts: The logs are clean and the load is inside the band.\n"
+                           "```python\nfinal_answer(\"No action taken: transient.\")\n```")
     for text in ("Thoughts: scale down.\n```python\nscale_kubernetes_deployment(replicas=1)\n```",
+                 "I will scale down now.\nscale_kubernetes_deployment(replicas=1)",
                  "Thought: x\n<code>\nprint(1)\n</code>", "No action taken: the breach is short.", "ok",
                  "# only a comment"):
         msg = ChatMessage(role="assistant", content=text)

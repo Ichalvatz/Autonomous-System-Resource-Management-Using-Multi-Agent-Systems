@@ -83,24 +83,33 @@ def _is_empty(message):
 
 
 def _fence_bare_code(message):
-    """A reply that is bare Python code (no code fence at all) gets the fence; returns whether it did.
+    """A reply whose code has no fence gets one; returns whether it did.
 
     smolagents accepts bare code (parse_code_blobs: "Maybe the LLM outputted a code blob directly"), but CodeAgent first
     appends the closing fence to any reply that lacks it, so the bare code no longer parses and the step fails. With the
     first draft of the v14 prompt (reasoning as comments inside the block) 17 of 44 capacity runs of the prompt
-    evaluation lost a step to a format failure; the one traced was such a reply (A33). Only a reply that parses as
-    Python as a whole and calls something (a tool, print, final_answer) is touched, and its text is kept: a one-word
-    reply such as "ok" is also valid Python, but it is not code."""
+    evaluation lost a step to a format failure; the one traced was such a reply, and with the final prompt one reply
+    had the "Thoughts:" line and then the code, again without the fence (A33).
+    Touched only: a reply with no fence and no <code> whose code starts at a line that begins with a comment, print(,
+    final_answer( or a tool call, with nothing before it or only the "Thoughts:" text, and that parses as Python and
+    calls something. The text is kept; only the fence is added. A one-word reply such as "ok" is valid Python, but it
+    is not code."""
     text = getattr(message, "content", None)
     if not isinstance(text, str) or "```" in text or "<code>" in text:
         return False
+    starts = tuple(f"{t.name}(" for t in SRE_TOOLS) + ("#", "print(", "final_answer(")
+    lines = text.strip().split("\n")
+    first = next((i for i, line in enumerate(lines) if line.lstrip().startswith(starts)), None)
+    if first is None or (first and not lines[0].startswith("Thought")):
+        return False
+    code = "\n".join(lines[first:])
     try:
-        tree = ast.parse(text)
+        tree = ast.parse(code)
     except SyntaxError:
         return False
     if not any(isinstance(node, ast.Call) for node in ast.walk(tree)):
         return False
-    message.content = f"```python\n{text.strip()}\n```"
+    message.content = "".join(line + "\n" for line in lines[:first]) + f"```python\n{code}\n```"
     return True
 
 
