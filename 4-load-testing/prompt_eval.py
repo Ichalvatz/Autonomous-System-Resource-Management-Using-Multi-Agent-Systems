@@ -65,6 +65,7 @@ agent.model.rate_limiter = RateLimiter(12)
 
 RESULTS = os.path.join(LT, "prompt_eval_results.jsonl")
 DRAFT = "v14-draft1"   # the first draft of v14's prompt, its runs kept under this label (A33)
+LAG = "v14-lag"        # v14 with get_pod_breakdown's healthy event-loop lag reference, on the non-capacity cases (A33)
 CASES = os.path.join(LT, "prompt_eval_cases.json")
 OBSERVE = ["get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs"]
 FAULT_AT_S = 240
@@ -236,11 +237,25 @@ def _recorded(real, output):
     return t
 
 
+RECORDED_REFERENCE = "p95 <= 0.25 s, throttling <= 25%."
+LAG_REFERENCE = (f"p95 <= 0.25 s, event-loop lag p99 ~{agent_tools.HEALTHY_LAG_P99} s "
+                 f"(max {agent_tools.HEALTHY_LAG_P99_MAX}), throttling <= 25%.")
+
+
+def with_lag_reference(outputs):
+    """The recorded outputs with get_pod_breakdown's healthy reference as v14's tool gives it (A33, 12:28)."""
+    out = dict(outputs)
+    if out.get("get_pod_breakdown"):
+        out["get_pod_breakdown"] = out["get_pod_breakdown"].replace(RECORDED_REFERENCE, LAG_REFERENCE)
+    return out
+
+
 def run_case(case, variant):
-    tools = [_recorded(getattr(agent_tools, t), case["outputs"].get(t)) for t in OBSERVE] + \
+    outputs = with_lag_reference(case["outputs"]) if variant == LAG else case["outputs"]
+    tools = [_recorded(getattr(agent_tools, t), outputs.get(t)) for t in OBSERVE] + \
             [agent_tools.scale_kubernetes_deployment, agent_tools.restart_kubernetes_deployment]
     metrics = {**case["metrics"], "window": "1m"}
-    if variant == "v14":
+    if variant in ("v14", LAG):
         sre = agent.make_sre_agent(agent.model, tools)
         memory = (agent_tools.format_memory(case["memory_matches"], case["memory_resolved"],
                                             agent_tools._similar_max())
@@ -330,6 +345,23 @@ def main_run(reps, passes=3):
                           + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
         if all(done[(c["id"], v)] >= reps for c in cases for v in ("v13", "v14")):
             break
+    lag_cases = [c for c in cases if not c["expected"].startswith("scale")]   # where the pod breakdown is read
+    for _ in range(passes):
+        for rep in range(1, reps + 1):
+            for c in lag_cases:
+                if done[(c["id"], LAG)] >= rep:
+                    continue
+                r = run_case(c, LAG)
+                r["rep"] = rep
+                with open(RESULTS, "a") as f:
+                    f.write(json.dumps(r) + "\n")
+                done[(c["id"], LAG)] += not r["error"]
+                print(f"[{datetime.now():%H:%M:%S}] rep {rep} {LAG} {c['id']}: expected {c['expected']}, got "
+                      f"{outcome(r)} ({'right' if outcome(r) == c['expected'] else 'WRONG'}); {r['steps']} steps, "
+                      f"{r['format_failures']} format failures, {r['seconds']} s"
+                      + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
+        if all(done[(c["id"], LAG)] >= reps for c in lag_cases):
+            break
 
 
 def report():
@@ -387,6 +419,36 @@ def report():
         print(f"- {name}: **{'pass' if ok else 'FAIL'}**")
     if wrong_restart:
         print(f"  - wrong restarts by v14 only: {', '.join(wrong_restart)}")
+    lag_runs = [r for r in primary if r["variant"] == LAG]
+    if lag_runs:
+        print(f"\n## The event-loop lag reference in get_pod_breakdown ({LAG}, A33)\n")
+        print("v14 against v14 with the tool's new healthy reference, on the non-capacity cases (the recorded pod "
+              "breakdown with the new reference line).\n")
+        print(f"| Cases | v14 | {LAG} |\n|---|---|---|")
+        lag_ids = {r["case"] for r in lag_runs}
+        def right_of(v, kind):
+            rs = [r for r in primary if r["variant"] == v and r["case"] in lag_ids and cases[r["case"]]["expected"] == kind]
+            return sum(outcome(r) == kind for r in rs), len(rs)
+        def wrong_restarts(v):
+            rs = [r for r in primary if r["variant"] == v and r["case"] in lag_ids and cases[r["case"]]["expected"] == "none"]
+            return sum(outcome(r) == "restart" for r in rs), len(rs)
+        a14, a_lag = right_of("v14", "restart"), right_of(LAG, "restart")
+        b14, b_lag = wrong_restarts("v14"), wrong_restarts(LAG)
+        f_lag = sum(r["format_failures"] for r in lag_runs)
+        print(f"| restart cases: right | {a14[0]}/{a14[1]} | {a_lag[0]}/{a_lag[1]} |")
+        print(f"| no-action cases: wrong restarts | {b14[0]}/{b14[1]} | {b_lag[0]}/{b_lag[1]} |")
+        print(f"| no-action cases: right | {right_of('v14', 'none')[0]}/{right_of('v14', 'none')[1]} | "
+              f"{right_of(LAG, 'none')[0]}/{right_of(LAG, 'none')[1]} |")
+        print(f"| code-format failures | {sum(r['format_failures'] for r in primary if r['variant'] == 'v14' and r['case'] in lag_ids)} | {f_lag} |")
+        rate = lambda x: x[0] / x[1] if x[1] else 0.0
+        print("\nCriteria (declared before the first run):\n")
+        print(f"- (a) restart cases, right action not below v14's: **{'pass' if rate(a_lag) >= rate(a14) else 'FAIL'}**")
+        print(f"- (b) no-action cases, wrong restarts not above v14's: **{'pass' if rate(b_lag) <= rate(b14) else 'FAIL'}**")
+        print(f"- (c) no code-format failure: **{'pass' if f_lag == 0 else 'FAIL'}**")
+        print("\n| Case | Expected | v14 | " + LAG + " |\n|---|---|---|---|")
+        for cid in sorted(lag_ids):
+            cell = lambda v: ", ".join(outcome(r) for r in sorted(by[cid][v], key=lambda r: r["rep"])) or "-"
+            print(f"| {cid} | {cases[cid]['expected']} | {cell('v14')} | {cell(LAG)} |")
     print("\n## Every case\n")
     print("| Case | Expected (why) | At the time | v13 prompt | v14 prompt | Borrowed outputs |\n|---|---|---|---|---|---|")
     for cid, c in cases.items():
@@ -397,7 +459,7 @@ def report():
     left = [c for c in extract_cases() if not c["expected"]]
     if left:
         print("\nLeft out: " + "; ".join(f"{c['id']} ({c['why']})" for c in left))
-    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] != DRAFT]
+    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] in ("v13", "v14")]
     if wrong:
         print("\n## The wrong runs\n")
         for r in wrong:
