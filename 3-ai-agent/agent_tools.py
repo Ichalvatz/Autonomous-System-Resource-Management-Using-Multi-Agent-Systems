@@ -68,6 +68,12 @@ HEALTHY_CPU_PER_REQUEST = 0.0084
 HEALTHY_CPU_PER_REQUEST_MAX = 0.016
 HEALTHY_POD_P95 = nfr_metrics.SAFE_P95
 HEALTHY_POD_THROTTLING = 0.25
+# Event-loop lag p99 per pod (v14, A33; 5-ml-training/measure_healthy_lag.py -> healthy_lag.json): the HPA's normal-load
+# runs of 26/10-1/11, 6148 pod readings healthy at the ingress: median 0.085 s, 99% below 0.21 s, max 0.39 s (cpuhog:
+# 1.2-1.4 s). Until v14 the breakdown gave no lag reference, though the prompt's restart rule names one, so the model
+# compared pods with each other: in an ingress slowdown of 1/11 one pod at 0.32 s against 0.08 s read as a bad state.
+HEALTHY_LAG_P99 = 0.085
+HEALTHY_LAG_P99_MAX = 0.39
 
 
 REVISION_ANNOTATION = "deployment.kubernetes.io/revision"
@@ -202,7 +208,8 @@ def get_pod_breakdown() -> str:
 
     lines = [f"{len(pods)} backend pod(s). Healthy reference (healthy traffic of the normal request mix): "
              f"CPU per request ~{HEALTHY_CPU_PER_REQUEST} core-s (max {HEALTHY_CPU_PER_REQUEST_MAX}), "
-             f"p95 <= {HEALTHY_POD_P95} s, throttling <= {HEALTHY_POD_THROTTLING:.0%}. Below ~5 req/s per pod the "
+             f"p95 <= {HEALTHY_POD_P95} s, event-loop lag p99 ~{HEALTHY_LAG_P99} s (max {HEALTHY_LAG_P99_MAX}), "
+             f"throttling <= {HEALTHY_POD_THROTTLING:.0%}. Below ~5 req/s per pod the "
              "process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic."]
     for pod in sorted(pods, key=lambda p: p.metadata.name):
         name = pod.metadata.name

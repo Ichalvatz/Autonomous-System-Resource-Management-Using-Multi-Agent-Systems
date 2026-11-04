@@ -563,6 +563,8 @@ def test_pod_breakdown_shows_the_sick_pod(fake_cluster):
     assert "revision 7" in hog_line and "CPU per request 0.317 core-s" in hog_line
     assert "event-loop lag p99 1.10 s" in hog_line and "120 MiB / 1024 MiB limit" in hog_line
     assert "CPU per request 0.075 core-s" in text.split(ok)[1]
+    # v14 (A33): the lag the prompt's restart rule compares with is given, measured on healthy traffic
+    assert "event-loop lag p99 ~0.085 s (max 0.39)" in text.split(hog)[0]
 
 
 def test_deployment_history_names_the_change(fake_cluster):
