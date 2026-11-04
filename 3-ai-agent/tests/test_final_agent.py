@@ -49,10 +49,13 @@ def test_prompt_classifies_first_and_has_no_fault_specific_hint():
 
 def test_one_code_format_in_the_whole_system_prompt():
     """Until v13 smolagents' system prompt asked for <code> blocks and ours for ```python: 15 of 581 phase-2 steps
-    failed on a stray "python" line (A33). v14: our own system prompt, markdown code blocks only, no generic examples."""
+    failed on a stray "python" line (A33). v14: our own system prompt, markdown code blocks only, no generic examples,
+    and each reply in the form smolagents' own correction message shows ("Thoughts: ..." and then the block)."""
     sp = agent.sre_agent.initialize_system_prompt()
     assert agent.sre_agent.code_block_tags == ("```python", "```")
     assert "<code>" not in sp and "Thought:" not in sp and "```python" in sp
+    assert "\nThoughts: " in sp and "\n```python\nprint(get_pod_breakdown())\n```\n" in sp
+    assert "reasoning, in a few short comments" not in sp
     assert "oldest person" not in sp and "notional tools" not in sp
     for tool in OBSERVE + ACT:
         assert f"def {tool}(" in sp

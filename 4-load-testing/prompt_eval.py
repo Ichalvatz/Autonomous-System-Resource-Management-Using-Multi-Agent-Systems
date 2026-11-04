@@ -56,8 +56,15 @@ import agent  # noqa: E402
 import agent_tools  # noqa: E402
 import prompt_v13  # noqa: E402
 from smolagents import CodeAgent  # noqa: E402
+from smolagents.models import RateLimiter  # noqa: E402
+
+# Pacing (from 2026-11-04 12:00, A33): the key is on Gemini's free tier (~15 requests per minute), and back-to-back runs
+# went over it, so 429s cost retries and runs. Both prompts are paced the same, one call per 5 s at most; a run's
+# "seconds" includes the pacing (the runs before 12:00 were not paced).
+agent.model.rate_limiter = RateLimiter(12)
 
 RESULTS = os.path.join(LT, "prompt_eval_results.jsonl")
+DRAFT = "v14-draft1"   # the first draft of v14's prompt, its runs kept under this label (A33)
 CASES = os.path.join(LT, "prompt_eval_cases.json")
 OBSERVE = ["get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs"]
 FAULT_AT_S = 240
@@ -274,7 +281,8 @@ def run_case(case, variant):
             "refusals": sum("Refused" in e or "Refused" in str(getattr(s, "observations", "") or "")
                             for e, s in zip(errors, steps)),
             "llm_calls": agent.model.stats["calls"], "retries": agent.model.stats["retries"],
-            "fallback_calls": agent.model.stats["fallback_calls"], "seconds": round(time.monotonic() - started, 1),
+            "fallback_calls": agent.model.stats["fallback_calls"], "fenced": agent.model.stats["fenced"],
+            "seconds": round(time.monotonic() - started, 1),
             "at": datetime.now().isoformat(timespec="seconds")}
 
 
@@ -291,26 +299,33 @@ def load_results():
     return [json.loads(l) for l in open(RESULTS) if l.strip()]
 
 
-def main_run(reps):
+def main_run(reps, passes=3):
+    """Each case reps times with each prompt. A run the provider broke (an exception: every retry and the fallback
+    failed) stays in the results, is not counted (report()) and is tried again in a later pass, so both prompts get
+    the same number of whole runs."""
     cases = [c for c in extract_cases() if c["expected"]]
     json.dump(cases, open(CASES, "w"), indent=1)
-    done = Counter((r["case"], r["variant"]) for r in load_results())
-    for rep in range(1, reps + 1):
-        for c in cases:
-            for variant in ("v13", "v14") if rep % 2 else ("v14", "v13"):
-                if done[(c["id"], variant)] >= rep:
-                    continue
-                r = run_case(c, variant)
-                r["rep"] = rep
-                with open(RESULTS, "a") as f:
-                    f.write(json.dumps(r) + "\n")
-                done[(c["id"], variant)] += 1
-                ok = "right" if outcome(r) == c["expected"] else "WRONG"
-                print(f"[{datetime.now():%H:%M:%S}] rep {rep} {variant} {c['id']}: expected {c['expected']}, "
-                      f"got {outcome(r)} ({ok}); {r['steps']} steps, {r['llm_calls']} calls, "
-                      f"{r['format_failures']} format failures, {r['seconds']} s"
-                      + (f"; fallback {r['fallback_calls']}" if r["fallback_calls"] else "")
-                      + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
+    done = Counter((r["case"], r["variant"]) for r in load_results() if not r["error"])
+    for _ in range(passes):
+        for rep in range(1, reps + 1):
+            for c in cases:
+                for variant in ("v13", "v14") if rep % 2 else ("v14", "v13"):
+                    if done[(c["id"], variant)] >= rep:
+                        continue
+                    r = run_case(c, variant)
+                    r["rep"] = rep
+                    with open(RESULTS, "a") as f:
+                        f.write(json.dumps(r) + "\n")
+                    done[(c["id"], variant)] += not r["error"]
+                    ok = "right" if outcome(r) == c["expected"] else "WRONG"
+                    print(f"[{datetime.now():%H:%M:%S}] rep {rep} {variant} {c['id']}: expected {c['expected']}, "
+                          f"got {outcome(r)} ({ok}); {r['steps']} steps, {r['llm_calls']} calls, "
+                          f"{r['format_failures']} format failures, {r['seconds']} s"
+                          + (f"; fenced {r['fenced']}" if r["fenced"] else "")
+                          + (f"; fallback {r['fallback_calls']}" if r["fallback_calls"] else "")
+                          + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
+        if all(done[(c["id"], v)] >= reps for c in cases for v in ("v13", "v14")):
+            break
 
 
 def report():
@@ -324,24 +339,34 @@ def report():
     print(f"*`prompt_eval.py --report`, {datetime.now():%Y-%m-%d %H:%M}. {len(cases)} recorded wake-ups "
           f"(1-3/11, the current health model), {len(results)} runs with {agent.PRIMARY_MODEL}; {len(primary)} used "
           f"only the primary model and are counted ({len(results) - len(primary)} used the fallback or failed).*\n")
+    draft = any(r["variant"] == DRAFT for r in primary)
+    if draft:
+        print(f"*{DRAFT}: the first draft of v14's prompt (reasoning as comments inside the code block), stopped after "
+              f"its runs below lost steps to unfenced code; v14 is the prompt as fixed (a \"Thoughts:\" line, then the "
+              f"block) and was run again in full (A33). Its column is for reference; the criteria compare v14 with "
+              f"v13.*\n")
     print("## Summary\n")
-    print("| | v13 prompt | v14 prompt |\n|---|---|---|")
+    variants = ("v13", "v14") + ((DRAFT,) if draft else ())
+    print("| | " + " | ".join(f"{v} prompt" for v in variants) + " |")
+    print("|---" * (len(variants) + 1) + "|")
     stats = {}
-    for v in ("v13", "v14"):
+    for v in variants:
         rs = [r for r in primary if r["variant"] == v]
         right = sum(outcome(r) == r["expected"] for r in rs)
         stats[v] = {"n": len(rs), "right": right, "rate": right / len(rs) if rs else 0.0,
                     "format": sum(r["format_failures"] for r in rs), "steps": statistics.median(r["steps"] for r in rs)
                     if rs else 0, "calls": sum(r["llm_calls"] for r in rs), "seconds": statistics.median(
-                        r["seconds"] for r in rs) if rs else 0, "refusals": sum(r["refusals"] for r in rs)}
+                        r["seconds"] for r in rs) if rs else 0, "refusals": sum(r["refusals"] for r in rs),
+                    "fenced": sum(r["fenced"] for r in rs if "fenced" in r) if any("fenced" in r for r in rs) else None}
     rows = [("Right action", lambda s: f"{s['right']}/{s['n']} ({100 * s['rate']:.0f}%)"),
             ("Code-format failures (steps)", lambda s: str(s["format"])),
+            ("Bare-code replies fenced by code (not failures)", lambda s: "n/a" if s["fenced"] is None else str(s["fenced"])),
             ("Median LLM steps per run", lambda s: f"{s['steps']:g}"),
             ("Guard refusals (steps)", lambda s: str(s["refusals"])),
             ("Median seconds per run", lambda s: f"{s['seconds']:g}"),
             ("LLM calls in all", lambda s: str(s["calls"]))]
     for name, f in rows:
-        print(f"| {name} | {f(stats['v13'])} | {f(stats['v14'])} |")
+        print(f"| {name} | " + " | ".join(f(stats[v]) for v in variants) + " |")
     wrong_restart = [cid for cid, vs in by.items() if cases[cid]["expected"] != "restart"
                      and any(outcome(r) == "restart" for r in vs["v14"])
                      and not any(outcome(r) == "restart" for r in vs["v13"])]
@@ -364,7 +389,7 @@ def report():
     left = [c for c in extract_cases() if not c["expected"]]
     if left:
         print("\nLeft out: " + "; ".join(f"{c['id']} ({c['why']})" for c in left))
-    wrong = [r for r in primary if outcome(r) != r["expected"]]
+    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] != DRAFT]
     if wrong:
         print("\n## The wrong runs\n")
         for r in wrong:

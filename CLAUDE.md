@@ -209,8 +209,11 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
 - **Prompt v14** (A33, 2026-11-03; v9–v13's in `4-load-testing/archive/prompt_v13/`):
   - **our own system prompt** (`agent.SYSTEM_PROMPT`, in place of smolagents' generic one; `make_sre_agent` builds the
     CodeAgent with it and `code_block_tags="markdown"`): the role, the NFR objectives, what each pod count serves (the
-    model's healthy band next to the measured load where the p95 objective breaks), how to decide, how to work (one
-    ```` ```python ```` block per step, one tool per step, reasoning as comments), the tools from their docstrings;
+    model's healthy band next to the measured load where the p95 objective breaks), how to decide, how to work (each
+    reply a "Thoughts:" line and one ```` ```python ```` block, the form of smolagents' own correction message; one tool
+    per step), the tools from their docstrings. A reply that is bare Python calling something gets its fence in code
+    (`agent._fence_bare_code`, counted as `fenced`): CodeAgent appends a closing fence to it and then cannot parse it
+    (the first draft, reasoning as comments, lost a step that way in 17 of 44 capacity runs of the evaluation);
   - **one message per wake-up with the incident only** (`agent.incident_message`): the reading in units with its window
     (the detector sends `window`), the facts, "Your recent actions" (the last 15 min with their verdicts, in-process:
     `agent.RECENT_ACTIONS`), the incident memory, and as the last line the task with its three key constraints;
@@ -262,9 +265,14 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
   - ChromaDB is connected lazily and retried. The volume is at `/data`, so memory survives restarts (in phase 1 it was
     lost on every ChromaDB restart).
 - **LLM:** primary `gemini/gemini-3.1-flash-lite`; fallback `gemini/gemini-2.5-flash` (`AIOPS_FALLBACK_MODEL=<model>|off`).
-  - `RetryingLiteLLMModel` retries transient errors and empty responses after 5 / 15 / 30 s, then tries the fallback.
-  - **No per-call timeout of our own** (litellm's default is 6000 s): a stalled provider call can block an incident
-    (`design_decisions.md` A27).
+  - `RetryingLiteLLMModel` retries transient errors and empty responses after 5 / 15 / 30 s, then tries the fallback;
+    it is the only retry policy (smolagents' own uncounted 60 s / 120 s retry of 429s is off, `retry=False`), and the log
+    names the quota a 429 hit.
+  - **Each call is cut after 60 s** (`CALL_TIMEOUT_SECONDS`, v14, A33; proposed in A27) and retried like a 503. Until v13
+    litellm's 6000 s default applied: a stalled call lost a cpuhog run on 23/10 and held single evaluation runs 31–163 min
+    on 3–4/11.
+  - **The key is on Gemini's free tier:** the fallback has 20 requests per day (quota resets at 10:00 Greek time), so it
+    helps only for a few calls a day.
 - **`3-ai-agent/incident_log.csv`:** one row per agent run (reading, score, memory hit, actions, verdict, recovery,
   re-wake, LLM calls / retries / fallback, seconds, final answer). It is the source of the per-incident numbers. A run cut
   by SIGTERM leaves no row; `campaign_report.py` finds such wake-ups in the run's `controller.log`.

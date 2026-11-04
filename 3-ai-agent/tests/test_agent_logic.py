@@ -394,7 +394,28 @@ def test_retry_on_empty_response_then_success():
         agent.model.reset_stats()
         out = agent.model.generate([])
     assert "final_answer" in out.content
-    assert agent.model.stats == {"calls": 3, "retries": 2, "fallback_calls": 0}
+    assert agent.model.stats == {"calls": 3, "retries": 2, "fallback_calls": 0, "fenced": 0}
+
+
+def test_bare_code_reply_gets_its_fence_and_prose_does_not():
+    """A33: smolagents appends the closing fence to a reply without one, so bare code failed to parse (17 of 44
+    capacity runs of the first v14 draft lost a step). A reply that is Python as a whole gets the fence; anything with
+    prose or a fence is left alone."""
+    import agent
+    from smolagents.models import ChatMessage
+    bare = "# 67.9 rps is below the band of 2 pods\nscale_kubernetes_deployment(replicas=1)"
+    p1, p2 = _gen([ChatMessage(role="assistant", content=bare)])
+    with p1, p2:
+        agent.model.reset_stats()
+        out = agent.model.generate([])
+    assert out.content == f"```python\n{bare}\n```" and agent.model.stats["fenced"] == 1
+    from smolagents.utils import parse_code_blobs
+    assert parse_code_blobs(out.content + "```", ("```python", "```")).strip() == bare   # what CodeAgent then does
+    for text in ("Thoughts: scale down.\n```python\nscale_kubernetes_deployment(replicas=1)\n```",
+                 "Thought: x\n<code>\nprint(1)\n</code>", "No action taken: the breach is short.", "ok",
+                 "# only a comment"):
+        msg = ChatMessage(role="assistant", content=text)
+        assert not agent._fence_bare_code(msg) and msg.content == text
 
 
 def test_retry_when_message_has_no_text_but_tool_calls():
@@ -438,6 +459,25 @@ def test_fallback_model_after_primary_keeps_failing():
         assert "final_answer" in agent.model.generate([]).content
     assert used == [agent.PRIMARY_MODEL] * 4 + ["gemini/fallback-model"]
     assert agent.model.stats["fallback_calls"] == 1 and agent.model.model_id == agent.PRIMARY_MODEL
+
+
+def test_every_llm_call_has_a_timeout_and_one_retry_policy():
+    """v14 (A33, proposed in A27): a stalled provider call is cut after CALL_TIMEOUT_SECONDS and retried like a 503
+    (litellm's default is 6000 s), and smolagents' own uncounted retry of 429s is off."""
+    import agent
+    from smolagents.models import ChatMessage
+    seen = {}
+
+    def completion(**kwargs):
+        seen.update(kwargs)
+        raise agent.litellm.exceptions.RateLimitError("429 quota", llm_provider="gemini", model="x")
+    with mock.patch.object(agent.model.client, "completion", completion), mock.patch.object(agent.time, "sleep"), \
+         mock.patch.object(agent, "FALLBACK_MODEL", None):
+        agent.model.reset_stats()
+        with pytest.raises(agent.litellm.exceptions.RateLimitError):
+            agent.model.generate([ChatMessage(role="user", content="hi")])
+    assert seen["timeout"] == agent.CALL_TIMEOUT_SECONDS == 60
+    assert agent.model.stats["calls"] == 4   # 1 + the wrapper's 3 retries, none hidden inside smolagents
 
 
 def test_non_transient_error_is_not_retried():

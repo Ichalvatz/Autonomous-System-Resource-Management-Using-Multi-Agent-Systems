@@ -1,3 +1,4 @@
+import ast
 import os
 import re
 import csv
@@ -52,6 +53,10 @@ TRANSIENT_ERRORS = (
     litellm.exceptions.Timeout,
 )
 RETRY_DELAYS_SECONDS = [5, 15, 30]  # free tier limits are per minute
+# Each call gets at most this long (v14, A33; proposed in A27). Without it litellm waits up to 6000 s: on 2026-11-03/04 the
+# prompt evaluation saw single runs take 30-160 min on stalled calls, and on 2026-10-23 one stalled call lost a cpuhog run.
+# Calls without a retry took a median 2.7 s (p90 11 s), so 60 s cuts only a stall; the cut call is retried like a 503.
+CALL_TIMEOUT_SECONDS = 60
 
 
 class EmptyModelResponse(Exception):
@@ -77,6 +82,34 @@ def _is_empty(message):
     return not content  # list-of-parts form
 
 
+def _fence_bare_code(message):
+    """A reply that is bare Python code (no code fence at all) gets the fence; returns whether it did.
+
+    smolagents accepts bare code (parse_code_blobs: "Maybe the LLM outputted a code blob directly"), but CodeAgent first
+    appends the closing fence to any reply that lacks it, so the bare code no longer parses and the step fails. With the
+    first draft of the v14 prompt (reasoning as comments inside the block) 17 of 44 capacity runs of the prompt
+    evaluation lost a step to a format failure; the one traced was such a reply (A33). Only a reply that parses as
+    Python as a whole and calls something (a tool, print, final_answer) is touched, and its text is kept: a one-word
+    reply such as "ok" is also valid Python, but it is not code."""
+    text = getattr(message, "content", None)
+    if not isinstance(text, str) or "```" in text or "<code>" in text:
+        return False
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return False
+    if not any(isinstance(node, ast.Call) for node in ast.walk(tree)):
+        return False
+    message.content = f"```python\n{text.strip()}\n```"
+    return True
+
+
+def _quota(error):
+    """The quota a 429 hit (e.g. GenerateRequestsPerDayPerProjectPerModel-FreeTier), for the log; '' if none."""
+    found = re.search(r'quotaId"?:\s*"([^"]+)"', str(error))
+    return f" ({found.group(1)})" if found else ""
+
+
 class RetryingLiteLLMModel(LiteLLMModel):
     """LiteLLMModel that retries transient errors with backoff, then tries the fallback model.
 
@@ -91,7 +124,7 @@ class RetryingLiteLLMModel(LiteLLMModel):
         self.reset_stats()
 
     def reset_stats(self):
-        self.stats = {"calls": 0, "retries": 0, "fallback_calls": 0}
+        self.stats = {"calls": 0, "retries": 0, "fallback_calls": 0, "fenced": 0}
 
     def generate(self, *args, **kwargs):
         model_ids = [self.primary_model_id] + ([FALLBACK_MODEL] if FALLBACK_MODEL else [])
@@ -102,7 +135,8 @@ class RetryingLiteLLMModel(LiteLLMModel):
             for attempt, delay in enumerate([0] + RETRY_DELAYS_SECONDS):
                 if delay:
                     self.stats["retries"] += 1
-                    print(f"⚠️ [LLM] {type(last_error).__name__} from {model_id}, retry {attempt}/{len(RETRY_DELAYS_SECONDS)} in {delay}s")
+                    print(f"⚠️ [LLM] {type(last_error).__name__}{_quota(last_error)} from {model_id}, "
+                          f"retry {attempt}/{len(RETRY_DELAYS_SECONDS)} in {delay}s")
                     time.sleep(delay)
                 self.stats["calls"] += 1
                 if model_id != self.primary_model_id:
@@ -112,6 +146,7 @@ class RetryingLiteLLMModel(LiteLLMModel):
                     message = super().generate(*args, **kwargs)
                     if _is_empty(message):
                         raise EmptyModelResponse(f"empty response from {model_id}")
+                    self.stats["fenced"] += _fence_bare_code(message)
                     return message
                 except TRANSIENT_ERRORS as e:
                     last_error = e
@@ -120,7 +155,9 @@ class RetryingLiteLLMModel(LiteLLMModel):
         raise last_error
 
 
-model = RetryingLiteLLMModel(model_id=PRIMARY_MODEL)
+# retry=False: smolagents' own retry of 429s (waits 60 s, then 120 s, uncounted) is off, so the wrapper above is the one
+# retry policy, with its waits printed and counted (until v13 a 429 could cost ~3 min per attempt, unseen).
+model = RetryingLiteLLMModel(model_id=PRIMARY_MODEL, timeout=CALL_TIMEOUT_SECONDS, retry=False)
 
 # ---------------------------------------------------------------------------
 # The capacity table (5-ml-training/capacity_discovery.py, phase 2): per pod count, the load of the normal
@@ -212,9 +249,9 @@ The bands overlap on purpose, so the new count is healthy right after a scale-up
 4. Report in a later step than the action: final_answer("Root cause: <one sentence, with the evidence>. Action: <what you did and why>.") or final_answer("No action taken: <reason>"). Do not verify or save anything yourself: the system does both after you finish.
 
 ## How you work
-You act by writing Python code, one short block per step:
+Each reply is one step: a line that starts with "Thoughts:" and says what you do and why, then one Python code block that calls one tool. For example:
+Thoughts: The minimum pod count equals the current one, so this is not capacity; I look at the pods first.
 ```python
-# your reasoning, in a few short comments
 print(get_pod_breakdown())
 ```
 - Call one tool per step and print its result. You see the output in the next step, as "Observation".

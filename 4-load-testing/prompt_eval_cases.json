@@ -1,0 +1,1940 @@
+[
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261101_1732",
+  "scenario": "cpuhog",
+  "time": "17:39:13",
+  "metrics": {
+   "throughput": 56.22112442248846,
+   "error_rate": 0.07577374599786553,
+   "latency_p95": 1.4940288713910759,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.7845403362836347,
+   "rps_per_pod": 56.22112442248846,
+   "timestamp": "17:39:13",
+   "score": -9.8432,
+   "explanation": [
+    "p95 latency 1.49 s is above the safe level 0.25 s (objective 0.35 s)",
+    "7.6% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -1.6
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-6d5d75668f-cck2m | revision 363 | age 6m56s | ready | container restarts 0\n    CPU 0.83 cores (throttled 25.1%) | 53.2 req/s | CPU per request 0.016 core-s | p95 0.21 s | 5xx 0.00/s | event-loop lag p99 1.27 s | memory 152 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 363, 1/1 replicas available. Newest first:\n- revision 363 (CURRENT): created 17:32:29 (7m00s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-6d5d75668f-cck2m: 200 lines scanned, 5 warnings/errors ---\n[2026-11-01T15:39:29.598Z] [WARN] [cebb96fb589491aa562866890abd3141] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 799ms | Status: 200\n[2026-11-01T15:39:29.598Z] [WARN] [11326e157d54bb528973bdf507a98e9a] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 732ms | Status: 200\n[2026-11-01T15:39:29.598Z] [WARN] [26cff3c28b4384b4c18b564afea12fb8] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 666ms | Status: 200\n[2026-11-01T15:39:29.599Z] [WARN] [2ad4842bcfdaf98b0523c065968574f5] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 601ms | Status: 200\n[2026-11-01T15:39:29.599Z] [WARN] [e9cd6246a3fc52d49ae6aba41a2eafbb] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 535ms | Status: 200"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod was experiencing high CPU throttling ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "cpuhog, after the fault",
+  "id": "eval_cpuhog_llm_20261101_1732@17:39:13"
+ },
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261101_1951",
+  "scenario": "cpuhog",
+  "time": "19:58:33",
+  "metrics": {
+   "throughput": 55.67777288908444,
+   "error_rate": 0.0,
+   "latency_p95": 1.5171171171171163,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.5617879481327801,
+   "rps_per_pod": 55.67777288908444,
+   "timestamp": "19:58:33",
+   "score": -5.3239,
+   "explanation": [
+    "p95 latency 1.52 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": -1.9
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-78898d54f9-vgnx2 | revision 369 | age 7m16s | ready | container restarts 0\n    CPU 0.98 cores (throttled 33.4%) | 53.2 req/s | CPU per request 0.018 core-s | p95 0.24 s | 5xx 0.00/s | event-loop lag p99 1.31 s | memory 184 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 369, 1/1 replicas available. Newest first:\n- revision 369 (CURRENT): created 19:51:44 (7m18s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-78898d54f9-vgnx2: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod exhibited high event-loop lag (1.31s ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "cpuhog, after the fault",
+  "id": "eval_cpuhog_llm_20261101_1951@19:58:33"
+ },
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261101_1951",
+  "scenario": "cpuhog",
+  "time": "20:04:21",
+  "metrics": {
+   "throughput": 56.82,
+   "error_rate": 0.0,
+   "latency_p95": 0.31169117647058764,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.6536538544524242,
+   "rps_per_pod": 56.82,
+   "timestamp": "20:04:21",
+   "score": -0.2622,
+   "explanation": [
+    "p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": -0.4
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 19:58:33 (4 min ago): restart -> verification STABLE",
+  "recent_v14": "- 19:58:33 (4 min ago): restart; verification: STABLE.",
+  "outputs": {
+   "get_pod_breakdown": "execution failed at line 'python' due to: InterpreterError: The variable `python` is not defined.",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 370, 1/1 replicas available. Newest first:\n- revision 370 (CURRENT): created 19:59:05 (5m26s ago): rolling restart only (no change to image, env or resources)\n- revision 369: created 19:51:44 (12m47s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-774db7db68-5jtqp: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [],
+  "then_answer": "No action taken: All metrics for the single pod are healthy, ",
+  "borrowed": [],
+  "expected": "none",
+  "why": "minimum 1 = current 1",
+  "id": "eval_cpuhog_llm_20261101_1951@20:04:21"
+ },
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261101_1951",
+  "scenario": "cpuhog",
+  "time": "20:08:14",
+  "metrics": {
+   "throughput": 57.157713691452344,
+   "error_rate": 0.0,
+   "latency_p95": 0.3610156249999998,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.7207466967315027,
+   "rps_per_pod": 57.157713691452344,
+   "timestamp": "20:08:14",
+   "score": -0.914,
+   "explanation": [
+    "p95 latency 0.36 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": -0.1
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 19:58:33 (8 min ago): restart -> verification STABLE - 20:04:21 (3 min ago): no action (No action taken: All metrics for the single pod are healthy, including p95 latency of 0.09s, which is well within the 0.)",
+  "recent_v14": "- 19:58:33 (8 min ago): restart; verification: STABLE.\n- 20:04:21 (3 min ago): no action (No action taken: All metrics for the single pod are healthy, including p95 latency of 0.09s, which is well within the 0.).",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-774db7db68-5jtqp | revision 370 | age 9m12s | ready | container restarts 0\n    CPU 0.72 cores (throttled 11.4%) | 57.2 req/s | CPU per request 0.013 core-s | p95 0.10 s | 5xx 0.00/s | event-loop lag p99 0.28 s | memory 173 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 370, 1/1 replicas available. Newest first:\n- revision 370 (CURRENT): created 19:59:05 (9m14s ago): rolling restart only (no change to image, env or resources)\n- revision 369: created 19:51:44 (16m35s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-774db7db68-5jtqp: 200 lines scanned, 1 warnings/errors ---\n[2026-11-01T18:08:19.852Z] [WARN] [a23a58a12cb0c9b91302d9f67dbcc333] POST /users/200029/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409"
+  },
+  "then": [],
+  "then_answer": "No action taken: Pod metrics show the process is healthy (p95 ",
+  "borrowed": [],
+  "expected": "none",
+  "why": "minimum 1 = current 1",
+  "id": "eval_cpuhog_llm_20261101_1951@20:08:14"
+ },
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261101_2247",
+  "scenario": "cpuhog",
+  "time": "22:53:53",
+  "metrics": {
+   "throughput": 56.2,
+   "error_rate": 0.0,
+   "latency_p95": 1.6874999999999996,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.7340755363203291,
+   "rps_per_pod": 56.2,
+   "timestamp": "22:53:53",
+   "score": -5.6427,
+   "explanation": [
+    "p95 latency 1.69 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": -1.3
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5f8957fc59-sj7k2 | revision 378 | age 6m46s | ready | container restarts 0\n    CPU 0.61 cores (throttled 21.5%) | 58.1 req/s | CPU per request 0.011 core-s | p95 0.10 s | 5xx 0.00/s | event-loop lag p99 1.38 s | memory 153 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 378, 1/1 replicas available. Newest first:\n- revision 378 (CURRENT): created 22:47:09 (6m47s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5f8957fc59-sj7k2: 200 lines scanned, 6 warnings/errors ---\n[2026-11-01T20:53:55.687Z] [WARN] [77756de74108889067d28366bdce4e65] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 1534ms | Status: 200\n[2026-11-01T20:53:56.661Z] [WARN] [04de5d19fa3710a2637b7189e6a1e9f6] POST /users/200298/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409\n[2026-11-01T20:53:56.977Z] [WARN] [f0ea03234027a15a0a561fe66768bcab] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 671ms | Status: 200\n[2026-11-01T20:53:56.977Z] [WARN] [902997751c4ad8f651625924691871b0] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 604ms | Status: 200\n[2026-11-01T20:53:56.978Z] [WARN] [4db6ad7ea3a39bd7033283c16455a0a9] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 535ms | Status: 200\n[2026-11-01T20:53:57.581Z] [WARN] [scheduler] - job \"rebuild-search-index\" still running after 34s (iteration 30, expected 1); event loop blocked 600ms per iteration"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod shows significant event-loop lag (p99 ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "cpuhog, after the fault",
+  "id": "eval_cpuhog_llm_20261101_2247@22:53:53"
+ },
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261102_0247",
+  "scenario": "cpuhog",
+  "time": "02:54:51",
+  "metrics": {
+   "throughput": 56.198876022479546,
+   "error_rate": 0.0,
+   "latency_p95": 1.489634146341463,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.8719541631500828,
+   "rps_per_pod": 56.198876022479546,
+   "timestamp": "02:54:51",
+   "score": -5.2698,
+   "explanation": [
+    "p95 latency 1.49 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": -1.4
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-748cbfd47c-p2t4l | revision 388 | age 7m01s | ready | container restarts 0\n    CPU 0.70 cores (throttled 23.6%) | 57.6 req/s | CPU per request 0.012 core-s | p95 0.22 s | 5xx 0.00/s | event-loop lag p99 1.20 s | memory 148 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 388, 1/1 replicas available. Newest first:\n- revision 388 (CURRENT): created 02:47:57 (7m02s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-748cbfd47c-p2t4l: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The pod was experiencing a high event-loop lag ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "cpuhog, after the fault",
+  "id": "eval_cpuhog_llm_20261102_0247@02:54:51"
+ },
+ {
+  "run": "4-load-testing/eval_cpuhog_llm_20261102_0542",
+  "scenario": "cpuhog",
+  "time": "05:49:40",
+  "metrics": {
+   "throughput": 56.72226889075563,
+   "error_rate": 0.02150916784203103,
+   "latency_p95": 1.5967999999999996,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.8917672917970517,
+   "rps_per_pod": 56.72226889075563,
+   "timestamp": "05:49:40",
+   "score": -5.9331,
+   "explanation": [
+    "p95 latency 1.60 s is above the safe level 0.25 s (objective 0.35 s)",
+    "2.2% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -1.1
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-79c4b44f44-b5nt9 | revision 396 | age 7m30s | ready | container restarts 0\n    CPU 0.99 cores (throttled 44.0%) | 52.9 req/s | CPU per request 0.019 core-s | p95 0.27 s | 5xx 0.00/s | event-loop lag p99 1.26 s | memory 144 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 396, 1/1 replicas available. Newest first:\n- revision 396 (CURRENT): created 05:42:41 (7m33s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-79c4b44f44-b5nt9: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: High event-loop lag (1.26s) in the running process ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "cpuhog, after the fault",
+  "id": "eval_cpuhog_llm_20261102_0542@05:49:40"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_1754",
+  "scenario": "baseline",
+  "time": "18:04:50",
+  "metrics": {
+   "throughput": 96.02192043840877,
+   "error_rate": 0.0,
+   "latency_p95": 0.2847408536585364,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.6220104684351343,
+   "rps_per_pod": 96.02192043840877,
+   "timestamp": "18:04:50",
+   "score": -0.504,
+   "explanation": [
+    "load 96.0 rps (96.0 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned)",
+    "p95 latency 0.28 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 20.1
+  },
+  "memory_v13": "No verified past incidents yet (0 stored in total).",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {},
+  "then": [
+   "scale 1->2"
+  ],
+  "then_answer": "Root cause: Capacity issue where the load of 96.0 rps exceeds the ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 1",
+  "id": "eval_llm_20261101_1754@18:04:50"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_1754",
+  "scenario": "baseline",
+  "time": "18:12:18",
+  "metrics": {
+   "throughput": 169.9,
+   "error_rate": 0.0,
+   "latency_p95": 0.2204925650557622,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.6554726691980262,
+   "rps_per_pod": 84.95,
+   "timestamp": "18:12:18",
+   "score": -0.196,
+   "explanation": [
+    "load 169.9 rps (85.0 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)"
+   ],
+   "load_trend_rps_per_min": 21.8
+  },
+  "memory_v13": "No verified past incidents yet (1 stored in total).",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 18:04:50 (6 min ago): scale 1->2 -> verification UNSTABLE: not improving (score -1.96 -> -1.82 over the last 30 s)",
+  "recent_v14": "- 18:04:50 (6 min ago): scale 1->2; verification: UNSTABLE: not improving (score -1.96 -> -1.82 over the last 30 s).",
+  "outputs": {},
+  "then": [
+   "scale 2->3"
+  ],
+  "then_answer": "Root cause: Capacity issue where the load of 169.9 rps exceeded ",
+  "borrowed": [],
+  "expected": "scale 3",
+  "why": "capacity: minimum 3, current 2",
+  "id": "eval_llm_20261101_1754@18:12:18"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_1754",
+  "scenario": "baseline",
+  "time": "18:21:57",
+  "metrics": {
+   "throughput": 111.34,
+   "error_rate": 0.0,
+   "latency_p95": 0.082344674556213,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.28166955909565256,
+   "rps_per_pod": 37.11333333333334,
+   "timestamp": "18:21:57",
+   "score": -0.2839,
+   "explanation": [
+    "load 111.3 rps (37.1 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -25.5
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 100.0, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 100.0 | 2026-11-01T18:12:34 | 2 pod(s), 169.9 rps (85.0/pod), p95 0.22 s, errors 0.0%; score -0.20: load 169.9 rps (85.0 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)\n    Action taken: scale 2->3 -> verified STABLE in 13 s\n    Diagnosis then: Root cause: Capacity issue where the load of 169.9 rps exceeded the healthy capacity of 2 pods (max 162.1 rps). Action: Scaled up to 3 replicas as suggested by the health model.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    100.0,
+    "2 pod(s), 169.9 rps (85.0/pod), p95 0.22 s, errors 0.0%; score -0.20: load 169.9 rps (85.0 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)",
+    {
+     "time": "2026-11-01T18:12:34",
+     "actions": "scale 2->3",
+     "recovery_s": "13",
+     "diagnosis": "Root cause: Capacity issue where the load of 169.9 rps exceeded the healthy capacity of 2 pods (max 162.1 rps). Action: Scaled up to 3 replicas as suggested by the health model."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 18:12:18 (9 min ago): scale 2->3 -> verification STABLE",
+  "recent_v14": "- 18:12:18 (9 min ago): scale 2->3; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 3->2"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 replicas for ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 3",
+  "id": "eval_llm_20261101_1754@18:21:57"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_1754",
+  "scenario": "baseline",
+  "time": "18:28:42",
+  "metrics": {
+   "throughput": 64.3,
+   "error_rate": 0.0,
+   "latency_p95": 0.08071289062499994,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.3182199323614062,
+   "rps_per_pod": 32.15,
+   "timestamp": "18:28:42",
+   "score": -0.3432,
+   "explanation": [
+    "load 64.3 rps (32.1 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -19.1
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 1.0, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 1.0 | 2026-11-01T18:12:34 | 2 pod(s), 169.9 rps (85.0/pod), p95 0.22 s, errors 0.0%; score -0.20: load 169.9 rps (85.0 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)\n    Action taken: scale 2->3 -> verified STABLE in 13 s\n    Diagnosis then: Root cause: Capacity issue where the load of 169.9 rps exceeded the healthy capacity of 2 pods (max 162.1 rps). Action: Scaled up to 3 replicas as suggested by the health model.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    1.0,
+    "2 pod(s), 169.9 rps (85.0/pod), p95 0.22 s, errors 0.0%; score -0.20: load 169.9 rps (85.0 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)",
+    {
+     "time": "2026-11-01T18:12:34",
+     "actions": "scale 2->3",
+     "recovery_s": "13",
+     "diagnosis": "Root cause: Capacity issue where the load of 169.9 rps exceeded the healthy capacity of 2 pods (max 162.1 rps). Action: Scaled up to 3 replicas as suggested by the health model."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 18:21:57 (6 min ago): scale 3->2 -> verification STABLE",
+  "recent_v14": "- 18:21:57 (6 min ago): scale 3->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->1"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 2 replicas for ",
+  "borrowed": [],
+  "expected": "scale 1",
+  "why": "capacity: minimum 1, current 2",
+  "id": "eval_llm_20261101_1754@18:28:42"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2035",
+  "scenario": "baseline",
+  "time": "20:46:11",
+  "metrics": {
+   "throughput": 95.84,
+   "error_rate": 0.0,
+   "latency_p95": 0.30730769230769245,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.7432624994186321,
+   "rps_per_pod": 95.84,
+   "timestamp": "20:46:11",
+   "score": -0.6917,
+   "explanation": [
+    "load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned)",
+    "p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 20.5
+  },
+  "memory_v13": "No verified past incidents yet (0 stored in total).",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "2 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5476789b6f-jc7pn | revision 372 | age 6m00s | ready | container restarts 0\n    CPU 0.72 cores (throttled 19.1%) | 73.3 req/s | CPU per request 0.010 core-s | p95 0.09 s | 5xx 0.00/s | event-loop lag p99 0.19 s | memory 170 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-q4bt4 | revision 372 | age 16m54s | ready | container restarts 0\n    CPU 0.63 cores (throttled 13.1%) | 74.3 req/s | CPU per request 0.009 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.10 s | memory 199 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 372, 2/2 replicas available. Newest first:\n- revision 372 (CURRENT): created 20:35:40 (16m57s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5476789b6f-jc7pn: 200 lines scanned, 1 warnings/errors ---\n[2026-11-01T18:52:37.768Z] [WARN] [533d1970727386f02eca7b88f61015d3] POST /users/200451/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409\n--- Pod aiops-backend-deployment-5476789b6f-q4bt4: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "scale 1->2"
+  ],
+  "then_answer": "Root cause: Capacity issue where current load (95.8 rps) and ",
+  "borrowed": [
+   "get_pod_breakdown from 20:52:32",
+   "get_deployment_history from 20:52:32",
+   "get_kubernetes_logs from 20:52:32"
+  ],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 1",
+  "id": "eval_llm_20261101_2035@20:46:11"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2035",
+  "scenario": "baseline",
+  "time": "20:52:32",
+  "metrics": {
+   "throughput": 144.58,
+   "error_rate": 0.0,
+   "latency_p95": 0.29326149425287373,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.6763207239297385,
+   "rps_per_pod": 72.29,
+   "timestamp": "20:52:32",
+   "score": -0.3873,
+   "explanation": [
+    "p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 20.7
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 100.0, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 100.0 | 2026-11-01T20:47:41 | 1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 50 s\n    Diagnosis then: Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    100.0,
+    "1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:47:41",
+     "actions": "scale 1->2",
+     "recovery_s": "50",
+     "diagnosis": "Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 20:46:11 (4 min ago): scale 1->2 -> verification STABLE",
+  "recent_v14": "- 20:46:11 (4 min ago): scale 1->2; verification: STABLE.",
+  "outputs": {
+   "get_pod_breakdown": "2 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5476789b6f-jc7pn | revision 372 | age 6m00s | ready | container restarts 0\n    CPU 0.72 cores (throttled 19.1%) | 73.3 req/s | CPU per request 0.010 core-s | p95 0.09 s | 5xx 0.00/s | event-loop lag p99 0.19 s | memory 170 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-q4bt4 | revision 372 | age 16m54s | ready | container restarts 0\n    CPU 0.63 cores (throttled 13.1%) | 74.3 req/s | CPU per request 0.009 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.10 s | memory 199 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 372, 2/2 replicas available. Newest first:\n- revision 372 (CURRENT): created 20:35:40 (16m57s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5476789b6f-jc7pn: 200 lines scanned, 1 warnings/errors ---\n[2026-11-01T18:52:37.768Z] [WARN] [533d1970727386f02eca7b88f61015d3] POST /users/200451/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409\n--- Pod aiops-backend-deployment-5476789b6f-q4bt4: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "scale 2->3"
+  ],
+  "then_answer": "Root cause: Capacity issue where the current load and its rising ",
+  "borrowed": [],
+  "expected": "scale 3",
+  "why": "capacity: minimum 3, current 2",
+  "id": "eval_llm_20261101_2035@20:52:32"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2035",
+  "scenario": "baseline",
+  "time": "20:56:14",
+  "metrics": {
+   "throughput": 210.4,
+   "error_rate": 0.0,
+   "latency_p95": 0.3603174603174599,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.6034828977128323,
+   "rps_per_pod": 70.13333333333334,
+   "timestamp": "20:56:14",
+   "score": -1.0427,
+   "explanation": [
+    "p95 latency 0.36 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 4.6
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 100.0, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 100.0 | 2026-11-01T20:53:24 | 2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 43 s\n    Diagnosis then: Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    100.0,
+    "2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:53:24",
+     "actions": "scale 2->3",
+     "recovery_s": "43",
+     "diagnosis": "Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 20:46:11 (8 min ago): scale 1->2 -> verification STABLE - 20:52:32 (2 min ago): scale 2->3 -> verification STABLE",
+  "recent_v14": "- 20:46:11 (8 min ago): scale 1->2; verification: STABLE.\n- 20:52:32 (2 min ago): scale 2->3; verification: STABLE.",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5476789b6f-gbg6m | revision 372 | age 3m38s | ready | container restarts 0\n    CPU 0.55 cores (throttled 9.8%) | 70.2 req/s | CPU per request 0.008 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.08 s | memory 169 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-jc7pn | revision 372 | age 9m43s | ready | container restarts 0\n    CPU 0.64 cores (throttled 24.1%) | 70.3 req/s | CPU per request 0.009 core-s | p95 0.11 s | 5xx 0.00/s | event-loop lag p99 0.32 s | memory 190 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-q4bt4 | revision 372 | age 20m37s | ready | container restarts 0\n    CPU 0.60 cores (throttled 6.8%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.14 s | memory 180 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 372, 3/3 replicas available. Newest first:\n- revision 372 (CURRENT): created 20:35:40 (20m42s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5476789b6f-gbg6m: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-jc7pn: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-q4bt4: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [],
+  "then_answer": "No action taken: All pods are operating within normal parameters ",
+  "borrowed": [],
+  "expected": "none",
+  "why": "minimum 3 = current 3",
+  "id": "eval_llm_20261101_2035@20:56:14"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2035",
+  "scenario": "baseline",
+  "time": "20:57:26",
+  "metrics": {
+   "throughput": 210.3042060841217,
+   "error_rate": 0.0,
+   "latency_p95": 0.31741329479768765,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.6281021816539312,
+   "rps_per_pod": 70.10140202804057,
+   "timestamp": "20:57:26",
+   "score": -0.6406,
+   "explanation": [
+    "p95 latency 0.32 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 0.1
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 100.0, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 100.0 | 2026-11-01T20:53:24 | 2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 43 s\n    Diagnosis then: Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    100.0,
+    "2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:53:24",
+     "actions": "scale 2->3",
+     "recovery_s": "43",
+     "diagnosis": "Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 20:46:11 (9 min ago): scale 1->2 -> verification STABLE - 20:52:32 (4 min ago): scale 2->3 -> verification STABLE - 20:56:14 (1 min ago): no action (No action taken: All pods are operating within normal parameters for CPU and request processing, and the global p95 late)",
+  "recent_v14": "- 20:46:11 (9 min ago): scale 1->2; verification: STABLE.\n- 20:52:32 (4 min ago): scale 2->3; verification: STABLE.\n- 20:56:14 (1 min ago): no action (No action taken: All pods are operating within normal parameters for CPU and request processing, and the global p95 late).",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5476789b6f-gbg6m | revision 372 | age 5m18s | ready | container restarts 0\n    CPU 0.64 cores (throttled 9.2%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.09 s | memory 161 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-jc7pn | revision 372 | age 11m23s | ready | container restarts 0\n    CPU 0.65 cores (throttled 14.9%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.10 s | 5xx 0.00/s | event-loop lag p99 0.40 s | memory 171 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-q4bt4 | revision 372 | age 22m17s | ready | container restarts 0\n    CPU 0.59 cores (throttled 5.2%) | 70.2 req/s | CPU per request 0.008 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.15 s | memory 256 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 372, 3/3 replicas available. Newest first:\n- revision 372 (CURRENT): created 20:35:40 (22m21s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5476789b6f-gbg6m: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-jc7pn: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-q4bt4: 200 lines scanned, 2 warnings/errors ---\n[2026-11-01T18:58:03.269Z] [WARN] [0ce54bdfb1e032df578296cb22dd9ea5] POST /users/200584/favourite-places - Client error (4xx): 409 | Duration: 0ms | Status: 409\n[2026-11-01T18:58:03.924Z] [WARN] [68e642ee434f6f9bceec356ddbb52700] POST /users/200646/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: High event-loop lag (p99 0.40s) observed in one pod ",
+  "borrowed": [],
+  "expected": "none",
+  "why": "minimum 3 = current 3",
+  "id": "eval_llm_20261101_2035@20:57:26"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2035",
+  "scenario": "baseline",
+  "time": "21:03:22",
+  "metrics": {
+   "throughput": 111.51776964460711,
+   "error_rate": 0.0,
+   "latency_p95": 0.08164516129032254,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.318864668984532,
+   "rps_per_pod": 37.17258988153571,
+   "timestamp": "21:03:22",
+   "score": -0.2814,
+   "explanation": [
+    "load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -25.2
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 1.0, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 1.0 | 2026-11-01T20:58:50 | 3 pod(s), 210.3 rps (70.1/pod), p95 0.32 s, errors 0.0%; score -0.64: p95 latency 0.32 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: restart -> verified STABLE in 39 s\n    Diagnosis then: Root cause: High event-loop lag (p99 0.40s) observed in one pod (jc7pn), indicating a potential process-level blockage causing increased p95 latency. Action: Executed a rolling restart of the deployment to clear the state in the running processes.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    1.0,
+    "3 pod(s), 210.3 rps (70.1/pod), p95 0.32 s, errors 0.0%; score -0.64: p95 latency 0.32 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:58:50",
+     "actions": "restart",
+     "recovery_s": "39",
+     "diagnosis": "Root cause: High event-loop lag (p99 0.40s) observed in one pod (jc7pn), indicating a potential process-level blockage causing increased p95 latency. Action: Executed a rolling restart of the deployment to clear the state in the running processes."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 20:52:32 (9 min ago): scale 2->3 -> verification STABLE - 20:56:14 (6 min ago): no action (No action taken: All pods are operating within normal parameters for CPU and request processing, and the global p95 late) - 20:57:26 (4 min ago): restart -> verification STABLE",
+  "recent_v14": "- 20:52:32 (9 min ago): scale 2->3; verification: STABLE.\n- 20:56:14 (6 min ago): no action (No action taken: All pods are operating within normal parameters for CPU and request processing, and the global p95 late).\n- 20:57:26 (4 min ago): restart; verification: STABLE.",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5476789b6f-gbg6m | revision 372 | age 5m18s | ready | container restarts 0\n    CPU 0.64 cores (throttled 9.2%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.09 s | memory 161 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-jc7pn | revision 372 | age 11m23s | ready | container restarts 0\n    CPU 0.65 cores (throttled 14.9%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.10 s | 5xx 0.00/s | event-loop lag p99 0.40 s | memory 171 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-q4bt4 | revision 372 | age 22m17s | ready | container restarts 0\n    CPU 0.59 cores (throttled 5.2%) | 70.2 req/s | CPU per request 0.008 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.15 s | memory 256 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 372, 3/3 replicas available. Newest first:\n- revision 372 (CURRENT): created 20:35:40 (22m21s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5476789b6f-gbg6m: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-jc7pn: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-q4bt4: 200 lines scanned, 2 warnings/errors ---\n[2026-11-01T18:58:03.269Z] [WARN] [0ce54bdfb1e032df578296cb22dd9ea5] POST /users/200584/favourite-places - Client error (4xx): 409 | Duration: 0ms | Status: 409\n[2026-11-01T18:58:03.924Z] [WARN] [68e642ee434f6f9bceec356ddbb52700] POST /users/200646/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409"
+  },
+  "then": [
+   "scale 3->2"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 pods for the ",
+  "borrowed": [
+   "get_pod_breakdown from 20:57:26",
+   "get_deployment_history from 20:57:26",
+   "get_kubernetes_logs from 20:57:26"
+  ],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 3",
+  "id": "eval_llm_20261101_2035@21:03:22"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2035",
+  "scenario": "baseline",
+  "time": "21:09:57",
+  "metrics": {
+   "throughput": 66.72,
+   "error_rate": 0.0,
+   "latency_p95": 0.08081196581196573,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.27562464309902257,
+   "rps_per_pod": 33.36,
+   "timestamp": "21:09:57",
+   "score": -0.2852,
+   "explanation": [
+    "load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -15.3
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 0.9, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 0.9 | 2026-11-01T20:53:24 | 2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 43 s\n    Diagnosis then: Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.9,
+    "2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:53:24",
+     "actions": "scale 2->3",
+     "recovery_s": "43",
+     "diagnosis": "Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "- 20:56:14 (13 min ago): no action (No action taken: All pods are operating within normal parameters for CPU and request processing, and the global p95 late) - 20:57:26 (11 min ago): restart -> verification STABLE - 21:03:22 (6 min ago): scale 3->2 -> verification STABLE",
+  "recent_v14": "- 20:56:14 (13 min ago): no action (No action taken: All pods are operating within normal parameters for CPU and request processing, and the global p95 late).\n- 20:57:26 (11 min ago): restart; verification: STABLE.\n- 21:03:22 (6 min ago): scale 3->2; verification: STABLE.",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5476789b6f-gbg6m | revision 372 | age 5m18s | ready | container restarts 0\n    CPU 0.64 cores (throttled 9.2%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.09 s | memory 161 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-jc7pn | revision 372 | age 11m23s | ready | container restarts 0\n    CPU 0.65 cores (throttled 14.9%) | 70.2 req/s | CPU per request 0.009 core-s | p95 0.10 s | 5xx 0.00/s | event-loop lag p99 0.40 s | memory 171 MiB / 1024 MiB limit\n- aiops-backend-deployment-5476789b6f-q4bt4 | revision 372 | age 22m17s | ready | container restarts 0\n    CPU 0.59 cores (throttled 5.2%) | 70.2 req/s | CPU per request 0.008 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.15 s | memory 256 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 372, 3/3 replicas available. Newest first:\n- revision 372 (CURRENT): created 20:35:40 (22m21s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5476789b6f-gbg6m: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-jc7pn: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-5476789b6f-q4bt4: 200 lines scanned, 2 warnings/errors ---\n[2026-11-01T18:58:03.269Z] [WARN] [0ce54bdfb1e032df578296cb22dd9ea5] POST /users/200584/favourite-places - Client error (4xx): 409 | Duration: 0ms | Status: 409\n[2026-11-01T18:58:03.924Z] [WARN] [68e642ee434f6f9bceec356ddbb52700] POST /users/200646/favourite-places - Client error (4xx): 409 | Duration: 1ms | Status: 409"
+  },
+  "then": [
+   "scale 2->1"
+  ],
+  "then_answer": "Root cause: Over-provisioning where 2 replicas were used for a ",
+  "borrowed": [
+   "get_pod_breakdown from 21:03:22",
+   "get_deployment_history from 21:03:22",
+   "get_kubernetes_logs from 21:03:22"
+  ],
+  "expected": "scale 1",
+  "why": "capacity: minimum 1, current 2",
+  "id": "eval_llm_20261101_2035@21:09:57"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2330",
+  "scenario": "baseline",
+  "time": "23:40:35",
+  "metrics": {
+   "throughput": 84.02,
+   "error_rate": 0.0,
+   "latency_p95": 0.2937239583333331,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.7160232626331737,
+   "rps_per_pod": 84.02,
+   "timestamp": "23:40:35",
+   "score": -0.4327,
+   "explanation": [
+    "p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 20.2
+  },
+  "memory_v13": "1 similar verified past incident(s) of 5 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.2 | 2026-11-01T20:47:41 | 1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 50 s\n    Diagnosis then: Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.2,
+    "1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:47:41",
+     "actions": "scale 1->2",
+     "recovery_s": "50",
+     "diagnosis": "Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band."
+    }
+   ]
+  ],
+  "memory_resolved": 5,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {},
+  "then": [
+   "scale 1->2"
+  ],
+  "then_answer": "Root cause: Capacity issue where the current load (84 rps) and ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 1",
+  "id": "eval_llm_20261101_2330@23:40:35"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2330",
+  "scenario": "baseline",
+  "time": "23:48:47",
+  "metrics": {
+   "throughput": 171.74,
+   "error_rate": 0.0,
+   "latency_p95": 0.30896853146853165,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.5242898269540378,
+   "rps_per_pod": 85.87,
+   "timestamp": "23:48:47",
+   "score": -0.6663,
+   "explanation": [
+    "load 171.7 rps (85.9 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)",
+    "p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 21.8
+  },
+  "memory_v13": "1 similar verified past incident(s) of 6 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.2 | 2026-11-01T20:53:24 | 2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 43 s\n    Diagnosis then: Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.2,
+    "2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:53:24",
+     "actions": "scale 2->3",
+     "recovery_s": "43",
+     "diagnosis": "Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": 6,
+  "recent_v13": "- 23:40:35 (7 min ago): scale 1->2 -> verification STABLE",
+  "recent_v14": "- 23:40:35 (7 min ago): scale 1->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->3"
+  ],
+  "then_answer": "Root cause: Capacity issue where the current load and its rising ",
+  "borrowed": [],
+  "expected": "scale 3",
+  "why": "capacity: minimum 3, current 2",
+  "id": "eval_llm_20261101_2330@23:48:47"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2330",
+  "scenario": "baseline",
+  "time": "23:58:18",
+  "metrics": {
+   "throughput": 112.98,
+   "error_rate": 0.0,
+   "latency_p95": 0.07558388157894731,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.3280397984848514,
+   "rps_per_pod": 37.660000000000004,
+   "timestamp": "23:58:18",
+   "score": -0.2603,
+   "explanation": [
+    "load 113.0 rps (37.7 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -25.9
+  },
+  "memory_v13": "1 similar verified past incident(s) of 7 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-01T21:03:36 | 3 pod(s), 111.5 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 111.5 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "3 pod(s), 111.5 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-01T21:03:36",
+     "actions": "scale 3->2",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 111.5 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ]
+  ],
+  "memory_resolved": 7,
+  "recent_v13": "- 23:48:47 (7 min ago): scale 2->3 -> verification STABLE",
+  "recent_v14": "- 23:48:47 (7 min ago): scale 2->3; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 3->2"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 pods for the ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 3",
+  "id": "eval_llm_20261101_2330@23:58:18"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261101_2330",
+  "scenario": "baseline",
+  "time": "00:04:54",
+  "metrics": {
+   "throughput": 67.86,
+   "error_rate": 0.0,
+   "latency_p95": 0.08321296296296289,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.3331251812570605,
+   "rps_per_pod": 33.93,
+   "timestamp": "00:04:54",
+   "score": -0.256,
+   "explanation": [
+    "load 67.9 rps (33.9 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -15.7
+  },
+  "memory_v13": "1 similar verified past incident(s) of 8 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-01T21:10:17 | 2 pod(s), 66.7 rps (33.4/pod), p95 0.08 s, errors 0.0%; score -0.29: load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "2 pod(s), 66.7 rps (33.4/pod), p95 0.08 s, errors 0.0%; score -0.29: load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-01T21:10:17",
+     "actions": "scale 2->1",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ]
+  ],
+  "memory_resolved": 8,
+  "recent_v13": "- 23:48:47 (13 min ago): scale 2->3 -> verification STABLE - 23:58:18 (4 min ago): scale 3->2 -> verification STABLE",
+  "recent_v14": "- 23:48:47 (13 min ago): scale 2->3; verification: STABLE.\n- 23:58:18 (4 min ago): scale 3->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->1"
+  ],
+  "then_answer": "Root cause: Over-provisioning where 2 replicas were used for a ",
+  "borrowed": [],
+  "expected": "scale 1",
+  "why": "capacity: minimum 1, current 2",
+  "id": "eval_llm_20261101_2330@00:04:54"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0331",
+  "scenario": "baseline",
+  "time": "03:42:01",
+  "metrics": {
+   "throughput": 94.7,
+   "error_rate": 0.0,
+   "latency_p95": 0.27862499999999996,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.7773948983545057,
+   "rps_per_pod": 94.7,
+   "timestamp": "03:42:01",
+   "score": -0.4383,
+   "explanation": [
+    "load 94.7 rps (94.7 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned)",
+    "p95 latency 0.28 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 19.3
+  },
+  "memory_v13": "2 similar verified past incident(s) of 9 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.2 | 2026-11-01T23:41:35 | 1 pod(s), 84.0 rps (84.0/pod), p95 0.29 s, errors 0.0%; score -0.43: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 56 s\n    Diagnosis then: Root cause: Capacity issue where the current load (84 rps) and projected rising trend (114 rps) exceed the healthy capacity of a single pod (87.3 rps limit). Action: Scaled up to 2 replicas to accommodate traffic and restore healthy load-per-pod levels.\n  - distance 0.3 | 2026-11-01T20:47:41 | 1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 50 s\n    Diagnosis then: Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.2,
+    "1 pod(s), 84.0 rps (84.0/pod), p95 0.29 s, errors 0.0%; score -0.43: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T23:41:35",
+     "actions": "scale 1->2",
+     "recovery_s": "56",
+     "diagnosis": "Root cause: Capacity issue where the current load (84 rps) and projected rising trend (114 rps) exceed the healthy capacity of a single pod (87.3 rps limit). Action: Scaled up to 2 replicas to accommodate traffic and restore healthy load-per-pod levels."
+    }
+   ],
+   [
+    0.3,
+    "1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:47:41",
+     "actions": "scale 1->2",
+     "recovery_s": "50",
+     "diagnosis": "Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band."
+    }
+   ]
+  ],
+  "memory_resolved": 9,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {},
+  "then": [
+   "scale 1->2"
+  ],
+  "then_answer": "Root cause: Capacity issue where the current load of 94.7 rps and ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 1",
+  "id": "eval_llm_20261102_0331@03:42:01"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0331",
+  "scenario": "baseline",
+  "time": "03:49:40",
+  "metrics": {
+   "throughput": 172.48000000000002,
+   "error_rate": 0.0,
+   "latency_p95": 0.26967889908256903,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.7361563086523009,
+   "rps_per_pod": 86.24000000000001,
+   "timestamp": "03:49:40",
+   "score": -0.3198,
+   "explanation": [
+    "load 172.5 rps (86.2 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)",
+    "p95 latency 0.27 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 21.7
+  },
+  "memory_v13": "2 similar verified past incident(s) of 10 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.3 | 2026-11-01T20:53:24 | 2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 43 s\n    Diagnosis then: Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\n  - distance 0.4 | 2026-11-01T23:50:56 | 2 pod(s), 171.7 rps (85.9/pod), p95 0.31 s, errors 0.0%; score -0.67: load 171.7 rps (85.9 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 0 s\n    Diagnosis then: Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.3,
+    "2 pod(s), 144.6 rps (72.3/pod), p95 0.29 s, errors 0.0%; score -0.39: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:53:24",
+     "actions": "scale 2->3",
+     "recovery_s": "43",
+     "diagnosis": "Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ],
+   [
+    0.4,
+    "2 pod(s), 171.7 rps (85.9/pod), p95 0.31 s, errors 0.0%; score -0.67: load 171.7 rps (85.9 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T23:50:56",
+     "actions": "scale 2->3",
+     "recovery_s": "0",
+     "diagnosis": "Root cause: Capacity issue where the current load and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": 10,
+  "recent_v13": "- 03:42:01 (6 min ago): scale 1->2 -> verification STABLE",
+  "recent_v14": "- 03:42:01 (6 min ago): scale 1->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->3"
+  ],
+  "then_answer": "Root cause: Capacity issue where the current load of 172.5 rps and",
+  "borrowed": [],
+  "expected": "scale 3",
+  "why": "capacity: minimum 3, current 2",
+  "id": "eval_llm_20261102_0331@03:49:40"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0331",
+  "scenario": "baseline",
+  "time": "03:59:07",
+  "metrics": {
+   "throughput": 111.74000000000001,
+   "error_rate": 0.0,
+   "latency_p95": 0.07756578947368416,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.29688920674439134,
+   "rps_per_pod": 37.24666666666667,
+   "timestamp": "03:59:07",
+   "score": -0.2782,
+   "explanation": [
+    "load 111.7 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -25.7
+  },
+  "memory_v13": "2 similar verified past incident(s) of 11 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-01T21:03:36 | 3 pod(s), 111.5 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 111.5 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\n  - distance 0.0 | 2026-11-02T00:00:13 | 3 pod(s), 113.0 rps (37.7/pod), p95 0.08 s, errors 0.0%; score -0.26: load 113.0 rps (37.7 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 0 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 113.0 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "3 pod(s), 111.5 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-01T21:03:36",
+     "actions": "scale 3->2",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 111.5 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ],
+   [
+    0.0,
+    "3 pod(s), 113.0 rps (37.7/pod), p95 0.08 s, errors 0.0%; score -0.26: load 113.0 rps (37.7 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T00:00:13",
+     "actions": "scale 3->2",
+     "recovery_s": "0",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 113.0 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ]
+  ],
+  "memory_resolved": 11,
+  "recent_v13": "- 03:49:40 (9 min ago): scale 2->3 -> verification STABLE",
+  "recent_v14": "- 03:49:40 (9 min ago): scale 2->3; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 3->2"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 pods for the ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 3",
+  "id": "eval_llm_20261102_0331@03:59:07"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0331",
+  "scenario": "baseline",
+  "time": "04:05:44",
+  "metrics": {
+   "throughput": 67.10134202684054,
+   "error_rate": 0.0,
+   "latency_p95": 0.08270985401459856,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.31821430641481835,
+   "rps_per_pod": 33.55067101342027,
+   "timestamp": "04:05:44",
+   "score": -0.2756,
+   "explanation": [
+    "load 67.1 rps (33.6 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -15.7
+  },
+  "memory_v13": "2 similar verified past incident(s) of 12 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-01T21:10:17 | 2 pod(s), 66.7 rps (33.4/pod), p95 0.08 s, errors 0.0%; score -0.29: load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\n  - distance 0.0 | 2026-11-02T00:07:40 | 2 pod(s), 67.9 rps (33.9/pod), p95 0.08 s, errors 0.0%; score -0.26: load 67.9 rps (33.9 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 0 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "2 pod(s), 66.7 rps (33.4/pod), p95 0.08 s, errors 0.0%; score -0.29: load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-01T21:10:17",
+     "actions": "scale 2->1",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ],
+   [
+    0.0,
+    "2 pod(s), 67.9 rps (33.9/pod), p95 0.08 s, errors 0.0%; score -0.26: load 67.9 rps (33.9 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T00:07:40",
+     "actions": "scale 2->1",
+     "recovery_s": "0",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ]
+  ],
+  "memory_resolved": 12,
+  "recent_v13": "- 03:59:07 (6 min ago): scale 3->2 -> verification STABLE",
+  "recent_v14": "- 03:59:07 (6 min ago): scale 3->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->1"
+  ],
+  "then_answer": "Root cause: Over-provisioning where 2 replicas were used for a ",
+  "borrowed": [],
+  "expected": "scale 1",
+  "why": "capacity: minimum 1, current 2",
+  "id": "eval_llm_20261102_0331@04:05:44"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0604",
+  "scenario": "baseline",
+  "time": "06:14:14",
+  "metrics": {
+   "throughput": 80.36160723214465,
+   "error_rate": 0.0,
+   "latency_p95": 0.2889814814814816,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.6044156477578578,
+   "rps_per_pod": 80.36160723214465,
+   "timestamp": "06:14:14",
+   "score": -0.3144,
+   "explanation": [
+    "p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 19.9
+  },
+  "memory_v13": "2 similar verified past incident(s) of 13 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.1 | 2026-11-01T23:41:35 | 1 pod(s), 84.0 rps (84.0/pod), p95 0.29 s, errors 0.0%; score -0.43: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 56 s\n    Diagnosis then: Root cause: Capacity issue where the current load (84 rps) and projected rising trend (114 rps) exceed the healthy capacity of a single pod (87.3 rps limit). Action: Scaled up to 2 replicas to accommodate traffic and restore healthy load-per-pod levels.\n  - distance 0.2 | 2026-11-02T03:43:09 | 1 pod(s), 94.7 rps (94.7/pod), p95 0.28 s, errors 0.0%; score -0.44: load 94.7 rps (94.7 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.28 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 50 s\n    Diagnosis then: Root cause: Capacity issue where the current load of 94.7 rps and the rising trend exceed the healthy capacity of a single pod (87.3 rps limit). Action: Scaled up to 2 replicas to accommodate traffic and restore healthy load-per-pod levels.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.1,
+    "1 pod(s), 84.0 rps (84.0/pod), p95 0.29 s, errors 0.0%; score -0.43: p95 latency 0.29 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T23:41:35",
+     "actions": "scale 1->2",
+     "recovery_s": "56",
+     "diagnosis": "Root cause: Capacity issue where the current load (84 rps) and projected rising trend (114 rps) exceed the healthy capacity of a single pod (87.3 rps limit). Action: Scaled up to 2 replicas to accommodate traffic and restore healthy load-per-pod levels."
+    }
+   ],
+   [
+    0.2,
+    "1 pod(s), 94.7 rps (94.7/pod), p95 0.28 s, errors 0.0%; score -0.44: load 94.7 rps (94.7 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.28 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-02T03:43:09",
+     "actions": "scale 1->2",
+     "recovery_s": "50",
+     "diagnosis": "Root cause: Capacity issue where the current load of 94.7 rps and the rising trend exceed the healthy capacity of a single pod (87.3 rps limit). Action: Scaled up to 2 replicas to accommodate traffic and restore healthy load-per-pod levels."
+    }
+   ]
+  ],
+  "memory_resolved": 13,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {},
+  "then": [
+   "scale 1->2"
+  ],
+  "then_answer": "Root cause: The current load (80.4 rps) and its rising trend ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 1",
+  "id": "eval_llm_20261102_0604@06:14:14"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0604",
+  "scenario": "baseline",
+  "time": "06:22:38",
+  "metrics": {
+   "throughput": 171.4834296685934,
+   "error_rate": 0.0,
+   "latency_p95": 0.19145308924485144,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.6748979035687727,
+   "rps_per_pod": 85.7417148342967,
+   "timestamp": "06:22:38",
+   "score": -0.2155,
+   "explanation": [
+    "load 171.5 rps (85.7 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)"
+   ],
+   "load_trend_rps_per_min": 21.7
+  },
+  "memory_v13": "1 similar verified past incident(s) of 14 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.2 | 2026-11-02T03:50:06 | 2 pod(s), 172.5 rps (86.2/pod), p95 0.27 s, errors 0.0%; score -0.32: load 172.5 rps (86.2 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned); p95 latency 0.27 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 23 s\n    Diagnosis then: Root cause: Capacity issue where the current load of 172.5 rps and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.2,
+    "2 pod(s), 172.5 rps (86.2/pod), p95 0.27 s, errors 0.0%; score -0.32: load 172.5 rps (86.2 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned); p95 latency 0.27 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-02T03:50:06",
+     "actions": "scale 2->3",
+     "recovery_s": "23",
+     "diagnosis": "Root cause: Capacity issue where the current load of 172.5 rps and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": 14,
+  "recent_v13": "- 06:14:14 (7 min ago): scale 1->2 -> verification STABLE",
+  "recent_v14": "- 06:14:14 (7 min ago): scale 1->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->3"
+  ],
+  "then_answer": "Root cause: The current load of 171.5 rps (rising trend) exceeds ",
+  "borrowed": [],
+  "expected": "scale 3",
+  "why": "capacity: minimum 3, current 2",
+  "id": "eval_llm_20261102_0604@06:22:38"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0604",
+  "scenario": "baseline",
+  "time": "06:32:03",
+  "metrics": {
+   "throughput": 113.12,
+   "error_rate": 0.0,
+   "latency_p95": 0.08238970588235296,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.35812494122054755,
+   "rps_per_pod": 37.70666666666667,
+   "timestamp": "06:32:03",
+   "score": -0.2582,
+   "explanation": [
+    "load 113.1 rps (37.7 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -25.9
+  },
+  "memory_v13": "2 similar verified past incident(s) of 15 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-02T00:00:13 | 3 pod(s), 113.0 rps (37.7/pod), p95 0.08 s, errors 0.0%; score -0.26: load 113.0 rps (37.7 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 0 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 113.0 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\n  - distance 0.0 | 2026-11-02T03:59:23 | 3 pod(s), 111.7 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.7 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 111.7 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "3 pod(s), 113.0 rps (37.7/pod), p95 0.08 s, errors 0.0%; score -0.26: load 113.0 rps (37.7 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T00:00:13",
+     "actions": "scale 3->2",
+     "recovery_s": "0",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 113.0 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ],
+   [
+    0.0,
+    "3 pod(s), 111.7 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.7 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T03:59:23",
+     "actions": "scale 3->2",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 111.7 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ]
+  ],
+  "memory_resolved": 15,
+  "recent_v13": "- 06:22:38 (9 min ago): scale 2->3 -> verification STABLE",
+  "recent_v14": "- 06:22:38 (9 min ago): scale 2->3; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 3->2"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 pods for the ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 3",
+  "id": "eval_llm_20261102_0604@06:32:03"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261102_0604",
+  "scenario": "baseline",
+  "time": "06:38:46",
+  "metrics": {
+   "throughput": 68.18,
+   "error_rate": 0.0,
+   "latency_p95": 0.0804662698412699,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.3266584799811612,
+   "rps_per_pod": 34.09,
+   "timestamp": "06:38:46",
+   "score": -0.2474,
+   "explanation": [
+    "load 68.2 rps (34.1 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -15.5
+  },
+  "memory_v13": "2 similar verified past incident(s) of 16 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-02T00:07:40 | 2 pod(s), 67.9 rps (33.9/pod), p95 0.08 s, errors 0.0%; score -0.26: load 67.9 rps (33.9 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 0 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\n  - distance 0.0 | 2026-11-02T04:05:59 | 2 pod(s), 67.1 rps (33.6/pod), p95 0.08 s, errors 0.0%; score -0.28: load 67.1 rps (33.6 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "2 pod(s), 67.9 rps (33.9/pod), p95 0.08 s, errors 0.0%; score -0.26: load 67.9 rps (33.9 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T00:07:40",
+     "actions": "scale 2->1",
+     "recovery_s": "0",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ],
+   [
+    0.0,
+    "2 pod(s), 67.1 rps (33.6/pod), p95 0.08 s, errors 0.0%; score -0.28: load 67.1 rps (33.6 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T04:05:59",
+     "actions": "scale 2->1",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ]
+  ],
+  "memory_resolved": 16,
+  "recent_v13": "- 06:32:03 (6 min ago): scale 3->2 -> verification STABLE",
+  "recent_v14": "- 06:32:03 (6 min ago): scale 3->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->1"
+  ],
+  "then_answer": "Root cause: Over-provisioning where 2 replicas were used for a ",
+  "borrowed": [],
+  "expected": "scale 1",
+  "why": "capacity: minimum 1, current 2",
+  "id": "eval_llm_20261102_0604@06:38:46"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261103_1854",
+  "scenario": "baseline",
+  "time": "19:04:28",
+  "metrics": {
+   "throughput": 92.92,
+   "error_rate": 0.0,
+   "latency_p95": 0.44268817204301086,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 0.5869534462815059,
+   "rps_per_pod": 92.92,
+   "timestamp": "19:04:28",
+   "score": -1.7177,
+   "explanation": [
+    "load 92.9 rps (92.9 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned)",
+    "p95 latency 0.44 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 20.5
+  },
+  "memory_v13": "NO similar past incident: the closest (distance 1.1, >0.4 = a different situation) describes a DIFFERENT problem. Do NOT reuse its action; decide from the current metrics. For reference only:\n  - distance 1.1 | 2026-11-01T20:47:41 | 1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 1->2 -> verified STABLE in 50 s\n    Diagnosis then: Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    1.1,
+    "1 pod(s), 95.8 rps (95.8/pod), p95 0.31 s, errors 0.0%; score -0.69: load 95.8 rps (95.8 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned); p95 latency 0.31 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-01T20:47:41",
+     "actions": "scale 1->2",
+     "recovery_s": "50",
+     "diagnosis": "Root cause: Capacity issue where current load (95.8 rps) and projected load exceed the capacity of a single pod (87.3 rps healthy limit). Action: Scaled up to 2 replicas to accommodate the traffic and return to the healthy load band."
+    }
+   ]
+  ],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {},
+  "then": [
+   "scale 1->2"
+  ],
+  "then_answer": "Root cause: Capacity issue where the current load of 92.9 rps ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 1",
+  "id": "eval_llm_20261103_1854@19:04:28"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261103_1854",
+  "scenario": "baseline",
+  "time": "19:12:10",
+  "metrics": {
+   "throughput": 169.68981861088335,
+   "error_rate": 0.0,
+   "latency_p95": 0.2196820175438594,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.7079404614648239,
+   "rps_per_pod": 84.84490930544167,
+   "timestamp": "19:12:10",
+   "score": -0.1932,
+   "explanation": [
+    "load 169.7 rps (84.8 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)"
+   ],
+   "load_trend_rps_per_min": 21.6
+  },
+  "memory_v13": "2 similar verified past incident(s) of 18 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-02T06:22:51 | 2 pod(s), 171.5 rps (85.7/pod), p95 0.19 s, errors 0.0%; score -0.22: load 171.5 rps (85.7 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)\n    Action taken: scale 2->3 -> verified STABLE in 3 s\n    Diagnosis then: Root cause: The current load of 171.5 rps (rising trend) exceeds the healthy serving capacity of 2 replicas, as confirmed by the health model requiring 3 replicas. Action: Scaled the deployment from 2 to 3 replicas to restore system health and meet the latency objective.\n  - distance 0.2 | 2026-11-02T03:50:06 | 2 pod(s), 172.5 rps (86.2/pod), p95 0.27 s, errors 0.0%; score -0.32: load 172.5 rps (86.2 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned); p95 latency 0.27 s is above the safe level 0.25 s (objective 0.35 s)\n    Action taken: scale 2->3 -> verified STABLE in 23 s\n    Diagnosis then: Root cause: Capacity issue where the current load of 172.5 rps and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "2 pod(s), 171.5 rps (85.7/pod), p95 0.19 s, errors 0.0%; score -0.22: load 171.5 rps (85.7 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned)",
+    {
+     "time": "2026-11-02T06:22:51",
+     "actions": "scale 2->3",
+     "recovery_s": "3",
+     "diagnosis": "Root cause: The current load of 171.5 rps (rising trend) exceeds the healthy serving capacity of 2 replicas, as confirmed by the health model requiring 3 replicas. Action: Scaled the deployment from 2 to 3 replicas to restore system health and meet the latency objective."
+    }
+   ],
+   [
+    0.2,
+    "2 pod(s), 172.5 rps (86.2/pod), p95 0.27 s, errors 0.0%; score -0.32: load 172.5 rps (86.2 per pod) is above the healthy maximum 162.1 rps for 2 pod(s) (under-provisioned); p95 latency 0.27 s is above the safe level 0.25 s (objective 0.35 s)",
+    {
+     "time": "2026-11-02T03:50:06",
+     "actions": "scale 2->3",
+     "recovery_s": "23",
+     "diagnosis": "Root cause: Capacity issue where the current load of 172.5 rps and its rising trend exceed the serving capacity of 2 replicas (the health model requires 3 replicas). Action: Scaled the deployment from 2 to 3 replicas."
+    }
+   ]
+  ],
+  "memory_resolved": 18,
+  "recent_v13": "- 19:04:28 (6 min ago): scale 1->2 -> verification STABLE",
+  "recent_v14": "- 19:04:28 (6 min ago): scale 1->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->3"
+  ],
+  "then_answer": "Root cause: The current load of 169.7 rps (with a rising trend to ",
+  "borrowed": [],
+  "expected": "scale 3",
+  "why": "capacity: minimum 3, current 2",
+  "id": "eval_llm_20261103_1854@19:12:10"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261103_1854",
+  "scenario": "baseline",
+  "time": "19:21:48",
+  "metrics": {
+   "throughput": 111.06222124442492,
+   "error_rate": 0.0,
+   "latency_p95": 0.07475406804733727,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.27141403052738566,
+   "rps_per_pod": 37.02074041480831,
+   "timestamp": "19:21:48",
+   "score": -0.2878,
+   "explanation": [
+    "load 111.1 rps (37.0 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -25.5
+  },
+  "memory_v13": "2 similar verified past incident(s) of 19 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-01T21:03:36 | 3 pod(s), 111.5 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 111.5 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\n  - distance 0.0 | 2026-11-02T03:59:23 | 3 pod(s), 111.7 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.7 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)\n    Action taken: scale 3->2 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: The system was over-provisioned with 3 pods for the current load of 111.7 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "3 pod(s), 111.5 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.5 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-01T21:03:36",
+     "actions": "scale 3->2",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 111.5 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ],
+   [
+    0.0,
+    "3 pod(s), 111.7 rps (37.2/pod), p95 0.08 s, errors 0.0%; score -0.28: load 111.7 rps (37.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T03:59:23",
+     "actions": "scale 3->2",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: The system was over-provisioned with 3 pods for the current load of 111.7 rps, which the health monitor determined only requires 2 pods. Action: Scaled down from 3 to 2 pods to align with cost objectives and health model recommendations."
+    }
+   ]
+  ],
+  "memory_resolved": 19,
+  "recent_v13": "- 19:12:10 (9 min ago): scale 2->3 -> verification STABLE",
+  "recent_v14": "- 19:12:10 (9 min ago): scale 2->3; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 3->2"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 pods for the ",
+  "borrowed": [],
+  "expected": "scale 2",
+  "why": "capacity: minimum 2, current 3",
+  "id": "eval_llm_20261103_1854@19:21:48"
+ },
+ {
+  "run": "4-load-testing/eval_llm_20261103_1854",
+  "scenario": "baseline",
+  "time": "19:28:30",
+  "metrics": {
+   "throughput": 66.74000000000001,
+   "error_rate": 0.0,
+   "latency_p95": 0.07833677685950415,
+   "replicas": 2.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 0.3216282647263352,
+   "rps_per_pod": 33.370000000000005,
+   "timestamp": "19:28:30",
+   "score": -0.2847,
+   "explanation": [
+    "load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -15.7
+  },
+  "memory_v13": "2 similar verified past incident(s) of 20 stored; most similar first (distance ~0-1 = nearly the same state):\n  - distance 0.0 | 2026-11-01T21:10:17 | 2 pod(s), 66.7 rps (33.4/pod), p95 0.08 s, errors 0.0%; score -0.29: load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\n  - distance 0.0 | 2026-11-02T04:05:59 | 2 pod(s), 67.1 rps (33.6/pod), p95 0.08 s, errors 0.0%; score -0.28: load 67.1 rps (33.6 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)\n    Action taken: scale 2->1 -> verified STABLE in 10 s\n    Diagnosis then: Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs.\nThese are hints only: always check them against the current metrics.",
+  "memory_matches": [
+   [
+    0.0,
+    "2 pod(s), 66.7 rps (33.4/pod), p95 0.08 s, errors 0.0%; score -0.29: load 66.7 rps (33.4 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-01T21:10:17",
+     "actions": "scale 2->1",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ],
+   [
+    0.0,
+    "2 pod(s), 67.1 rps (33.6/pod), p95 0.08 s, errors 0.0%; score -0.28: load 67.1 rps (33.6 per pod) is below the healthy minimum 73.5 rps for 2 pod(s) (over-provisioned)",
+    {
+     "time": "2026-11-02T04:05:59",
+     "actions": "scale 2->1",
+     "recovery_s": "10",
+     "diagnosis": "Root cause: Over-provisioning where 2 replicas were used for a load that only requires 1 replica. Action: Scaled down from 2 to 1 replicas to match capacity needs."
+    }
+   ]
+  ],
+  "memory_resolved": 20,
+  "recent_v13": "- 19:21:48 (6 min ago): scale 3->2 -> verification STABLE",
+  "recent_v14": "- 19:21:48 (6 min ago): scale 3->2; verification: STABLE.",
+  "outputs": {},
+  "then": [
+   "scale 2->1"
+  ],
+  "then_answer": "Root cause: Over-provisioning where 2 replicas were used for a ",
+  "borrowed": [],
+  "expected": "scale 1",
+  "why": "capacity: minimum 1, current 2",
+  "id": "eval_llm_20261103_1854@19:28:30"
+ },
+ {
+  "run": "4-load-testing/eval_stuck_llm_20261101_1710",
+  "scenario": "stuck",
+  "time": "17:17:16",
+  "metrics": {
+   "throughput": 57.24,
+   "error_rate": 0.516072676450035,
+   "latency_p95": 4.587608069164265,
+   "replicas": 1.0,
+   "ready_replicas": 0.0,
+   "avg_cpu_per_pod": null,
+   "rps_per_pod": 57.24,
+   "timestamp": "17:17:16",
+   "score": -57.8769,
+   "explanation": [
+    "p95 latency 4.59 s is above the safe level 0.25 s (objective 0.35 s)",
+    "51.6% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -0.3
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5676d48c46-lhrt2 | revision 361 | age 6m46s | not ready (Running) | container restarts 0\n    CPU 0.30 cores (throttled 0.6%) | 33.3 req/s | CPU per request 0.009 core-s | p95 4.30 s | 5xx 6.34/s | event-loop lag p99 0.02 s | memory 168 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 361, 0/1 replicas available. Newest first:\n- revision 361 (CURRENT): created 17:10:31 (6m47s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5676d48c46-lhrt2: 200 lines scanned, 188 warnings/errors ---\n[2026-11-01T15:17:02.381Z] [ERROR] [8bcb756bd86af34b21c6589da754628b] GET /places/search - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T15:16:46.457Z)\n[2026-11-01T15:17:02.381Z] [ERROR] [8bcb756bd86af34b21c6589da754628b] GET /places/search - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-01T15:17:02.398Z] [ERROR] [7ee80a6fff9a900934c79fc609981a05] GET /places/search - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T15:16:46.457Z)\n[2026-11-01T15:17:02.398Z] [ERROR] [7ee80a6fff9a900934c79fc609981a05] GET /places/search - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-01T15:17:02.470Z] [ERROR] [c99123143d602b31969f51cf900516db] POST /auth/login - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T15:16:46.457Z)\n[2026-11-01T15:17:02.470Z] [ERROR] [c99123143d602b31969f51cf900516db] POST /auth/login - Server error (5xx): 503 | Duration: 3000ms | Status: 503\n[2026-11-01T15:17:03.892Z] [ERROR] [bbfbd7e8-3ac5-48f0-943d-ba23b54e34e9] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T15:17:08.874Z] [ERROR] [a7515349-9a02-4096-ab3d-2892472bff25] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T15:17:13.872Z] [ERROR] [ea58a3b5-fb08-44e9-a8cf-54de268931aa] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T15:17:18.872Z] [ERROR] [d0d29bb6-c5ba-42c2-8359-3d4a4ca8517e] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod was stuck in a degraded state due to a",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "stuck, after the fault",
+  "id": "eval_stuck_llm_20261101_1710@17:17:16"
+ },
+ {
+  "run": "4-load-testing/eval_stuck_llm_20261101_1907",
+  "scenario": "stuck",
+  "time": "19:14:49",
+  "metrics": {
+   "throughput": 57.18,
+   "error_rate": 0.6603707590066457,
+   "latency_p95": 4.608891928864569,
+   "replicas": 1.0,
+   "ready_replicas": 0.0,
+   "avg_cpu_per_pod": null,
+   "rps_per_pod": 57.18,
+   "timestamp": "19:14:49",
+   "score": -73.7712,
+   "explanation": [
+    "p95 latency 4.61 s is above the safe level 0.25 s (objective 0.35 s)",
+    "66.0% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": 0.3
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5b56c8886c-xcdwh | revision 366 | age 7m57s | not ready (Running) | container restarts 0\n    CPU 0.01 cores (throttled 0.0%) | 0.2 req/s | CPU per request n/a (too few requests) | p95 0.02 s | 5xx 0.22/s | event-loop lag p99 0.01 s | memory 127 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 366, 0/1 replicas available. Newest first:\n- revision 366 (CURRENT): created 19:07:54 (7m59s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5b56c8886c-xcdwh: 200 lines scanned, 110 warnings/errors ---\n[2026-11-01T17:16:02.120Z] [ERROR] [8183978f-20c7-4385-bed8-ba2cbf4e1cbd] GET /ready - Server error (5xx): 503 | Duration: 0ms | Status: 503\n[2026-11-01T17:16:07.120Z] [ERROR] [03c40c28-bcc7-4158-a343-1ed97a799e48] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:12.119Z] [ERROR] [8aee60fa-2248-444a-9749-f44e79185dd1] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:17.119Z] [ERROR] [d154665d-3815-4aab-9719-4ba438c146cf] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:22.124Z] [ERROR] [6581024f-4133-47bb-99b0-e495bab49dff] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:27.119Z] [ERROR] [566d55db-6916-475d-ab66-091dfcb768f7] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:32.120Z] [ERROR] [3a50832d-09e6-4c96-9d6b-2edec92a9827] GET /ready - Server error (5xx): 503 | Duration: 0ms | Status: 503\n[2026-11-01T17:16:37.119Z] [ERROR] [8a72c497-0cf7-417d-9f53-57be84e7068b] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:42.119Z] [ERROR] [7dce17e3-06e4-487d-b5a3-f8a55ff4cb0d] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T17:16:47.119Z] [ERROR] [a41588aa-723f-4cc6-9393-4a4088b58a9d] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod was stuck in a bad state, consistently",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "stuck, after the fault",
+  "id": "eval_stuck_llm_20261101_1907@19:14:49"
+ },
+ {
+  "run": "4-load-testing/eval_stuck_llm_20261101_2203",
+  "scenario": "stuck",
+  "time": "22:10:21",
+  "metrics": {
+   "throughput": 57.03771849126035,
+   "error_rate": 0.6237727910238429,
+   "latency_p95": 4.593152639087018,
+   "replicas": 1.0,
+   "ready_replicas": 0.0,
+   "avg_cpu_per_pod": null,
+   "rps_per_pod": 57.03771849126035,
+   "timestamp": "22:10:21",
+   "score": -69.7331,
+   "explanation": [
+    "p95 latency 4.59 s is above the safe level 0.25 s (objective 0.35 s)",
+    "62.4% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -0.5
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-d6f68d598-gpxrm | revision 375 | age 6m58s | not ready (Running) | container restarts 0\n    CPU 0.06 cores (throttled 1.1%) | 14.3 req/s | CPU per request 0.004 core-s | p95 4.49 s | 5xx 3.41/s | event-loop lag p99 0.01 s | memory 103 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 375, 0/1 replicas available. Newest first:\n- revision 375 (CURRENT): created 22:03:26 (7m00s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-d6f68d598-gpxrm: 200 lines scanned, 180 warnings/errors ---\n[2026-11-01T20:09:57.195Z] [ERROR] [e83aac921c66498cec48cc0ef83845ad] GET /places/search - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T20:09:40.988Z)\n[2026-11-01T20:09:57.195Z] [ERROR] [e83aac921c66498cec48cc0ef83845ad] GET /places/search - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-01T20:09:57.319Z] [ERROR] [b306ffb45a9c6041ae5c8d9d1492810c] POST /users/200585/favourite-places - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T20:09:40.988Z)\n[2026-11-01T20:09:57.319Z] [ERROR] [b306ffb45a9c6041ae5c8d9d1492810c] POST /users/200585/favourite-places - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-01T20:09:58.360Z] [ERROR] [d627f624-6178-4714-819f-56fef9ac9eea] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T20:10:03.360Z] [ERROR] [877f8ee0-236c-45e8-a67f-95f5e6f5f5b1] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T20:10:08.358Z] [ERROR] [d4a80d67-d25a-4902-ab2a-d34f6982881d] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T20:10:13.358Z] [ERROR] [d4ca6667-c587-4495-8d1d-13fe7c2daa6a] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T20:10:18.358Z] [ERROR] [782838bd-7a04-4523-8f74-beec5a98d540] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T20:10:23.358Z] [ERROR] [491e0a56-2036-488e-bc77-eb3b8c0c246c] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod was stuck with a 'DB connection pool ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "stuck, after the fault",
+  "id": "eval_stuck_llm_20261101_2203@22:10:21"
+ },
+ {
+  "run": "4-load-testing/eval_stuck_llm_20261102_0120",
+  "scenario": "stuck",
+  "time": "01:26:56",
+  "metrics": {
+   "throughput": 57.080000000000005,
+   "error_rate": 0.5119131044148563,
+   "latency_p95": 4.604709141274238,
+   "replicas": 1.0,
+   "ready_replicas": 0.0,
+   "avg_cpu_per_pod": null,
+   "rps_per_pod": 57.080000000000005,
+   "timestamp": "01:26:56",
+   "score": -57.4215,
+   "explanation": [
+    "p95 latency 4.60 s is above the safe level 0.25 s (objective 0.35 s)",
+    "51.2% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -0.8
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-5876fdc6d-gkbgp | revision 384 | age 6m56s | not ready (Running) | container restarts 0\n    CPU 0.17 cores (throttled 2.0%) | 24.4 req/s | CPU per request 0.007 core-s | p95 4.58 s | 5xx 6.88/s | event-loop lag p99 0.01 s | memory 103 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 384, 0/1 replicas available. Newest first:\n- revision 384 (CURRENT): created 01:20:12 (6m59s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-5876fdc6d-gkbgp: 200 lines scanned, 178 warnings/errors ---\n[2026-11-01T23:26:43.047Z] [ERROR] [34796acf990261dbf2d9d08bc0246e6e] GET /places/103175 - Server error (5xx): 503 | Duration: 3002ms | Status: 503\n[2026-11-01T23:26:43.046Z] [ERROR] [34796acf990261dbf2d9d08bc0246e6e] GET /places/103175 - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T23:26:26.780Z)\n[2026-11-01T23:26:43.065Z] [ERROR] [4d3b6b45c2c478f78e4787d6ae80dc66] POST /users/200341/favourite-places - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-01T23:26:26.780Z)\n[2026-11-01T23:26:43.066Z] [ERROR] [4d3b6b45c2c478f78e4787d6ae80dc66] POST /users/200341/favourite-places - Server error (5xx): 503 | Duration: 3003ms | Status: 503\n[2026-11-01T23:26:44.302Z] [ERROR] [75cf582c-8b49-4ebe-8e4e-6eb7f5e75c28] GET /ready - Server error (5xx): 503 | Duration: 0ms | Status: 503\n[2026-11-01T23:26:49.303Z] [ERROR] [426299a8-64e7-4280-9973-38809d93b87b] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T23:26:54.300Z] [ERROR] [6745ca2f-fe30-4fac-ad33-1264e81e7db9] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T23:26:59.303Z] [ERROR] [9074e30e-9b8f-4104-8b0f-f7f6b5a279cc] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T23:27:04.301Z] [ERROR] [b1676e1a-f12d-49b5-ad51-e4b2eecfa245] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-01T23:27:09.302Z] [ERROR] [aa210827-26bf-4dbe-9791-079f78e51b43] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod was stuck due to database connection ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "stuck, after the fault",
+  "id": "eval_stuck_llm_20261102_0120@01:26:56"
+ },
+ {
+  "run": "4-load-testing/eval_stuck_llm_20261102_0437",
+  "scenario": "stuck",
+  "time": "04:43:53",
+  "metrics": {
+   "throughput": 56.900000000000006,
+   "error_rate": 0.5683655536028119,
+   "latency_p95": 4.601540616246498,
+   "replicas": 1.0,
+   "ready_replicas": 0.0,
+   "avg_cpu_per_pod": null,
+   "rps_per_pod": 56.900000000000006,
+   "timestamp": "04:43:53",
+   "score": -63.6294,
+   "explanation": [
+    "p95 latency 4.60 s is above the safe level 0.25 s (objective 0.35 s)",
+    "56.8% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -0.7
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-654bb66b89-bcr9d | revision 393 | age 6m45s | not ready (Running) | container restarts 0\n    CPU 0.27 cores (throttled 4.1%) | 37.8 req/s | CPU per request 0.007 core-s | p95 4.42 s | 5xx 7.76/s | event-loop lag p99 0.01 s | memory 120 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 393, 0/1 replicas available. Newest first:\n- revision 393 (CURRENT): created 04:37:09 (6m46s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-654bb66b89-bcr9d: 200 lines scanned, 191 warnings/errors ---\n[2026-11-02T02:43:39.977Z] [ERROR] [e6fa4ba55ebe038788264102c149e9ae] GET /places/104996 - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-02T02:43:40.029Z] [ERROR] [27c7bc311a6327c121424f5299d3707a] GET /places/103017 - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-02T02:43:23.851Z)\n[2026-11-02T02:43:40.029Z] [ERROR] [27c7bc311a6327c121424f5299d3707a] GET /places/103017 - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-02T02:43:40.065Z] [ERROR] [48992a12bdbb927499bac944a26842be] GET /places/104087/reviews - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-02T02:43:23.851Z)\n[2026-11-02T02:43:40.065Z] [ERROR] [48992a12bdbb927499bac944a26842be] GET /places/104087/reviews - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-02T02:43:40.100Z] [ERROR] [7cdb36f6d934b9b051ae84b50ee953f4] GET /places/search - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-02T02:43:23.851Z)\n[2026-11-02T02:43:40.100Z] [ERROR] [7cdb36f6d934b9b051ae84b50ee953f4] GET /places/search - Server error (5xx): 503 | Duration: 3001ms | Status: 503\n[2026-11-02T02:43:41.414Z] [ERROR] [712223cc-9253-413f-b383-af1c3733fb64] GET /ready - Server error (5xx): 503 | Duration: 0ms | Status: 503\n[2026-11-02T02:43:46.414Z] [ERROR] [f9023e92-da40-403b-b03f-465b9b27a108] GET /ready - Server error (5xx): 503 | Duration: 0ms | Status: 503\n[2026-11-02T02:43:51.414Z] [ERROR] [6045cff6-cee2-4d2e-83e0-f54bd77fd5b4] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The database connection pool became exhausted, causing",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "stuck, after the fault",
+  "id": "eval_stuck_llm_20261102_0437@04:43:53"
+ },
+ {
+  "run": "4-load-testing/eval_stuck_llm_20261103_1938",
+  "scenario": "stuck",
+  "time": "19:45:18",
+  "metrics": {
+   "throughput": 56.841136822736466,
+   "error_rate": 0.6358198451794511,
+   "latency_p95": 4.606915629322268,
+   "replicas": 1.0,
+   "ready_replicas": 0.0,
+   "avg_cpu_per_pod": null,
+   "rps_per_pod": 56.841136822736466,
+   "timestamp": "19:45:18",
+   "score": -71.0626,
+   "explanation": [
+    "p95 latency 4.61 s is above the safe level 0.25 s (objective 0.35 s)",
+    "63.6% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": -0.3
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "None in the last 15 minutes.",
+  "recent_v14": "None in the last 15 minutes.",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-9dd488c9f-f285k | revision 400 | age 6m58s | not ready (Running) | container restarts 0\n    CPU 0.16 cores (throttled 1.5%) | 22.2 req/s | CPU per request 0.007 core-s | p95 4.61 s | 5xx 6.75/s | event-loop lag p99 0.02 s | memory 111 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 400, 0/1 replicas available. Newest first:\n- revision 400 (CURRENT): created 19:38:25 (7m02s ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-9dd488c9f-f285k: 200 lines scanned, 176 warnings/errors ---\n[2026-11-03T17:44:55.714Z] [ERROR] [6e80f121fa355df5f0235d9f1e1c547c] GET /places/104944/reviews - DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-03T17:44:39.509Z)\n[2026-11-03T17:44:55.715Z] [ERROR] [6e80f121fa355df5f0235d9f1e1c547c] GET /places/104944/reviews - Server error (5xx): 503 | Duration: 3002ms | Status: 503\n[2026-11-03T17:44:57.164Z] [ERROR] [7d51d322-bd3b-47d5-af9e-057e7e541c0e] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-03T17:45:02.166Z] [ERROR] [b12d9faa-5b60-4915-80ac-77da40822b5b] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-03T17:45:07.165Z] [ERROR] [75d3722d-1952-490e-9f4a-5e72f767cd77] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-03T17:45:12.165Z] [ERROR] [2f676b87-04c5-483f-ad2f-66699805a614] GET /ready - Server error (5xx): 503 | Duration: 0ms | Status: 503\n[2026-11-03T17:45:17.164Z] [ERROR] [5acf0412-39c6-45f1-bd95-1a3c0d0beaa0] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-03T17:45:22.164Z] [ERROR] [63b6b4e4-295a-4376-b3ca-3ff265628523] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-03T17:45:27.165Z] [ERROR] [60c6912f-9682-4a6d-b5d3-34209fc4bd0a] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503\n[2026-11-03T17:45:32.166Z] [ERROR] [973ab3c9-070a-41f3-9ffc-d80a1afbedb6] GET /ready - Server error (5xx): 503 | Duration: 1ms | Status: 503"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: The backend pod is in a non-ready state with a high ",
+  "borrowed": [],
+  "expected": "restart",
+  "why": "stuck, after the fault",
+  "id": "eval_stuck_llm_20261103_1938@19:45:18"
+ },
+ {
+  "run": "4-load-testing/archive/unstable_test_2026-11-01",
+  "scenario": "unstable_test",
+  "time": "16:51:20",
+  "metrics": {
+   "throughput": 273.9854797095942,
+   "error_rate": 0.5501131469450325,
+   "latency_p95": 10.0,
+   "replicas": 1.0,
+   "ready_replicas": 1.0,
+   "avg_cpu_per_pod": 1.2004108905838629,
+   "rps_per_pod": 273.9854797095942,
+   "timestamp": "16:51:20",
+   "score": -62.0067,
+   "explanation": [
+    "load 274.0 rps (274.0 per pod) is above the healthy maximum 87.3 rps for 1 pod(s) (under-provisioned)",
+    "p95 latency 10.00 s is above the safe level 0.25 s (objective 0.35 s)",
+    "55.0% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": null
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 16:50:32 (0 min ago): restart -> verification UNSTABLE: worse (score -35.63 -> -48.74 in 10 s)",
+  "recent_v14": "- 16:50:32 (0 min ago): restart; verification: UNSTABLE: worse (score -35.63 -> -48.74 in 10 s).",
+  "outputs": {
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-6bdcbdbccc-hsgtl | revision 358 | age 3m00s | ready | container restarts 0\n    CPU 0.69 cores (throttled 32.2%) | 68.7 req/s | CPU per request 0.010 core-s | p95 0.59 s | 5xx 0.00/s | event-loop lag p99 0.01 s | memory 214 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 358, 1/1 replicas available. Newest first:\n- revision 358 (CURRENT): created 16:47:33 (3m01s ago): rolling restart only (no change to image, env or resources)\n- revision 357: created 15:54:43 (55m51s ago): rolling restart only (no change to image, env or resources)\n- revision 356: created 15:53:33 (57m01s ago): rolling restart only (no change to image, env or resources)\n- revision 355: created 15:45:38 (1h04m ago): rolling restart only (no change to image, env or resources)\n- revision 354: created 15:24:33 (1h26m ago): rolling restart only (no change to image, env or resources)\n- revision 353: created 20:06:54 (92h43m ago): rolling restart only (no change to image, env or resources)\n- revision 352: created 19:56:54 (92h53m ago): oldest revision kept",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-6bdcbdbccc-hsgtl: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "scale 1->3"
+  ],
+  "then_answer": "Root cause: Under-provisioning (1 pod serving 274 rps, capacity is",
+  "borrowed": [
+   "get_pod_breakdown from 16:50:32",
+   "get_deployment_history from 16:50:32",
+   "get_kubernetes_logs from 16:50:32"
+  ],
+  "expected": "scale 3",
+  "why": "UNSTABLE test, by hand",
+  "id": "unstable_test_2026-11-01@16:51:20"
+ },
+ {
+  "run": "4-load-testing/archive/unstable_test_2026-11-01",
+  "scenario": "unstable_test",
+  "time": "16:52:35",
+  "metrics": {
+   "throughput": 279.0284241855263,
+   "error_rate": 0.13852101080964993,
+   "latency_p95": 10.0,
+   "replicas": 3.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 1.0953266833373076,
+   "rps_per_pod": 93.00947472850878,
+   "timestamp": "16:52:35",
+   "score": -18.8085,
+   "explanation": [
+    "load 279.0 rps (93.0 per pod) is above the healthy maximum 251.3 rps for 3 pod(s) (under-provisioned)",
+    "p95 latency 10.00 s is above the safe level 0.25 s (objective 0.35 s)",
+    "13.9% of requests fail (5xx); safe level 0.1% (objective 1%)"
+   ],
+   "load_trend_rps_per_min": null
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 16:50:32 (1 min ago): restart -> verification UNSTABLE: worse (score -35.63 -> -48.74 in 10 s) - 16:51:20 (0 min ago): scale 1->3 -> verification UNSTABLE: worse (score -13.45 -> -18.73 in 10 s)",
+  "recent_v14": "- 16:50:32 (1 min ago): restart; verification: UNSTABLE: worse (score -35.63 -> -48.74 in 10 s).\n- 16:51:20 (0 min ago): scale 1->3; verification: UNSTABLE: worse (score -13.45 -> -18.73 in 10 s).",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-6c6c8bd9fb-8nt78 | revision 359 | age 2m00s | ready | container restarts 1\n    CPU 0.41 cores (throttled 29.3%) | n/a req/s | CPU per request n/a (too few requests) | p95 n/a s | 5xx 0.00/s | event-loop lag p99 0.01 s | memory 212 MiB / 1024 MiB limit\n- aiops-backend-deployment-6c6c8bd9fb-gxtpr | revision 359 | age 1m15s | not ready (Running) | container restarts 0\n    CPU 0.98 cores (throttled 45.4%) | 110.7 req/s | CPU per request 0.009 core-s | p95 2.79 s | 5xx 0.00/s | event-loop lag p99 4.86 s | memory 288 MiB / 1024 MiB limit\n- aiops-backend-deployment-6c6c8bd9fb-jnpll | revision 359 | age 1m15s | ready | container restarts 0\n    CPU 0.82 cores (throttled 51.7%) | 89.8 req/s | CPU per request 0.009 core-s | p95 3.83 s | 5xx 0.00/s | event-loop lag p99 0.23 s | memory 294 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 359, 2/3 replicas available. Newest first:\n- revision 359 (CURRENT): created 16:50:36 (2m01s ago): rolling restart only (no change to image, env or resources)\n- revision 358: created 16:47:33 (5m04s ago): rolling restart only (no change to image, env or resources)\n- revision 357: created 15:54:43 (57m54s ago): rolling restart only (no change to image, env or resources)\n- revision 356: created 15:53:33 (59m04s ago): rolling restart only (no change to image, env or resources)\n- revision 355: created 15:45:38 (1h06m ago): rolling restart only (no change to image, env or resources)\n- revision 354: created 15:24:33 (1h28m ago): rolling restart only (no change to image, env or resources)\n- revision 353: created 20:06:54 (92h45m ago): rolling restart only (no change to image, env or resources)",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-6c6c8bd9fb-8nt78: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-6c6c8bd9fb-gxtpr: 200 lines scanned, 45 warnings/errors ---\n[2026-11-01T14:52:35.991Z] [WARN] [2f07694841485a509d6d6e15f250142d] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 625ms | Status: 200\n[2026-11-01T14:52:35.992Z] [WARN] [2db8ba2c44848c45cd9cf978abc8e9ad] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 547ms | Status: 200\n[2026-11-01T14:52:36.090Z] [WARN] [c74ca30845baf1c3f5daaa842af87cec] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 4418ms | Status: 200\n[2026-11-01T14:52:36.110Z] [WARN] [4e7df1a61d08c750abd65ac96fe1c65e] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 4327ms | Status: 200\n[2026-11-01T14:52:36.112Z] [WARN] [bb7e98f6b11c80ab65e8c319697bb79c] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 3483ms | Status: 200\n[2026-11-01T14:52:36.113Z] [WARN] [f3053789effe5910bf3843081a77d9c8] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 3337ms | Status: 200\n[2026-11-01T14:52:36.114Z] [WARN] [4775e7bb04b3d9fcb9d8e4f40c36c524] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 2760ms | Status: 200\n[2026-11-01T14:52:36.115Z] [WARN] [ca5aee4dfc61e3158e20e7a261585d72] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 2115ms | Status: 200\n[2026-11-01T14:52:36.116Z] [WARN] [f60cd4cc1149a15950d80dc213e7b127] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 2012ms | Status: 200\n[2026-11-01T14:52:36.117Z] [WARN] [f0cfdb3a9be56d9e6bf012adc8d70421] POST /auth/login - High latency detected: Request queued or CPU throttled | Duration: 1367ms | Status: 200\n--- Pod aiops-backend-deployment-6c6c8bd9fb-jnpll: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "restart"
+  ],
+  "then_answer": "Root cause: Persistent high CPU utilization and event-loop lag ",
+  "borrowed": [],
+  "expected": "none",
+  "why": "UNSTABLE test, by hand",
+  "id": "unstable_test_2026-11-01@16:52:35"
+ },
+ {
+  "run": "4-load-testing/archive/unstable_test_2026-11-01",
+  "scenario": "unstable_test",
+  "time": "16:55:12",
+  "metrics": {
+   "throughput": 281.19437611247776,
+   "error_rate": 0.0,
+   "latency_p95": 10.0,
+   "replicas": 3.0,
+   "ready_replicas": 2.0,
+   "avg_cpu_per_pod": 1.3707426405177163,
+   "rps_per_pod": 93.73145870415925,
+   "timestamp": "16:55:12",
+   "score": -10.9675,
+   "explanation": [
+    "load 281.2 rps (93.7 per pod) is above the healthy maximum 251.3 rps for 3 pod(s) (under-provisioned)",
+    "p95 latency 10.00 s is above the safe level 0.25 s (objective 0.35 s)"
+   ],
+   "load_trend_rps_per_min": 2.4
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 16:50:32 (4 min ago): restart -> verification UNSTABLE: worse (score -35.63 -> -48.74 in 10 s) - 16:51:20 (2 min ago): scale 1->3 -> verification UNSTABLE: worse (score -13.45 -> -18.73 in 10 s) - 16:52:35 (1 min ago): restart -> verification UNSTABLE: not improving (score -10.97 -> -10.97 over the last 30 s)",
+  "recent_v14": "- 16:50:32 (4 min ago): restart; verification: UNSTABLE: worse (score -35.63 -> -48.74 in 10 s).\n- 16:51:20 (2 min ago): scale 1->3; verification: UNSTABLE: worse (score -13.45 -> -18.73 in 10 s).\n- 16:52:35 (1 min ago): restart; verification: UNSTABLE: not improving (score -10.97 -> -10.97 over the last 30 s).",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-58799744dd-j5jq4 | revision 360 | age 3m31s | ready | container restarts 0\n    CPU 0.82 cores (throttled 38.8%) | 82.3 req/s | CPU per request 0.010 core-s | p95 0.33 s | 5xx 0.00/s | event-loop lag p99 0.23 s | memory 289 MiB / 1024 MiB limit\n- aiops-backend-deployment-58799744dd-lxbnl | revision 360 | age 3m38s | ready | container restarts 0\n    CPU 0.91 cores (throttled 39.1%) | 83.3 req/s | CPU per request 0.011 core-s | p95 0.49 s | 5xx 0.00/s | event-loop lag p99 0.15 s | memory 274 MiB / 1024 MiB limit\n- aiops-backend-deployment-58799744dd-vzg6t | revision 360 | age 3m00s | ready | container restarts 0\n    CPU 0.94 cores (throttled 42.5%) | 63.9 req/s | CPU per request 0.015 core-s | p95 0.94 s | 5xx 0.00/s | event-loop lag p99 0.64 s | memory 292 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 360, 3/3 replicas available. Newest first:\n- revision 360 (CURRENT): created 16:52:39 (4m43s ago): rolling restart only (no change to image, env or resources)\n- revision 359: created 16:50:36 (6m46s ago): rolling restart only (no change to image, env or resources)\n- revision 358: created 16:47:33 (9m49s ago): rolling restart only (no change to image, env or resources)\n- revision 357: created 15:54:43 (1h02m ago): rolling restart only (no change to image, env or resources)\n- revision 356: created 15:53:33 (1h03m ago): rolling restart only (no change to image, env or resources)\n- revision 355: created 15:45:38 (1h11m ago): rolling restart only (no change to image, env or resources)\n- revision 354: created 15:24:33 (1h32m ago): rolling restart only (no change to image, env or resources)",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-58799744dd-j5jq4: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-58799744dd-lxbnl: 200 lines scanned, 1 warnings/errors ---\n[2026-11-01T14:57:22.918Z] [WARN] [498412138cafa2b68a09176c15dc373e] POST /users/200097/favourite-places - Client error (4xx): 409 | Duration: 0ms | Status: 409\n--- Pod aiops-backend-deployment-58799744dd-vzg6t: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [],
+  "then_answer": "No action taken: The deployment is currently at its maximum ",
+  "borrowed": [],
+  "expected": "none",
+  "why": "UNSTABLE test, by hand",
+  "id": "unstable_test_2026-11-01@16:55:12"
+ },
+ {
+  "run": "4-load-testing/archive/unstable_test_2026-11-01",
+  "scenario": "unstable_test",
+  "time": "16:58:26",
+  "metrics": {
+   "throughput": 75.52,
+   "error_rate": 0.0,
+   "latency_p95": 0.11662499999999984,
+   "replicas": 3.0,
+   "ready_replicas": 3.0,
+   "avg_cpu_per_pod": 0.25458271196328836,
+   "rps_per_pod": 25.173333333333332,
+   "timestamp": "16:58:26",
+   "score": -0.7578,
+   "explanation": [
+    "load 75.5 rps (25.2 per pod) is below the healthy minimum 123.3 rps for 3 pod(s) (over-provisioned)"
+   ],
+   "load_trend_rps_per_min": -245.6
+  },
+  "memory_v13": "Incident memory disabled for this run.",
+  "memory_matches": [],
+  "memory_resolved": null,
+  "recent_v13": "- 16:50:32 (7 min ago): restart -> verification UNSTABLE: worse (score -35.63 -> -48.74 in 10 s) - 16:51:20 (6 min ago): scale 1->3 -> verification UNSTABLE: worse (score -13.45 -> -18.73 in 10 s) - 16:52:35 (4 min ago): restart -> verification UNSTABLE: not improving (score -10.97 -> -10.97 over the last 30 s) - 16:55:12 (1 min ago): no action (No action taken: The deployment is currently at its maximum capacity (3 pods) and the load exceeds the system's capacity)",
+  "recent_v14": "- 16:50:32 (7 min ago): restart; verification: UNSTABLE: worse (score -35.63 -> -48.74 in 10 s).\n- 16:51:20 (6 min ago): scale 1->3; verification: UNSTABLE: worse (score -13.45 -> -18.73 in 10 s).\n- 16:52:35 (4 min ago): restart; verification: UNSTABLE: not improving (score -10.97 -> -10.97 over the last 30 s).\n- 16:55:12 (1 min ago): no action (No action taken: The deployment is currently at its maximum capacity (3 pods) and the load exceeds the system's capacity).",
+  "outputs": {
+   "get_pod_breakdown": "3 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-58799744dd-j5jq4 | revision 360 | age 3m31s | ready | container restarts 0\n    CPU 0.82 cores (throttled 38.8%) | 82.3 req/s | CPU per request 0.010 core-s | p95 0.33 s | 5xx 0.00/s | event-loop lag p99 0.23 s | memory 289 MiB / 1024 MiB limit\n- aiops-backend-deployment-58799744dd-lxbnl | revision 360 | age 3m38s | ready | container restarts 0\n    CPU 0.91 cores (throttled 39.1%) | 83.3 req/s | CPU per request 0.011 core-s | p95 0.49 s | 5xx 0.00/s | event-loop lag p99 0.15 s | memory 274 MiB / 1024 MiB limit\n- aiops-backend-deployment-58799744dd-vzg6t | revision 360 | age 3m00s | ready | container restarts 0\n    CPU 0.94 cores (throttled 42.5%) | 63.9 req/s | CPU per request 0.015 core-s | p95 0.94 s | 5xx 0.00/s | event-loop lag p99 0.64 s | memory 292 MiB / 1024 MiB limit",
+   "get_deployment_history": "Deployment aiops-backend-deployment: current revision 360, 3/3 replicas available. Newest first:\n- revision 360 (CURRENT): created 16:52:39 (4m43s ago): rolling restart only (no change to image, env or resources)\n- revision 359: created 16:50:36 (6m46s ago): rolling restart only (no change to image, env or resources)\n- revision 358: created 16:47:33 (9m49s ago): rolling restart only (no change to image, env or resources)\n- revision 357: created 15:54:43 (1h02m ago): rolling restart only (no change to image, env or resources)\n- revision 356: created 15:53:33 (1h03m ago): rolling restart only (no change to image, env or resources)\n- revision 355: created 15:45:38 (1h11m ago): rolling restart only (no change to image, env or resources)\n- revision 354: created 15:24:33 (1h32m ago): rolling restart only (no change to image, env or resources)",
+   "get_kubernetes_logs": "--- Pod aiops-backend-deployment-58799744dd-j5jq4: 200 lines scanned, 0 warnings/errors ---\n--- Pod aiops-backend-deployment-58799744dd-lxbnl: 200 lines scanned, 1 warnings/errors ---\n[2026-11-01T14:57:22.918Z] [WARN] [498412138cafa2b68a09176c15dc373e] POST /users/200097/favourite-places - Client error (4xx): 409 | Duration: 0ms | Status: 409\n--- Pod aiops-backend-deployment-58799744dd-vzg6t: 200 lines scanned, 0 warnings/errors ---"
+  },
+  "then": [
+   "scale 3->1"
+  ],
+  "then_answer": "Root cause: The system was over-provisioned with 3 pods for the ",
+  "borrowed": [
+   "get_pod_breakdown from 16:55:12",
+   "get_deployment_history from 16:55:12",
+   "get_kubernetes_logs from 16:55:12"
+  ],
+  "expected": "scale 1",
+  "why": "UNSTABLE test, by hand",
+  "id": "unstable_test_2026-11-01@16:58:26"
+ }
+]
