@@ -309,8 +309,8 @@ INCIDENT_LOG_FIELDS = [
     "woke_at", "agent_version", "signature", "throughput", "rps_per_pod", "latency_p95", "error_rate", "replicas",
     "ready_replicas", "avg_cpu_per_pod", "score", "explanation", "memory_hit", "actions", "verification",
     "verification_detail", "recovery_s", "score_after", "rewake", "saved_to_memory", "agent_error", "llm_calls",
-    "llm_retries", "llm_fallback_calls", "agent_seconds", "total_seconds", "final_answer",
-]
+    "llm_retries", "llm_fallback_calls", "llm_fenced", "agent_seconds", "total_seconds", "final_answer",
+]  # llm_fenced (v14, A33): replies that were bare code and got their fence (agent._fence_bare_code); empty before v14
 
 
 def _rollback_failed_scale_down(actions):
@@ -577,6 +577,7 @@ def trigger_ai_agent(metrics_json):
         "llm_calls": model.stats["calls"],
         "llm_retries": model.stats["retries"],
         "llm_fallback_calls": model.stats["fallback_calls"],
+        "llm_fenced": model.stats["fenced"],
         "agent_seconds": round(agent_seconds, 1),
         "total_seconds": round(time.monotonic() - started, 1),
         "final_answer": response[:500],

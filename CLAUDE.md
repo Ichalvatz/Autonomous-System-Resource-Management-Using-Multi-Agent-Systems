@@ -274,7 +274,7 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
   - **The key is on Gemini's free tier:** the fallback has 20 requests per day (quota resets at 10:00 Greek time), so it
     helps only for a few calls a day.
 - **`3-ai-agent/incident_log.csv`:** one row per agent run (reading, score, memory hit, actions, verdict, recovery,
-  re-wake, LLM calls / retries / fallback, seconds, final answer). It is the source of the per-incident numbers. A run cut
+  re-wake, LLM calls / retries / fallback / fenced replies (v14), seconds, final answer). It is the source of the per-incident numbers. A run cut
   by SIGTERM leaves no row; `campaign_report.py` finds such wake-ups in the run's `controller.log`.
 
 ## Pod sizing: 1 core per backend pod

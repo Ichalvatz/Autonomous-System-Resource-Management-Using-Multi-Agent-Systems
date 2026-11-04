@@ -215,6 +215,7 @@ def main():
             out.append(f"- {i['woke_at'][11:]} `{i['signature'].replace('State -> ', '')}` → "
                        f"**{i['actions'] or 'καμία ενέργεια'}** ({i.get('verification_detail') or i['verification'] or '–'}); "
                        f"LLM calls {i['llm_calls']}, retries {i['llm_retries']}, fallback {i['llm_fallback_calls']}, "
+                       f"{'fenced ' + i['llm_fenced'] + ', ' if i.get('llm_fenced') not in (None, '', '0') else ''}"
                        f"agent {i['agent_seconds']} s, σύνολο {i['total_seconds']} s"
                        f"{'; error: ' + i['agent_error'][:120] if i['agent_error'] else ''}")
             if answer:
