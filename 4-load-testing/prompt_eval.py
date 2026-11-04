@@ -250,6 +250,11 @@ def with_lag_reference(outputs):
     return out
 
 
+def _ends(text, head=300, tail=900):
+    """The start and the end of a long model output (where a missing code fence shows)."""
+    return text if len(text) <= head + tail else text[:head] + " [...] " + text[-tail:]
+
+
 def run_case(case, variant):
     outputs = with_lag_reference(case["outputs"]) if variant == LAG else case["outputs"]
     tools = [_recorded(getattr(agent_tools, t), outputs.get(t)) for t in OBSERVE] + \
@@ -295,7 +300,7 @@ def run_case(case, variant):
     return {"case": case["id"], "variant": variant, "expected": case["expected"], "applied": applied,
             "answer": answer[:300], "error": error, "steps": len(steps),
             "format_failures": sum(("Error in code parsing" in e or "variable `python`" in e) for e in errors),
-            "failed_outputs": [str(s.model_output or "")[:500] + " || " + e[:200] for e, s in zip(errors, steps)
+            "failed_outputs": [_ends(str(s.model_output or "")) + " || " + e[:200] for e, s in zip(errors, steps)
                                if "Error in code parsing" in e or "variable `python`" in e],
             "refusals": sum("Refused" in e or "Refused" in str(getattr(s, "observations", "") or "")
                             for e, s in zip(errors, steps)),
