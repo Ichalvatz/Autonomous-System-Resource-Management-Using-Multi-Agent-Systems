@@ -13,7 +13,13 @@ The comparison is against the native Kubernetes HPA.
   summaries: `thesis_notes/results_summary.md` (v12, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
   order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
   current version; superseded ones go to `thesis_notes/history/`).
-  - **Agent v13 is the current code** (branch `nfr-v13`, since 2026-11-02; A32, A32.1, **live-checked 2026-11-03, no campaign yet**): v12's
+  - **Agent v14 is the current code** (branch `nfr-v14`, since 2026-11-03; A33): v13 with the final prompt (our own
+    system prompt, the incident as its own message, one code format), every LLM call cut after 60 s, bare code fenced
+    in code, and the healthy event-loop lag in `get_pod_breakdown`. **Status (2026-11-05):** the prompt evaluation is
+    partly done (`prompt_eval.md`; stopped on Gemini's free-tier daily quota, 500 requests); no live run yet. Everything
+    left (rest of the evaluation, the lag check, smoke runs and their gate, the campaign) runs with one command:
+    `nohup ./4-load-testing/v14_finish.sh > /dev/null 2>&1 &` (log `4-load-testing/v14_finish.log`; A33's last part).
+  - **Agent v13** = git tag `v13-live-check` (A32, A32.1, live-checked 2026-11-03, no campaign): v12's
     model, prompt and tools, with two changes the user asked for.
     - **A32:** the detector judges every reading after a pod-count change ("να κρίνει αμέσως αν είμαστε stable, το οποίο
       καθορίζεται από το SVM"). v12 skipped 90 s, counted from when it saw the change, i.e. after the agent's verification
@@ -313,8 +319,8 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
   - writes `eval_[<scenario>_]<strategy>_<time>/`: controller.log, k6.log, `k6_summary.json`, `series.json`,
     `events.txt`, `pods_at_end.txt`, `power.log` (AC or battery every 30 s), window and score;
   - appends one row to `results_nfr.csv` / `results_nfr_stuck.csv` / `results_nfr_cpuhog.csv`;
-  - env: `AIOPS_MEMORY`, `AIOPS_ACT_GUARD`, `LABEL` (default `llm-v13` / `hpa`; `*-INVALID` rows are excluded).
-    `compare_results.py` / `campaign_report.py` take `AGENT_LABEL` (default `llm-v13`; `llm-v12` for campaign-2026-11-01, `llm-v11` for campaign-2026-10-28,
+  - env: `AIOPS_MEMORY`, `AIOPS_ACT_GUARD`, `LABEL` (default `llm-v14` / `hpa`; `*-INVALID` rows are excluded).
+    `compare_results.py` / `campaign_report.py` take `AGENT_LABEL` (default `llm-v14`; `llm-v12` for campaign-2026-11-01, `llm-v11` for campaign-2026-10-28,
     `llm-v10` for campaign-2026-10-26, `llm-v9` for campaign-2026-10-23).
   - Never run two strategies at once (`queue.sh` runs them back to back).
 - **`evaluate_run.py`** scores a window at the ingress:
@@ -344,6 +350,16 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
 - **`replay_v13.py`** (A32, A32.1): v12's detector and verification against v13's on every action of phase 2 with data
   (117), the detector after the 113 STABLE ones, the live validations (series saved as `detector_validation_series.json`
   next to each validation) and the four campaigns → `replay_v13.md`. (A32's 1 m version: `archive/a32_replay_follow/`.)
+- **`prompt_eval.py`** (A33): v13's prompt against v14's with the real LLM on 43 recorded wake-ups (recorded tool
+  outputs, real action tools on a mocked cluster), plus the lag check (`v14-lag`) → `prompt_eval.md`; resumable, waits
+  for Gemini's daily quota; `--gate` (the lag check), `--calls-since-reset`.
+- **`smoke_gate.py TAG`:** did a new version's smoke runs go right (one run per scenario, every action STABLE, no agent
+  crash, faults recovered by a restart, no battery)?
+- **`v14_finish.sh`:** the rest of v14 in one command (evaluation → lag gate → quota check → smoke runs → smoke gate →
+  `full_campaign.sh campaign-v14-<date>`).
+- **Gemini's free tier** (the key's plan): 500 requests a day for the primary, 20 for the fallback, reset at 10:00 Greek
+  time. A campaign uses ~200 (140 in the agent runs of campaign-2026-11-01, plus `llm_ready`). Count an experiment's
+  calls before running it.
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
@@ -437,7 +453,7 @@ python 3-ai-agent/anomaly_detector.py         # live
 k6 run 4-load-testing/k6/demo.js              # in another terminal
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (102: detector loop, post-change readings and the follow of a
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (104: detector loop, post-change readings and the follow of a
   pod-count change, tools and guards, facts, the system prompt and the incident message, one code format, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
 - Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812).
 - After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.

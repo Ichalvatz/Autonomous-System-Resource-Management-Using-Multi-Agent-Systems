@@ -43,8 +43,9 @@ import statistics
 import sys
 import time
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LT = os.path.join(ROOT, "4-load-testing")
@@ -323,60 +324,132 @@ def load_results():
     return [json.loads(l) for l in open(RESULTS) if l.strip()]
 
 
-def main_run(reps, passes=3):
-    """Each case reps times with each prompt. A run the provider broke (an exception: every retry and the fallback
-    failed) stays in the results, is not counted (report()) and is tried again in a later pass, so both prompts get
-    the same number of whole runs."""
+def last_reset(now=None):
+    """When Gemini's daily quota last reset: midnight Pacific time (10:00 in Greece in winter), as a local datetime."""
+    pacific = (now or datetime.now()).astimezone(ZoneInfo("America/Los_Angeles"))
+    return pacific.replace(hour=0, minute=0, second=0, microsecond=0).astimezone().replace(tzinfo=None)
+
+
+def wait_for_llm():
+    """Wait until the primary model answers. The key is on Gemini's free tier: 500 requests a day per model (the
+    fallback 20). When the day's quota is used up, sleep until 5 min after the next reset, else try every 5 min."""
+    import litellm
+    while True:
+        try:
+            litellm.completion(model=agent.PRIMARY_MODEL, max_tokens=5, timeout=30,
+                               messages=[{"role": "user", "content": "Reply with the single word OK."}])
+            return
+        except Exception as e:
+            if "PerDay" in str(e):
+                wake = last_reset() + timedelta(days=1, minutes=5)
+                print(f"[{datetime.now():%H:%M:%S}] the daily quota of {agent.PRIMARY_MODEL} is used up: waiting "
+                      f"until {wake:%Y-%m-%d %H:%M}", flush=True)
+                time.sleep(max(60.0, (wake - datetime.now()).total_seconds()))
+            else:
+                print(f"[{datetime.now():%H:%M:%S}] {agent.PRIMARY_MODEL} is not answering ({type(e).__name__}): "
+                      f"trying again in 5 min", flush=True)
+                time.sleep(300)
+
+
+def focus(case):
+    """The cases where the prompts differ: the 17 that call for an investigation (restart or no action). The capacity
+    cases were settled by 2026-11-04 (v13 41/41, v14 36/36 right, v14 0 format failures), so the rest of the runs
+    goes here (A33, 2026-11-05: Gemini's free tier allows 500 requests a day)."""
+    return not case["expected"].startswith("scale")
+
+
+def _run_logged(case, variant, rep, done):
+    r = run_case(case, variant)
+    r["rep"] = rep
+    with open(RESULTS, "a") as f:
+        f.write(json.dumps(r) + "\n")
+    done[(case["id"], variant)] += not r["error"]
+    print(f"[{datetime.now():%H:%M:%S}] rep {rep} {variant} {case['id']}: expected {case['expected']}, "
+          f"got {outcome(r)} ({'right' if outcome(r) == case['expected'] else 'WRONG'}); {r['steps']} steps, "
+          f"{r['llm_calls']} calls, {r['format_failures']} format failures, {r['seconds']} s"
+          + (f"; fenced {r['fenced']}" if r["fenced"] else "")
+          + (f"; fallback {r['fallback_calls']}" if r["fallback_calls"] else "")
+          + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
+    if r["error"]:   # the provider broke the run: it is run again later, once the model answers
+        wait_for_llm()
+
+
+def main_run(reps):
+    """The runs still missing, resumable: v14 up to `reps` runs on each focus case (v13's runs stay as they are:
+    1-3 per case), then the lag check (v14-lag) on the same cases. A run the provider broke (an exception: every retry
+    and the fallback failed) stays in the results, is not counted (report()) and is run again."""
     cases = [c for c in extract_cases() if c["expected"]]
     json.dump(cases, open(CASES, "w"), indent=1)
     done = Counter((r["case"], r["variant"]) for r in load_results() if not r["error"] and not r.get("superseded"))
-    for _ in range(passes):
-        for rep in range(1, reps + 1):
-            for c in cases:
-                for variant in ("v13", "v14") if rep % 2 else ("v14", "v13"):
-                    if done[(c["id"], variant)] >= rep:
-                        continue
-                    r = run_case(c, variant)
-                    r["rep"] = rep
-                    with open(RESULTS, "a") as f:
-                        f.write(json.dumps(r) + "\n")
-                    done[(c["id"], variant)] += not r["error"]
-                    ok = "right" if outcome(r) == c["expected"] else "WRONG"
-                    print(f"[{datetime.now():%H:%M:%S}] rep {rep} {variant} {c['id']}: expected {c['expected']}, "
-                          f"got {outcome(r)} ({ok}); {r['steps']} steps, {r['llm_calls']} calls, "
-                          f"{r['format_failures']} format failures, {r['seconds']} s"
-                          + (f"; fenced {r['fenced']}" if r["fenced"] else "")
-                          + (f"; fallback {r['fallback_calls']}" if r["fallback_calls"] else "")
-                          + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
-        if all(done[(c["id"], v)] >= reps for c in cases for v in ("v13", "v14")):
-            break
-    lag_cases = [c for c in cases if not c["expected"].startswith("scale")]   # where the pod breakdown is read
-    for _ in range(passes):
-        for rep in range(1, reps + 1):
-            for c in lag_cases:
-                if done[(c["id"], LAG)] >= rep:
-                    continue
-                r = run_case(c, LAG)
-                r["rep"] = rep
-                with open(RESULTS, "a") as f:
-                    f.write(json.dumps(r) + "\n")
-                done[(c["id"], LAG)] += not r["error"]
-                print(f"[{datetime.now():%H:%M:%S}] rep {rep} {LAG} {c['id']}: expected {c['expected']}, got "
-                      f"{outcome(r)} ({'right' if outcome(r) == c['expected'] else 'WRONG'}); {r['steps']} steps, "
-                      f"{r['format_failures']} format failures, {r['seconds']} s"
-                      + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
-        if all(done[(c["id"], LAG)] >= reps for c in lag_cases):
-            break
+    wait_for_llm()
+    for variant in ("v14", LAG):
+        todo = [c for c in cases if focus(c)]
+        while any(done[(c["id"], variant)] < reps for c in todo):
+            for rep in range(1, reps + 1):
+                for c in todo:
+                    if done[(c["id"], variant)] < rep:
+                        _run_logged(c, variant, rep, done)
 
 
-def report():
+def calls_since_reset():
+    """LLM calls (with retries) of this evaluation since Gemini's daily quota last reset: an upper bound on its use."""
+    since = last_reset()
+    return sum(r["llm_calls"] for r in load_results() if datetime.fromisoformat(r["at"]) >= since)
+
+
+def _counted():
+    """The cases and the runs that count: not superseded, not broken by the provider, only the primary model."""
     cases = {c["id"]: c for c in json.load(open(CASES))}
-    superseded = [r for r in load_results() if r.get("superseded")]
     results = [r for r in load_results() if r["case"] in cases and not r.get("superseded")]
     primary = [r for r in results if not r["fallback_calls"] and not r["error"]]
     by = defaultdict(lambda: defaultdict(list))
     for r in primary:
         by[r["case"]][r["variant"]].append(r)
+    return cases, results, primary, by
+
+
+def _per_case(cases, by, v, ids):
+    """Right-action rate (mean over cases) and steps (median of the per-case medians): each case weighs the same,
+    whatever its number of runs (A33, 2026-11-05: v13 has 1-3 runs per case, v14 3 on the focus cases)."""
+    ids = [cid for cid in ids if by[cid][v]]
+    rate = statistics.mean(sum(outcome(r) == cases[cid]["expected"] for r in by[cid][v]) / len(by[cid][v])
+                           for cid in ids) if ids else 0.0
+    steps = statistics.median(statistics.median(r["steps"] for r in by[cid][v]) for cid in ids) if ids else 0
+    return rate, steps
+
+
+def lag_check(cases, by, primary):
+    """The lag reference check (A33, 12:28 on 4/11): v14 against v14-lag on the cases both ran; (c) as redeclared on
+    5/11 before any v14-lag run: not more format failures than v14 on the same cases."""
+    ids = [cid for cid in cases if by[cid][LAG] and by[cid]["v14"]]
+    def rate(v, kind, act):
+        rs = [r for cid in ids if cases[cid]["expected"] == kind for r in by[cid][v]]
+        return sum(outcome(r) == act for r in rs), len(rs)
+    out = {"ids": ids, "complete": all(len(by[cid][LAG]) >= 3 for cid in cases if focus(cases[cid])),
+           "restart": {v: rate(v, "restart", "restart") for v in ("v14", LAG)},
+           "wrong_restart": {v: rate(v, "none", "restart") for v in ("v14", LAG)},
+           "none_right": {v: rate(v, "none", "none") for v in ("v14", LAG)},
+           "format": {v: sum(r["format_failures"] for cid in ids for r in by[cid][v]) for v in ("v14", LAG)}}
+    frac = lambda x: x[0] / x[1] if x[1] else 0.0
+    out["a"] = frac(out["restart"][LAG]) >= frac(out["restart"]["v14"])
+    out["b"] = frac(out["wrong_restart"][LAG]) <= frac(out["wrong_restart"]["v14"])
+    out["c"] = out["format"][LAG] <= out["format"]["v14"]
+    return out
+
+
+def gate():
+    """0 if the lag check is complete and passed; else 1 (v14_finish.sh stops: the reference is then removed, A33)."""
+    cases, _, primary, by = _counted()
+    lc = lag_check(cases, by, primary)
+    ok = lc["complete"] and lc["a"] and lc["b"] and lc["c"]
+    print(f"lag check: {'complete' if lc['complete'] else 'INCOMPLETE'}; (a) {'pass' if lc['a'] else 'FAIL'}, "
+          f"(b) {'pass' if lc['b'] else 'FAIL'}, (c) {'pass' if lc['c'] else 'FAIL'}")
+    return 0 if ok else 1
+
+
+def report():
+    cases, results, primary, by = _counted()
+    superseded = [r for r in load_results() if r.get("superseded")]
     print("# Prompt evaluation: v13's prompt against v14's (A33)\n")
     print(f"*`prompt_eval.py --report`, {datetime.now():%Y-%m-%d %H:%M}. {len(cases)} recorded wake-ups "
           f"(1-3/11, the current health model), {len(results)} runs with {agent.PRIMARY_MODEL}; {len(primary)} used "
@@ -384,87 +457,92 @@ def report():
     if superseded:
         print(f"*{len(superseded)} earlier runs are superseded and not counted: "
               + "; ".join(f"{n} × {why}" for why, n in Counter(r["superseded"] for r in superseded).items()) + ".*\n")
+    print("*Runs per case differ (A33, 2026-11-05): Gemini's free tier allows 500 requests a day, so after 4/11 only "
+          "the 17 cases that call for an investigation got more runs (v14 up to 3); the capacity cases were settled "
+          "(v13 41/41, v14 36/36 right) and v13 keeps its 1-3 runs per case. The criteria therefore weigh each case "
+          "the same (rate = mean over cases; steps = median of the per-case medians).*\n")
     draft = any(r["variant"] == DRAFT for r in primary)
     if draft:
         print(f"*{DRAFT}: the first draft of v14's prompt (reasoning as comments inside the code block), stopped after "
-              f"its runs below lost steps to unfenced code; v14 is the prompt as fixed (a \"Thoughts:\" line, then the "
-              f"block) and was run again in full (A33). Its column is for reference; the criteria compare v14 with "
-              f"v13.*\n")
-    print("## Summary\n")
+              f"its runs lost steps to unfenced code; v14 is the prompt as fixed (a \"Thoughts:\" line, then the "
+              f"block). Its column is for reference.*\n")
+    print("## Summary (pooled runs)\n")
     variants = ("v13", "v14") + ((DRAFT,) if draft else ())
     print("| | " + " | ".join(f"{v} prompt" for v in variants) + " |")
     print("|---" * (len(variants) + 1) + "|")
     stats = {}
     for v in variants:
         rs = [r for r in primary if r["variant"] == v]
-        right = sum(outcome(r) == r["expected"] for r in rs)
-        stats[v] = {"n": len(rs), "right": right, "rate": right / len(rs) if rs else 0.0,
-                    "format": sum(r["format_failures"] for r in rs), "steps": statistics.median(r["steps"] for r in rs)
-                    if rs else 0, "calls": sum(r["llm_calls"] for r in rs), "seconds": statistics.median(
-                        r["seconds"] for r in rs) if rs else 0, "refusals": sum(r["refusals"] for r in rs),
+        stats[v] = {"n": len(rs), "format": sum(r["format_failures"] for r in rs),
+                    "calls": sum(r["llm_calls"] for r in rs), "refusals": sum(r["refusals"] for r in rs),
+                    "seconds": statistics.median(r["seconds"] for r in rs) if rs else 0,
                     "fenced": sum(r["fenced"] for r in rs if "fenced" in r) if any("fenced" in r for r in rs) else None}
-    rows = [("Right action", lambda s: f"{s['right']}/{s['n']} ({100 * s['rate']:.0f}%)"),
+        for kind in ("scale", "restart", "none"):
+            ks = [r for r in rs if r["expected"].startswith(kind)]
+            stats[v][kind] = f"{sum(outcome(r) == r['expected'] for r in ks)}/{len(ks)}"
+    rows = [("Right action, capacity cases (scale)", lambda s: s["scale"]),
+            ("Right action, restart cases", lambda s: s["restart"]),
+            ("Right action, no-action cases", lambda s: s["none"]),
             ("Code-format failures (steps)", lambda s: str(s["format"])),
             ("Bare-code replies fenced by code (not failures)", lambda s: "n/a" if s["fenced"] is None else str(s["fenced"])),
-            ("Median LLM steps per run", lambda s: f"{s['steps']:g}"),
             ("Guard refusals (steps)", lambda s: str(s["refusals"])),
             ("Median seconds per run", lambda s: f"{s['seconds']:g}"),
-            ("LLM calls in all", lambda s: str(s["calls"]))]
+            ("Runs / LLM calls", lambda s: f"{s['n']} / {s['calls']}")]
     for name, f in rows:
         print(f"| {name} | " + " | ".join(f(stats[v]) for v in variants) + " |")
+    common = [cid for cid in cases if by[cid]["v13"] and by[cid]["v14"]]
+    (r13, s13), (r14, s14) = _per_case(cases, by, "v13", common), _per_case(cases, by, "v14", common)
     wrong_restart = [cid for cid, vs in by.items() if cases[cid]["expected"] != "restart"
                      and any(outcome(r) == "restart" for r in vs["v14"])
                      and not any(outcome(r) == "restart" for r in vs["v13"])]
-    crit = [("1. right-action rate at least v13's", stats["v14"]["rate"] >= stats["v13"]["rate"]),
+    print(f"\nPer case ({len(common)} cases with runs of both): right-action rate v13 {100 * r13:.1f}%, "
+          f"v14 {100 * r14:.1f}%; steps v13 {s13:g}, v14 {s14:g}.")
+    crit = [("1. right-action rate at least v13's (per case)", r14 >= r13),
             ("2. no code-format failure", stats["v14"]["format"] == 0),
-            ("3. median steps not above v13's", stats["v14"]["steps"] <= stats["v13"]["steps"]),
+            ("3. median steps not above v13's (per case)", s14 <= s13),
             ("4. no wrong restart v13 never made", not wrong_restart)]
     print("\n## Criteria (declared before the first run)\n")
     for name, ok in crit:
         print(f"- {name}: **{'pass' if ok else 'FAIL'}**")
     if wrong_restart:
         print(f"  - wrong restarts by v14 only: {', '.join(wrong_restart)}")
-    lag_runs = [r for r in primary if r["variant"] == LAG]
-    if lag_runs:
+    lc = lag_check(cases, by, primary)
+    if lc["ids"]:
         print(f"\n## The event-loop lag reference in get_pod_breakdown ({LAG}, A33)\n")
-        print("v14 against v14 with the tool's new healthy reference, on the non-capacity cases (the recorded pod "
-              "breakdown with the new reference line).\n")
-        print(f"| Cases | v14 | {LAG} |\n|---|---|---|")
-        lag_ids = {r["case"] for r in lag_runs}
-        def right_of(v, kind):
-            rs = [r for r in primary if r["variant"] == v and r["case"] in lag_ids and cases[r["case"]]["expected"] == kind]
-            return sum(outcome(r) == kind for r in rs), len(rs)
-        def wrong_restarts(v):
-            rs = [r for r in primary if r["variant"] == v and r["case"] in lag_ids and cases[r["case"]]["expected"] == "none"]
-            return sum(outcome(r) == "restart" for r in rs), len(rs)
-        a14, a_lag = right_of("v14", "restart"), right_of(LAG, "restart")
-        b14, b_lag = wrong_restarts("v14"), wrong_restarts(LAG)
-        f_lag = sum(r["format_failures"] for r in lag_runs)
-        print(f"| restart cases: right | {a14[0]}/{a14[1]} | {a_lag[0]}/{a_lag[1]} |")
-        print(f"| no-action cases: wrong restarts | {b14[0]}/{b14[1]} | {b_lag[0]}/{b_lag[1]} |")
-        print(f"| no-action cases: right | {right_of('v14', 'none')[0]}/{right_of('v14', 'none')[1]} | "
-              f"{right_of(LAG, 'none')[0]}/{right_of(LAG, 'none')[1]} |")
-        print(f"| code-format failures | {sum(r['format_failures'] for r in primary if r['variant'] == 'v14' and r['case'] in lag_ids)} | {f_lag} |")
-        rate = lambda x: x[0] / x[1] if x[1] else 0.0
-        print("\nCriteria (declared before the first run):\n")
-        print(f"- (a) restart cases, right action not below v14's: **{'pass' if rate(a_lag) >= rate(a14) else 'FAIL'}**")
-        print(f"- (b) no-action cases, wrong restarts not above v14's: **{'pass' if rate(b_lag) <= rate(b14) else 'FAIL'}**")
-        print(f"- (c) no code-format failure: **{'pass' if f_lag == 0 else 'FAIL'}**")
+        print("v14 against v14 with the tool's healthy lag reference (the recorded pod breakdown with the new reference "
+              f"line), on the {len(lc['ids'])} investigation cases both ran"
+              + ("" if lc["complete"] else " (**incomplete**)") + ".\n")
+        cell = lambda x: f"{x[0]}/{x[1]}"
+        print(f"| | v14 | {LAG} |\n|---|---|---|")
+        print(f"| restart cases: restarted | {cell(lc['restart']['v14'])} | {cell(lc['restart'][LAG])} |")
+        print(f"| no-action cases: wrong restarts | {cell(lc['wrong_restart']['v14'])} | {cell(lc['wrong_restart'][LAG])} |")
+        print(f"| no-action cases: right | {cell(lc['none_right']['v14'])} | {cell(lc['none_right'][LAG])} |")
+        print(f"| code-format failures | {lc['format']['v14']} | {lc['format'][LAG]} |")
+        print("\nCriteria (declared before the first run; (c) redeclared on 5/11, before any run):\n")
+        print(f"- (a) restart cases, right action not below v14's: **{'pass' if lc['a'] else 'FAIL'}**")
+        print(f"- (b) no-action cases, wrong restarts not above v14's: **{'pass' if lc['b'] else 'FAIL'}**")
+        print(f"- (c) not more code-format failures than v14: **{'pass' if lc['c'] else 'FAIL'}**")
         print("\n| Case | Expected | v14 | " + LAG + " |\n|---|---|---|---|")
-        for cid in sorted(lag_ids):
-            cell = lambda v: ", ".join(outcome(r) for r in sorted(by[cid][v], key=lambda r: r["rep"])) or "-"
-            print(f"| {cid} | {cases[cid]['expected']} | {cell('v14')} | {cell(LAG)} |")
+        for cid in lc["ids"]:
+            runs = lambda v: ", ".join(outcome(r) for r in sorted(by[cid][v], key=lambda r: r["rep"])) or "-"
+            print(f"| {cid} | {cases[cid]['expected']} | {runs('v14')} | {runs(LAG)} |")
     print("\n## Every case\n")
     print("| Case | Expected (why) | At the time | v13 prompt | v14 prompt | Borrowed outputs |\n|---|---|---|---|---|---|")
     for cid, c in cases.items():
-        cell = lambda v: ", ".join(outcome(r) + ("" if outcome(r) == c["expected"] else " ✗")
-                                   for r in sorted(by[cid][v], key=lambda r: r["rep"])) or "-"
-        print(f"| {cid} | {c['expected']} ({c['why']}) | {'; '.join(c['then']) or 'none'} | {cell('v13')} | "
-              f"{cell('v14')} | {len(c['borrowed'])} |")
+        cellv = lambda v: ", ".join(outcome(r) + ("" if outcome(r) == c["expected"] else " ✗")
+                                    for r in sorted(by[cid][v], key=lambda r: r["rep"])) or "-"
+        print(f"| {cid} | {c['expected']} ({c['why']}) | {'; '.join(c['then']) or 'none'} | {cellv('v13')} | "
+              f"{cellv('v14')} | {len(c['borrowed'])} |")
     left = [c for c in extract_cases() if not c["expected"]]
     if left:
         print("\nLeft out: " + "; ".join(f"{c['id']} ({c['why']})" for c in left))
-    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] in ("v13", "v14")]
+    failed = [r for r in primary if r.get("failed_outputs") and r["variant"] in ("v14", LAG)]
+    if failed:
+        print("\n## The replies that failed the code format (v14)\n")
+        for r in failed:
+            for text in r["failed_outputs"]:
+                print(f"- {r['variant']} {r['case']} (rep {r['rep']}): `{text[:600].replace(chr(10), ' / ')}`")
+    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] in ("v13", "v14", LAG)]
     if wrong:
         print("\n## The wrong runs\n")
         for r in wrong:
@@ -477,6 +555,8 @@ if __name__ == "__main__":
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--cases", action="store_true")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--gate", action="store_true", help="exit 0 only if the lag check passed (A33)")
+    ap.add_argument("--calls-since-reset", action="store_true")
     a = ap.parse_args()
     if a.cases:
         for c in extract_cases():
@@ -485,5 +565,9 @@ if __name__ == "__main__":
                   f"/{c['memory_resolved']} | {c['why']}")
     elif a.report:
         report()
+    elif a.gate:
+        sys.exit(gate())
+    elif a.calls_since_reset:
+        print(calls_since_reset())
     else:
         main_run(a.reps)

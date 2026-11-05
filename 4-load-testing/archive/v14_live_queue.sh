@@ -3,16 +3,17 @@
 # prompt evaluation (prompt_eval.py) passed its criteria. The user gave full autonomy for this and the campaign after it
 # ("μην σταματήσεις για τίποτα").
 #   stuck and cpuhog (memory off) and the normal load (memory on: the incidents of campaign-2026-11-01 and the v13 smoke
-#   runs, in the same model's space), notes smoke-v14-2026-11-04: the new prompt live, with the verification and the
-#   detector of v13.
-# Every run waits for AC power and until llm_ready.py gets 3/3 answers. The campaign is started separately.
-# Run from the repo root:  nohup ./4-load-testing/archive/v14_live_queue.sh &   (log: 4-load-testing/v14_live_queue.log)
+#   runs, in the same model's space), notes smoke-v14-<date> (or the tag given): the new prompt live, with the
+#   verification and the detector of v13. 4-load-testing/smoke_gate.py <tag> checks them.
+# Every run waits for AC power and until llm_ready.py gets 3/3 answers. The campaign is started separately
+# (4-load-testing/v14_finish.sh runs this queue, the gate and then the campaign).
+# Run from the repo root:  nohup ./4-load-testing/archive/v14_live_queue.sh [tag] &   (log: 4-load-testing/v14_live_queue.log)
 {
 set -u
 cd "$(dirname "$0")/../.."
 LOG=4-load-testing/v14_live_queue.log
 PY=.venv/bin/python3
-TAG=smoke-v14-2026-11-04
+TAG=${1:-smoke-v14-$(date +%Y-%m-%d)}
 log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"; }
 power(){ pmset -g batt | head -1 | grep -q "AC Power" && echo AC || echo BATTERY; }
 wait_ac(){ until [ "$(power)" = AC ]; do log "on battery: waiting for AC power"; sleep 60; done; }

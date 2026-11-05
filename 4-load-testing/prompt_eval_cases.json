@@ -101,7 +101,7 @@
   "recent_v13": "- 19:58:33 (4 min ago): restart -> verification STABLE",
   "recent_v14": "- 19:58:33 (4 min ago): restart; verification: STABLE.",
   "outputs": {
-   "get_pod_breakdown": "execution failed at line 'python' due to: InterpreterError: The variable `python` is not defined.",
+   "get_pod_breakdown": "1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.\n- aiops-backend-deployment-774db7db68-5jtqp | revision 370 | age 5m24s | ready | container restarts 0\n    CPU 0.47 cores (throttled 9.6%) | 57.2 req/s | CPU per request 0.008 core-s | p95 0.09 s | 5xx 0.00/s | event-loop lag p99 0.11 s | memory 162 MiB / 1024 MiB limit",
    "get_deployment_history": "Deployment aiops-backend-deployment: current revision 370, 1/1 replicas available. Newest first:\n- revision 370 (CURRENT): created 19:59:05 (5m26s ago): rolling restart only (no change to image, env or resources)\n- revision 369: created 19:51:44 (12m47s ago): oldest revision kept",
    "get_kubernetes_logs": "--- Pod aiops-backend-deployment-774db7db68-5jtqp: 200 lines scanned, 0 warnings/errors ---"
   },
