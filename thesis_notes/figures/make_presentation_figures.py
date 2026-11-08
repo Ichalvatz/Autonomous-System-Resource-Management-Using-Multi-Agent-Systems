@@ -7,7 +7,10 @@ Figures of the v14 presentation (2026-11-08): each one backs a design choice of 
   if_vs_ocsvm.png         Isolation Forest (raw features) against the deployed One-Class SVM on the same 210 healthy
                           readings, along the load and along the latency of 1 pod: why the SVM
   svm_map.png             what the SVM calls healthy for 1 / 2 / 3 pods (load x p95), with the training readings
-  gamma_holes.png         the healthy intervals along the load for each gamma of the grid: why gamma 0.1 (A31)
+  gamma_hills.png         what gamma is: the support vectors of 1 pod as hills along the load, their sum against the
+                          threshold, for gamma 0.1 (2 wide hills) and 1.0 (11 narrow ones, 3 holes)
+  gamma_choice.png        why gamma 0.1, both sides on 1 pod: holes in the band from gamma 0.2 up (A31), and the p95
+                          tolerated at each load, which reaches the NFR below 0.1 (0.05: checked after the choice)
   score_faults.png        the score in the stuck and cpuhog runs of campaign-v14-2026-11-08, agent and HPA
   faults_timeline.png     errors, p95 and ready pods in the same runs
   normal_load.png         the normal load of the same campaign: pods of the agent, the HPA and the needed count, and p95
@@ -251,40 +254,116 @@ def fig_svm_map():
     save(fig, "svm_map.png")
 
 
-# --- why gamma 0.1 ---------------------------------------------------------------------------------------------------
-def fig_gamma_holes():
-    params = thb.params_for()
-    fig, ax = plt.subplots(figsize=(16.6, 6.2))
-    y = 0
-    ticks, labels = [], []
-    for n in (1, 2, 3):
-        h = health[health["replicas"] == n]
-        for gamma in thb.GAMMAS:
-            b = {"model": thb.fit(params, health, gamma), "params": params}
-            iv = thb.intervals(b, n)
-            color = AGENT if gamma == bundle["gamma"] else HPA
-            for a, z in iv:
-                ax.plot([a, z], [y, y], color=color, lw=10, solid_capstyle="butt")
-            holes = len(iv) - 1
-            ax.text(470, y, ("1 διάστημα" if holes == 0 else f"{holes} τρύπ{'α' if holes == 1 else 'ες'}"),
-                    va="center", fontsize=15, color=color)
-            ticks.append(y)
-            labels.append(f"{n} pod{'s' if n > 1 else ''}, γ {gamma}")
-            y -= 1
-        ax.axvspan(h["throughput"].min(), h["throughput"].max(), ymin=0, ymax=1, color=FILL, alpha=0.0)
-        ax.plot([h["throughput"].min(), h["throughput"].max()], [y + 0.35, y + 0.35], color=MUTED, lw=2)
-        ax.text(h["throughput"].max() * 1.06, y + 0.35, "δεδομένα", fontsize=14, color=MUTED, va="center")
-        y -= 0.8
-    ax.set_xscale("log")
-    ax.set_xlim(0.8, 460)
-    ax.set_xticks([1, 3, 10, 30, 100, 300])
-    ax.set_xticklabels(["1", "3", "10", "30", "100", "300"])
-    ax.set_yticks(ticks)
-    ax.set_yticklabels(labels, fontsize=15)
-    ax.grid(axis="y", visible=False)
-    ax.set_xlabel("φορτίο (αιτήματα/s) που το μοντέλο λέει υγιές, latency και σφάλματα στο ασφαλές επίπεδο")
-    ax.set_title("Μόνο το γ 0.1 δίνει ένα συνεχές υγιές διάστημα για κάθε αριθμό pods")
-    save(fig, "gamma_holes.png")
+# --- what gamma is, and why 0.1 --------------------------------------------------------------------------------------
+GAMMA_C = {0.05: "#8A93A6", 0.1: AGENT, 0.2: PODS_C[1], 0.5: PODS_C[2], 1.0: PODS_C[3]}
+GAMMA_ASIDE = 0.05   # below the declared grid: checked after the choice (2026-11-08), only to show the other side
+
+
+def gamma_bundle(gamma):
+    """The deployed bundle for its own gamma, else the same data and transform fitted with this gamma."""
+    if gamma == bundle["gamma"]:
+        return bundle
+    return {"model": thb.fit(bundle["params"], health, gamma), "params": bundle["params"], "gamma": gamma}
+
+
+def fig_gamma_hills():
+    """1 pod along the load, latency and errors at the safe level: every support vector of 1 pod is a hill
+    a_i * exp(-gamma * (ln rps - ln rps_i)^2); the reading is healthy where their sum reaches the threshold rho."""
+    loads = np.geomspace(0.6, 300, 3000)
+    x = np.log(loads)
+    h1 = health[health["replicas"] == 1]["throughput"]
+    fig, axes = plt.subplots(1, 2, figsize=(16.6, 6.2), sharey=True)
+    for ax, gamma, (peak_at, sign) in zip(axes, (0.1, 1.0), ((1.0, 1), (87.4, -1))):
+        m = gamma_bundle(gamma)["model"]
+        rho, sv, a = float(m.offset_[0]), m.support_vectors_, m.dual_coef_[0]
+        one = np.round(sv[:, 3] / hm.POD_SEPARATION) == 1
+        hills = a[one][None] * np.exp(-gamma * (x[:, None] - sv[one, 0][None]) ** 2) / rho
+        total = hills.sum(1)
+        for i in range(hills.shape[1]):
+            ax.plot(loads, hills[:, i], color=HPA, lw=1.6, alpha=0.75, label="ένας λόφος ανά support vector" if i == 0 else None)
+        ax.plot(loads, total, color=INK, lw=3.2, label="το άθροισμα")
+        ax.axhline(1.0, color=NFR_C, ls="--", lw=2)
+        ax.fill_between(loads, 0, 1.25, where=total >= 1.0, color=FILL, alpha=0.7, lw=0, label="υγιές (άθροισμα ≥ κατώφλι)")
+        holes = np.flatnonzero(np.diff((total >= 1.0).astype(int)))
+        for lo_i, hi_i in zip(holes[1::2], holes[2::2]):
+            ax.annotate("τρύπα", (np.sqrt(loads[lo_i] * loads[hi_i]), 1.0), (np.sqrt(loads[lo_i] * loads[hi_i]), 1.17),
+                        ha="center", fontsize=14, color=NFR_C, arrowprops={"arrowstyle": "->", "color": NFR_C, "lw": 1.6})
+        # the width: where the hill of one end falls to 37% of its peak, 1/sqrt(gamma) units of ln(rps) away
+        k = int(np.argmin(abs(np.exp(sv[one, 0]) - peak_at)))
+        top = a[one][k] / rho
+        far = peak_at * np.exp(sign / np.sqrt(gamma))
+        ax.annotate("", (far, top * np.exp(-1)), (peak_at, top * np.exp(-1)),
+                    arrowprops={"arrowstyle": "<->", "color": INK, "lw": 1.6})
+        units = 1 / np.sqrt(gamma)
+        ax.text(np.sqrt(peak_at * far), top * np.exp(-1) - 0.04,
+                f"37% σε {units:.2g} μονάδ{'α' if units == 1 else 'ες'}: ×{np.exp(units):.2g} φορτίο",
+                ha="center", va="top", fontsize=14, color=INK, bbox={"facecolor": BG, "edgecolor": "none", "alpha": 0.9})
+        ax.plot([h1.min(), h1.max()], [0.03, 0.03], color=MUTED, lw=3)
+        ax.set_xscale("log")
+        ax.set_xlim(0.6, 300)
+        ax.set_ylim(0, 1.25)
+        ax.set_xticks([1, 3, 10, 30, 100, 300])
+        ax.set_xticklabels(["1", "3", "10", "30", "100", "300"])
+        ax.set_xlabel("φορτίο (αιτήματα/s), 1 pod")
+        n_sv = int(one.sum())
+        ax.set_title(f"γ {gamma}: {n_sv} λόφοι, {'φαρδιοί' if gamma < 0.5 else 'στενοί'}", fontsize=18)
+    axes[0].set_ylabel("ύψος / κατώφλι ρ")
+    axes[0].text(290, 1.02, "κατώφλι ρ", color=NFR_C, fontsize=14, va="bottom", ha="right")
+    axes[0].text(np.sqrt(h1.min() * h1.max()), 0.06, "δεδομένα του 1 pod", ha="center", fontsize=14, color=MUTED)
+    fig.tight_layout()
+    fig.legend(*axes[0].get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3, fontsize=15)
+    save(fig, "gamma_hills.png")
+
+
+def fig_gamma_choice():
+    """Both sides of the choice on 1 pod (2 and 3 pods: one interval with every gamma): the healthy intervals along the
+    load, and the p95 the model tolerates at each load before it calls an anomaly (thb.tolerance)."""
+    gammas = sorted([GAMMA_ASIDE] + thb.GAMMAS)
+    loads = thb.SCAN[(thb.SCAN >= 0.8) & (thb.SCAN <= 120)]
+    h1 = health[health["replicas"] == 1]["throughput"]
+    fig, (left, right) = plt.subplots(1, 2, figsize=(16.6, 6.2), gridspec_kw={"width_ratios": [1, 1.15]})
+    for y, gamma in enumerate(reversed(gammas)):
+        chosen = gamma == bundle["gamma"]
+        b = gamma_bundle(gamma)
+        iv = thb.intervals(b, 1)
+        for a, z in iv:
+            left.plot([a, z], [y, y], color=GAMMA_C[gamma], lw=12, solid_capstyle="butt")
+        holes = len(iv) - 1
+        left.text(118, y, "1 διάστημα" if holes == 0 else f"{holes} τρύπ{'α' if holes == 1 else 'ες'}", va="center",
+                  fontsize=15, color=NFR_C if holes else INK)
+        r, p95, _ = thb.tolerance(b, 1, loads)
+        ok = hm.decision(b, thb.rows_at(loads, 1)) >= 0
+        right.plot(loads, np.where(ok, p95, np.nan), color=GAMMA_C[gamma], lw=3.4 if chosen else 2.2,
+                   ls="--" if gamma == GAMMA_ASIDE else "-", zorder=5 if chosen else 3,
+                   label=f"γ {gamma}" + (" *" if gamma == GAMMA_ASIDE else ""))
+        k = int(np.nanargmax(np.where(ok, p95, np.nan)))
+        if gamma in (GAMMA_ASIDE, bundle["gamma"]):
+            right.text(loads[k], p95[k] + 0.006, f"ως {p95[k]:.2f} s", ha="center", va="bottom", fontsize=15,
+                       color=GAMMA_C[gamma], fontweight="bold")
+    left.plot([h1.min(), h1.max()], [-0.8, -0.8], color=MUTED, lw=3)
+    left.text(118, -0.8, "δεδομένα", va="center", fontsize=15, color=MUTED)
+    left.text(0.85, -1.45, "* εκτός του δηλωμένου πλέγματος, ελέγχθηκε μετά την επιλογή", va="center", fontsize=13,
+              color=MUTED)
+    left.set_yticks(range(len(gammas)))
+    left.set_yticklabels([f"γ {g}" + (" *" if g == GAMMA_ASIDE else "") for g in reversed(gammas)], fontsize=16)
+    left.set_ylim(-1.8, len(gammas) - 0.4)
+    left.grid(axis="y", visible=False)
+    left.set_title("Μεγάλο γ: τρύπες στη ζώνη του 1 pod", fontsize=18)
+    left.set_xlabel("φορτίο που το μοντέλο λέει υγιές (αιτήματα/s)")
+    right.set_ylim(0.24, 0.49)
+    right.set_title("Μικρό γ: ανέχεται και την ίδια τη NFR", fontsize=18)
+    right.set_ylabel("p95 που ανέχεται πριν πει ανωμαλία (s)")
+    right.set_xlabel("φορτίο (αιτήματα/s), 1 pod")
+    handles, labels = right.get_legend_handles_labels()
+    right.legend(handles[::-1], labels[::-1], loc="upper center", fontsize=14, ncol=5, handlelength=1.6, columnspacing=1.0)
+    for ax in (left, right):
+        ax.set_xscale("log")
+        ax.set_xlim(0.8, 120 if ax is right else 260)
+        ax.set_xticks([1, 3, 10, 30, 100])
+        ax.set_xticklabels(["1", "3", "10", "30", "100"])
+    nfr_lines(right)
+    fig.tight_layout()
+    save(fig, "gamma_choice.png")
 
 
 # --- the faults ------------------------------------------------------------------------------------------------------
@@ -410,7 +489,8 @@ if __name__ == "__main__":
     fig_ingress_vs_backend()
     fig_if_vs_ocsvm()
     fig_svm_map()
-    fig_gamma_holes()
+    fig_gamma_hills()
+    fig_gamma_choice()
     fig_score_faults()
     fig_faults_timeline()
     fig_normal_load()

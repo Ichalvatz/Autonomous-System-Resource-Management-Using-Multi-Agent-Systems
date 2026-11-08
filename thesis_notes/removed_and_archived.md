@@ -293,3 +293,9 @@ LLM) → `prompt_eval_cases.json`, `prompt_eval_results.jsonl`, `prompt_eval.md`
 | Τα βήματα «δοκιμή → έλεγχος lag» του `v14_finish.sh` | `4-load-testing/v14_finish.sh` | Έλεγχος ορίου (`llm_ready.py --calls-today`, `--seconds-to-reset`), μετά τα δοκιμαστικά runs, το `smoke_gate.py` και η καμπάνια. |
 
 Το `analyze_agent_steps.py` κρατά το `get_deployment_history` στη λίστα του, γιατί διαβάζει τα logs των παλιών runs.
+
+## 13. Παρουσίαση του v14 (2026-11-08)
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| `gamma_holes.png` (τα υγιή διαστήματα για κάθε γ του πλέγματος, 1 / 2 / 3 pods) και η `fig_gamma_holes` | `thesis_notes/figures/presentation/`, `make_presentation_figures.py` | `gamma_hills.png` (τι είναι το γ: οι λόφοι και το άθροισμά τους, 1 pod) και `gamma_choice.png` (και οι δύο πλευρές της επιλογής στο 1 pod: τρύπες με μεγάλο γ, ανοχή στη NFR με μικρό). Στα 2 και 3 pods κάθε γ δίνει ένα διάστημα, οπότε δεν έδειχναν κάτι. Το παλιό: `git show 8371798:thesis_notes/figures/presentation/gamma_holes.png` |
