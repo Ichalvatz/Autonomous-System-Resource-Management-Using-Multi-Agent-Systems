@@ -21,8 +21,9 @@ The comparison is against the native Kubernetes HPA.
     grouped by message with their first / last time and the rare requests; the fault injector leaves no trace in the
     logs. **Status (2026-11-08):** the prompt evaluation is closed (`prompt_eval.md`: per-case right action 94.0% = v13's,
     format failures 1 vs 5; the runs used v13's three tools); hand tests of 8/11 (demo, stuck) went right with the
-    three tools; no measured live run yet. Smoke runs, their gate and the campaign run with one command:
-    `nohup ./4-load-testing/v14_finish.sh > /dev/null 2>&1 &` (log `4-load-testing/v14_finish.log`).
+    three tools. **The campaign `campaign-v14-2026-11-08` started 2026-11-08 ~13:20** with
+    `nohup ./4-load-testing/v14_finish.sh > /dev/null 2>&1 &` (log `4-load-testing/v14_finish.log`): no separate smoke
+    runs; the campaign's first round is judged by `smoke_gate.py --first` and a FAIL stops it (A34).
   - **Agent v13** = git tag `v13-live-check` (A32, A32.1, live-checked 2026-11-03, no campaign): v12's
     model, prompt and tools, with two changes the user asked for.
     - **A32:** the detector judges every reading after a pod-count change ("να κρίνει αμέσως αν είμαστε stable, το οποίο
@@ -369,8 +370,8 @@ v9, the rest as v10, with v12's minimum pod count, v13's detector and verificati
   declared and never ran.
 - **`smoke_gate.py TAG`:** did a new version's smoke runs go right (one run per scenario, every action STABLE, no agent
   crash, faults recovered by a restart, no battery)?
-- **`v14_finish.sh`:** v14's live runs in one command (quota check → smoke runs → smoke gate →
-  `full_campaign.sh campaign-v14-<date>`). `llm_ready.py --calls-today` / `--seconds-to-reset` (no LLM call): the
+- **`v14_finish.sh`:** v14's campaign in one command (quota check → `full_campaign.sh campaign-v14-<date>` → the gate
+  on its first round, `smoke_gate.py --first`, which stops the campaign on a FAIL). `llm_ready.py --calls-today` / `--seconds-to-reset` (no LLM call): the
   agent's requests since the daily reset (incident_log.csv), the time to the next one.
 - **Gemini's free tier** (the key's plan): 500 requests a day for the primary, 20 for the fallback, reset at 10:00 Greek
   time. A campaign uses ~200 (140 in the agent runs of campaign-2026-11-01, plus `llm_ready`). Count an experiment's

@@ -5,7 +5,10 @@ The runs tagged TAG (results_nfr*.csv, notes = TAG, label = AGENT_LABEL, default
   - one per scenario (baseline, stuck, cpuhog), none on battery;
   - every agent action verified STABLE, no agent run that crashed (incident_log.csv, agent_error empty);
   - the faults recovered (recovery_s present) by a restart.
+With --first, the first run of each scenario is judged (the first round of a campaign, A34 2026-11-08), and the exit
+code is 2 while a scenario has no run yet.
 Read-only. Usage (repo root):  .venv/bin/python3 4-load-testing/smoke_gate.py smoke-v14-2026-11-07
+                               .venv/bin/python3 4-load-testing/smoke_gate.py --first campaign-v14-2026-11-08
 """
 import csv
 import os
@@ -23,11 +26,16 @@ def read(path):
     return list(csv.DictReader(open(path))) if os.path.exists(path) else []
 
 
-def main(tag):
+def main(tag, first=False):
     incidents = read(os.path.join(ROOT, "3-ai-agent", "incident_log.csv"))
-    problems = []
+    problems, missing = [], []
     for scenario, name in SCENARIOS.items():
         runs = [r for r in read(os.path.join(LT, name)) if r["notes"] == tag and r["label"] == LABEL]
+        if first and not runs:
+            missing.append(scenario)
+            continue
+        if first:
+            runs = [min(runs, key=lambda r: r["start"])]
         if len(runs) != 1:
             problems.append(f"{scenario}: {len(runs)} runs tagged {tag} (expected 1)")
             continue
@@ -55,9 +63,13 @@ def main(tag):
                 problems.append(f"{scenario}: no restart")
     for p in problems:
         print("PROBLEM:", p)
-    print("smoke gate:", "pass" if not problems else "FAIL")
-    return 0 if not problems else 1
+    if problems or not missing:
+        print("smoke gate:", "pass" if not problems else "FAIL")
+        return 0 if not problems else 1
+    print(f"smoke gate: waiting for the first run of {', '.join(missing)}")
+    return 2
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1]))
+    args = [a for a in sys.argv[1:] if a != "--first"]
+    sys.exit(main(args[0], first="--first" in sys.argv))
