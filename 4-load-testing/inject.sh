@@ -17,7 +17,7 @@ case "${1:-}" in
     done ;;
   reset)
     kubectl rollout restart $D && kubectl scale $D --replicas=1 && kubectl rollout status $D --timeout=180s
-    echo "reset done; wait ~2 min before a new test (the detector ignores readings for 90 s after a replica change)" ;;
+    echo "reset done; wait ~2 min before a new test, so the detector sees healthy readings first" ;;
   status)
     kubectl get $D -o jsonpath='replicas {.status.readyReplicas}/{.spec.replicas} ready, revision {.metadata.annotations.deployment\.kubernetes\.io/revision}{"\n"}'
     kubectl get pods -l app=aiops-backend --no-headers ;;

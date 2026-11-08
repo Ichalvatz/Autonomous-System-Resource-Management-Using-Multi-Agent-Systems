@@ -23,7 +23,6 @@ from agent_tools import (
     run_outcome,
     reset_run_outcome,
     get_pod_breakdown,
-    get_deployment_history,
     guard_start,
     guard_stop,
     guard_step_done,
@@ -210,6 +209,9 @@ def _capacity_table():
 # recent actions, the memory) and ends with the task. One code format (```python, code_block_tags="markdown"): until v13
 # smolagents asked for <code> while the prompt asked for ```python, and 15 of 581 phase-2 steps failed on a stray
 # "python" line. The decision procedure is v9's. v13's prompt: 4-load-testing/archive/prompt_v13/.
+# The investigation (2026-11-08; A34): the data and the logs, two observation tools. The deployment's last change is a
+# line of get_pod_breakdown (get_deployment_history never changed a decision in phase 2), and the logs show how the
+# problem started (warnings and errors grouped with their first and last time, the rare requests of the last 10 min).
 # v13 (2026-11-02; A32, A32.1): v12 with the detector judging every reading after a
 # pod-count change (v12 skipped 90 s; a change no verification watched is followed with the verification's rule), and
 # after a change both the verification and the detector read only data from after it (the window starts where the change
@@ -226,7 +228,7 @@ def _capacity_table():
 AGENT_VERSION = "v14"
 
 # The system prompt (v14, A33): what stays the same at every wake-up. The decision procedure is v9's (classify by the
-# minimum pod count; capacity -> scale to it; anything else -> all three observation tools, then act on the cause), in
+# minimum pod count; capacity -> scale to it; anything else -> both observation tools, then act on the cause), in
 # a calm, direct register with the reason for each rule, as Google's Gemini 3 prompting guide advises. The tools'
 # descriptions come from their docstrings (smolagents renders them in the Jinja block at the end).
 SYSTEM_PROMPT = f"""You are the SRE agent of one Kubernetes deployment, the backend of the web application "myWorld Travel". A health monitor watches the service and wakes you when it leaves its healthy state. Your job is to find what kind of problem it is and act on it with your tools. Code around you checks every action afterwards and keeps a memory of past incidents, so you only decide and act.
@@ -248,10 +250,10 @@ The bands overlap on purpose, so the new count is healthy right after a scale-up
    - Capacity: the minimum pod count in the facts differs from the current count, and all pods are ready. The minimum is the smallest count the health model calls healthy for this load and for the load a rising trend reaches before new pods serve. Go to 2A; no investigation is needed.
    - Something else: the minimum equals the current count but latency or errors are bad, or some pods are not ready, or you are not sure. Go to 2B.
 2A. Capacity: scale to the minimum with scale_kubernetes_deployment(replicas=N). Scale up when the minimum is higher than now. Scale down when it is lower and the objectives are met, because pods the load does not need break the cost objective.
-2B. Something else: investigate with all three observation tools, get_pod_breakdown(), get_deployment_history() and get_kubernetes_logs(), one per step (the system refuses a restart until you have used all three), then act on the cause.
+2B. Something else: investigate with both observation tools, get_pod_breakdown() and get_kubernetes_logs(), one per step (the system refuses a restart until you have used both), then act on the cause.
    - Evidence of a bad state inside the running processes calls for restart_kubernetes_deployment(): ERROR lines or a stuck or runaway job in the logs, pods that are not ready, or event-loop lag or CPU per request several times the healthy reference. Warnings that only repeat the symptom (such as "High latency detected") are not evidence of a cause.
    - If it turns out to be capacity, scale as in 2A.
-   - If a recent change to the deployment caused it (deployment history), take no action: you have no tool to undo a change, and a restart would recreate it. Answer "No action taken: <the change>, needs a human decision".
+   - If a recent change to the deployment caused it (the deployment line of the pod breakdown), take no action: you have no tool to undo a change, and a restart would recreate it. Answer "No action taken: <the change>, needs a human decision".
    - If there is no evidence of a cause and the breach is small or short (for example right after a restart or a scale, while new pods warm up), it may be transient. Answer "No action taken: <reason>"; the monitor wakes you again if it persists.
    Keep in mind: more pods help only when the load is more than the current pods serve; a restart helps only when the bad state lives in the running processes; if one of your recent actions failed verification, do not repeat it without new evidence, because the cause is probably something else.
 3. Apply at most one remediation action. The system then follows the health score: it waits while the state improves, and wakes you again at once if it gets worse or stops improving.
@@ -289,7 +291,6 @@ PROMPT_TEMPLATES["system_prompt"] = SYSTEM_PROMPT
 # steps, and the final-answer checks refuse a guessed answer or a claimed action no tool executed.
 SRE_TOOLS = [
     get_pod_breakdown,
-    get_deployment_history,
     get_kubernetes_logs,
     scale_kubernetes_deployment,
     restart_kubernetes_deployment,
@@ -304,7 +305,7 @@ def make_sre_agent(llm, tools=SRE_TOOLS):
         prompt_templates=PROMPT_TEMPLATES,
         code_block_tags="markdown",
         add_base_tools=False,
-        max_steps=10,  # investigation (3 calls) + action + final_answer, with room for refused calls
+        max_steps=10,  # investigation (2 calls) + action + final_answer, with room for refused calls
         step_callbacks=[guard_step_done],
         final_answer_checks=[guard_final_answer_check, claim_final_answer_check],
     )

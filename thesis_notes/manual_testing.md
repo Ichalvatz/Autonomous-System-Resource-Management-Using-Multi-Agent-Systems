@@ -143,12 +143,16 @@ k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/stuck.
 - Το `/ready` αποτυγχάνει, και το readiness βγάζει το pod εκτός.
 - Το score πέφτει από +1.00 σε −3, μετά −32, μετά −55. Στην 3η μέτρηση γίνεται η αφύπνιση, ~30 s μετά το σφάλμα.
 
-**Τι πρέπει να κάνει ο agent:**
+**Τι πρέπει να κάνει ο agent** (v14, Α34: η έρευνα με δύο εργαλεία, δεδομένα και logs):
 1. Τα ελάχιστα pods είναι ίδια με τα τωρινά (1), οπότε τρέχει την έρευνα (B).
-2. `get_pod_breakdown`: το pod είναι not ready, με p95 ~4.4 s.
-3. `get_deployment_history`: καμία πρόσφατη αλλαγή.
-4. `get_kubernetes_logs`: `DB connection pool exhausted: waited 3000ms … (0/10 idle)`.
-5. `restart_kubernetes_deployment()`, και η επαλήθευση δίνει STABLE σε ~60 s.
+2. `get_pod_breakdown`: το pod είναι not ready, με p95 ~4.4 s. Η γραμμή «Deployment:» δείχνει ότι το template δεν άλλαξε
+   πρόσφατα.
+3. `get_kubernetes_logs`: οι ομάδες `DB connection pool exhausted: waited 3000ms … (0/10 idle …)` και
+   `Server error (5xx): 503`, με πρώτη φορά λίγο μετά το inject και σε όλα τα endpoints. Σπάνιο αίτημα δεν υπάρχει, γιατί
+   το inject δεν αφήνει ίχνος στα logs.
+4. `restart_kubernetes_deployment()`, και η επαλήθευση δίνει STABLE σε ~20–60 s.
+
+Το inject δεν το κάνει το `stuck.js`: το τρέχεις εσύ στο 4ο λεπτό (στα runs της καμπάνιας το κάνει το `run_experiment.sh`).
 
 **Στην καμπάνια:** ανάκαμψη σε 110–120 s. Το HPA δεν ανακάμπτει ποτέ: χωρίς κίνηση η CPU πέφτει, και το liveness περνά.
 
@@ -166,8 +170,9 @@ k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/cpuhog
 
 **Τι πρέπει να κάνει ο agent:**
 1. Τα ελάχιστα pods είναι ίδια με τα τωρινά, άρα έρευνα (B).
-2. `get_pod_breakdown`: μεγάλο event-loop lag και CPU ανά αίτημα πολλαπλάσια του υγιούς 0.0084.
-3. `get_kubernetes_logs`: `job "rebuild-search-index" still running`.
+2. `get_pod_breakdown`: μεγάλο event-loop lag (υγιές ~0.085 s) και CPU ανά αίτημα πολλαπλάσια του υγιούς 0.0084.
+3. `get_kubernetes_logs`: η ομάδα `job "rebuild-search-index" started` (μία φορά, στην ώρα του inject), μετά `still
+   running …`, και `High latency detected` σε όλα τα endpoints.
 4. Restart, και STABLE.
 
 **Στην καμπάνια:** ανάκαμψη σε 110–140 s. Το HPA πάει 1→2 pods και μένει εκεί, με p95 ~0.7 s, χωρίς ανάκαμψη: πληρώνει

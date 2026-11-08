@@ -567,23 +567,74 @@ def test_pod_breakdown_shows_the_sick_pod(fake_cluster):
     assert "event-loop lag p99 ~0.085 s (max 0.39)" in text.split(hog)[0]
 
 
-def test_deployment_history_names_the_change(fake_cluster):
-    text = agent_tools.get_deployment_history()
-    lines = text.splitlines()
-    assert "revision 7 (CURRENT)" in lines[1] and "env FEATURE_X=true added" in lines[1]
-    assert "revision 6" in lines[2] and "rolling restart only" in lines[2]
-    assert "some-other" not in text and "revision 3" not in text
+def _breakdown_deployment_line():
+    with mock.patch.object(agent_tools, "_prom_by_pod", return_value={}):
+        return agent_tools.get_pod_breakdown().splitlines()[-1]
 
 
-def test_logs_select_backend_pods_by_label(fake_cluster):
-    """Fixed 2026-10-11: the selector was app=aiops-backend-deployment (no pod has it), so every call fell
-    back to listing all pods of the namespace. Now one call with the pods' real label."""
+def test_pod_breakdown_names_the_deployment_change(fake_cluster):
+    """A34 (2026-11-08): the deployment's last change is a line of the pod breakdown (until then a tool of its own,
+    get_deployment_history, which never changed a decision in phase 2)."""
+    line = _breakdown_deployment_line()
+    assert line.startswith("Deployment: revision 7 is current, created at ")
+    assert "(2m" in line and line.endswith("change from revision 6: env FEATURE_X=true added.")
+    assert "some-other" not in line and "revision 3" not in line
+
+
+def _log(seconds, level, method, path, message, source="0123456789abcdef"):
+    stamp = (NOW + _dt.timedelta(seconds=seconds)).isoformat().replace("+00:00", "Z")
+    return f"[{stamp}] [{level}] [{source}] " + (f"{method} {path} " if method else "") + f"- {message}"
+
+
+def _steady_then_stuck():
+    """5 min of steady traffic (one rare request just before the end), then the stuck fault's lines."""
+    lines = []
+    for i in range(400):
+        for method, path in (("GET", f"/places/{1000 + i}"), ("GET", "/places/search")):
+            lines.append(_log(i * 0.75, "INFO", method, path, "Request started"))
+            lines.append(_log(i * 0.75, "INFO", method, path, "Request completed | Duration: 1ms | Status: 200"))
+    lines.append(_log(299, "INFO", "POST", "/admin/pool-resize", "Request started"))
+    for i in range(30):
+        lines.append(_log(300 + i, "ERROR", "GET", f"/places/{7 + i}", "DB connection pool exhausted: waited 3000ms "
+                          "for a free connection (0/10 idle since 2026-10-03T10:05:00.000Z)", source=f"{i:016x}"))
+        lines.append(_log(300 + i, "ERROR", "GET", f"/places/{7 + i}", "Server error (5xx): 503 | Duration: 3001ms | "
+                          "Status: 503", source=f"{i:016x}"))
+    lines.append(_log(310, "WARN", None, None, 'job "rebuild-search-index" started', source="scheduler"))
+    lines.append("FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory")
+    return "\n".join(lines)
+
+
+def test_logs_show_how_the_problem_started(fake_cluster):
+    """A34 (2026-11-08): the last 10 min of every pod, warnings and errors grouped by message with their first and last
+    time and endpoints, and the rare requests of the window. Until then the last 10 problem lines of the last 200 lines:
+    at 57 rps the last 1.8 s, ten copies of the symptom."""
     _, core, _ = fake_cluster
-    core.read_namespaced_pod_log.return_value = "GET /login 200\n[ERROR] DB connection pool exhausted\n"
+    core.read_namespaced_pod_log.return_value = _steady_then_stuck()
     text = agent_tools.get_kubernetes_logs()
     core.list_namespaced_pod.assert_called_once_with(namespace="default", label_selector="app=aiops-backend")
-    assert f"--- Pod {DEP}-h7-aaaaa: 2 lines scanned, 1 warnings/errors ---" in text
-    assert text.count("[ERROR] DB connection pool exhausted") == 2
+    assert core.read_namespaced_pod_log.call_args.kwargs["since_seconds"] == 600
+    pod = text.split(f"--- Pod {DEP}-h7-aaaaa:")[1].split("--- Pod")[0]
+    clock = lambda seconds: (NOW + _dt.timedelta(seconds=seconds)).astimezone().strftime("%H:%M:%S")
+    assert "Warnings and errors, 4 kind(s), in order of first appearance:" in pod
+    pool = next(l for l in pod.splitlines() if "DB connection pool exhausted" in l)
+    assert pool.startswith(f"- ERROR x30, first {clock(300)}, last {clock(329)} on GET /places/:id 30: ")
+    assert sum("Server error (5xx): 503" in l for l in pod.splitlines()) == 1     # one kind, not 30
+    assert "- WARN x1" in pod and 'job "rebuild-search-index" started' in pod
+    assert "- unstructured x1" in pod and "heap out of memory" in pod
+    assert "Request started" not in pod and "Status: 200" not in pod               # requests are not warnings
+    assert pod.splitlines()[-1] == ("Rare requests (called at most 3 times, of 801 requests in the window): "
+                                    f"POST /admin/pool-resize at {clock(299)}.")
+
+
+def test_logs_of_steady_traffic_and_of_a_quiet_pod(fake_cluster):
+    _, core, _ = fake_cluster
+    steady = "\n".join(_log(i * 0.5, "INFO", "GET", "/places/search", "Request started") for i in range(400))
+    core.read_namespaced_pod_log.side_effect = [steady, _log(1, "INFO", "GET", "/ready", "Request started")]
+    text = agent_tools.get_kubernetes_logs()
+    first, second = text.split("--- Pod")[1:]
+    assert "Warnings and errors: none." in first
+    assert "Rare requests: none; every endpoint called in the window (400 requests) is part of the steady" in first
+    assert "Rare requests: too little traffic to tell (1 requests in the window)." in second
 
 
 def test_recent_actions_show_failed_action_and_expire():
@@ -602,9 +653,9 @@ def test_recent_actions_show_failed_action_and_expire():
     assert agent._recent_actions_text(now).startswith("None")
 
 
-def test_deployment_history_after_a_rollback(fake_cluster):
-    """A rollback re-uses the old ReplicaSet (revision 6 -> 8): the bad revision 7 must stay
-    listed with its change, and 8 must say it re-applied 6 and when (from the events)."""
+def test_deployment_line_after_a_rollback(fake_cluster):
+    """A rollback re-uses the old ReplicaSet (revision 6 -> 8): the line must say that 8 re-applied 6, when (from the
+    events), and what changed from 7, the revision it replaced."""
     apps, core, dep = fake_cluster
     rs6 = _rs(8, "h6", minutes_ago=20)
     rs6.metadata.annotations["deployment.kubernetes.io/revision-history"] = "6"
@@ -616,11 +667,9 @@ def test_deployment_history_after_a_rollback(fake_cluster):
     core.list_namespaced_event.return_value.items = [
         NS(message=f"Scaled up replica set {DEP}-h6 from 0 to 1", last_timestamp=NOW - _dt.timedelta(minutes=1),
            event_time=None, metadata=NS(creation_timestamp=None))]
-    lines = agent_tools.get_deployment_history().splitlines()
-    assert "revision 8 (CURRENT): re-applied the template of revision 6" in lines[1]
-    assert "(1m" in lines[1] and "env FEATURE_X removed" in lines[1]   # ~1 min ago (suite timing varies)
-    assert "revision 7" in lines[2] and "env FEATURE_X=true added" in lines[2]
-    assert "revision 6" in lines[3] and "later re-applied as revision 8" in lines[3]
+    line = _breakdown_deployment_line()
+    assert line.startswith("Deployment: revision 8 is current, re-applied the template of revision 6 at ")
+    assert "(1m" in line and line.endswith("change from revision 7: env FEATURE_X removed.")   # ~1 min ago
 
 
 # ---------------------------------------------------------------- computed facts (v10)

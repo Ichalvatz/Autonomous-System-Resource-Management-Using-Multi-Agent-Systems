@@ -71,16 +71,14 @@ app.use(
   })
 );
 app.use(cors(corsOptions));
-app.use(requestId); // Request ID for tracing
-app.use(metricsMiddleware); // Prometheus metrics instrumentation
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Structured logging middleware stack (for AIOps observability)
-app.use(structuredLogger); // Main structured logger with request timing
-app.use(performanceMonitor); // Performance tracking utilities
-app.use(setupAsyncOperationLogger); // Async operation logging capabilities
-
+/**
+ * Fault injection for the thesis experiments (4-load-testing/inject.sh, run_experiment.sh), only with
+ * CHAOS_ENABLED=true. Declared before the request ID, the metrics and the request log (2026-11-08,
+ * design_decisions.md A34): the injector is not part of the system under test, so its two calls leave
+ * no trace in the logs and metrics the agent reads, as a real connection leak or a scheduled job has
+ * no request that announces it. What the faults do to the service shows as before.
+ */
 /**
  * Chaos: "stuck dependency" fault (thesis restart experiment, 4-load-testing/fault_experiment.sh).
  * POST /chaos/stuck puts THIS process in a state where every request first waits
@@ -90,7 +88,8 @@ app.use(setupAsyncOperationLogger); // Async operation logging capabilities
  * dilutes the problem but does not fix it.
  * Since 2026-10-22 the wait ends like a real pool's acquire timeout: 503 DB_POOL_EXHAUSTED
  * (until then the request went on and succeeded after the 3 s), and /ready reports the pod
- * as not ready, so Kubernetes stops routing to it (readiness probe, phase 2).
+ * as not ready, so Kubernetes stops routing to it (readiness probe, phase 2). The effect on
+ * requests is the middleware after the request log below.
  */
 const STUCK_DELAY_MS = 3000;
 let stuckSince = null;
@@ -99,21 +98,7 @@ app.post('/chaos/stuck', (_, res) => {
     return res.status(404).json({ error: 'CHAOS_DISABLED' });
   }
   stuckSince = stuckSince ?? new Date().toISOString();
-  console.error(`[${new Date().toISOString()}] [ERROR] [chaos] - Database connection pool leak injected: every request will wait ${STUCK_DELAY_MS}ms`);
   res.status(200).json({ stuck: true, since: stuckSince, delayMs: STUCK_DELAY_MS });
-});
-app.use((req, res, next) => {
-  if (!stuckSince || req.path === '/metrics' || req.path === '/health' || req.path === '/ready' || req.path.startsWith('/chaos')) {
-    return next();
-  }
-  setTimeout(() => {
-    console.error(
-      `[${new Date().toISOString()}] [ERROR] [${req.id || '-'}] ${req.method} ${req.path} - ` +
-      `DB connection pool exhausted: waited ${STUCK_DELAY_MS}ms for a free connection (0/10 idle since ${stuckSince})`
-    );
-    res.status(503).json({ success: false, error: 'DB_POOL_EXHAUSTED',
-      message: `Timed out after ${STUCK_DELAY_MS}ms waiting for a database connection` });
-  }, STUCK_DELAY_MS);
 });
 
 /**
@@ -154,6 +139,31 @@ app.post('/chaos/cpuhog', (_, res) => {
   }
   console.warn(`[${new Date().toISOString()}] [WARN] [scheduler] - job "rebuild-search-index" started`);
   res.status(200).json({ cpuhog: true, since: new Date(hogSince).toISOString(), busyMs: HOG_BUSY_MS });
+});
+
+app.use(requestId); // Request ID for tracing
+app.use(metricsMiddleware); // Prometheus metrics instrumentation
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Structured logging middleware stack (for AIOps observability)
+app.use(structuredLogger); // Main structured logger with request timing
+app.use(performanceMonitor); // Performance tracking utilities
+app.use(setupAsyncOperationLogger); // Async operation logging capabilities
+
+// The stuck fault's effect: after the request log, so each failed request is logged as a real one would be.
+app.use((req, res, next) => {
+  if (!stuckSince || req.path === '/metrics' || req.path === '/health' || req.path === '/ready' || req.path.startsWith('/chaos')) {
+    return next();
+  }
+  setTimeout(() => {
+    console.error(
+      `[${new Date().toISOString()}] [ERROR] [${req.id || '-'}] ${req.method} ${req.path} - ` +
+      `DB connection pool exhausted: waited ${STUCK_DELAY_MS}ms for a free connection (0/10 idle since ${stuckSince})`
+    );
+    res.status(503).json({ success: false, error: 'DB_POOL_EXHAUSTED',
+      message: `Timed out after ${STUCK_DELAY_MS}ms waiting for a database connection` });
+  }, STUCK_DELAY_MS);
 });
 
 /**

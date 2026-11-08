@@ -1,6 +1,6 @@
 """
-The final agent (v14, thesis phase 2, 2026-11-03; decision procedure and tools as v9): its toolset (3 observation tools, scale,
-rolling restart of the whole app) and tool descriptions, the prompt's rules, the three code-enforced guards (evidence before action; no
+The final agent (v14, thesis phase 2, 2026-11-03; decision procedure and tools as v9): its toolset (2 observation tools, scale,
+rolling restart of the whole app; A34: the deployment history is a line of the pod breakdown) and tool descriptions, the prompt's rules, the three code-enforced guards (evidence before action; no
 claimed action without a tool call; full diagnosis before a restart), and replays of the three measured incidents
 that motivated the guards (phase 1, agents v6/v7), run through a real smolagents CodeAgent with a scripted model.
 The computed facts are tested in test_agent_logic.py.
@@ -19,15 +19,16 @@ os.environ.setdefault("GEMINI_API_KEY", "dummy-for-tests")
 import agent  # noqa: E402
 import agent_tools  # noqa: E402
 
-OBSERVE = ["get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs"]
+OBSERVE = ["get_pod_breakdown", "get_kubernetes_logs"]
 ACT = ["scale_kubernetes_deployment", "restart_kubernetes_deployment"]
 
 
 # ---------------------------------------------------------------- the agent and its prompt
 
-def test_agent_has_the_five_tools_and_the_guards():
-    assert list(agent.sre_agent.tools)[:5] == OBSERVE + ACT
-    assert not {"restart_kubernetes_pod", "rollback_kubernetes_deployment"} & set(agent.sre_agent.tools)
+def test_agent_has_the_four_tools_and_the_guards():
+    assert list(agent.sre_agent.tools)[:4] == OBSERVE + ACT
+    assert not {"restart_kubernetes_pod", "rollback_kubernetes_deployment", "get_deployment_history"} & set(
+        agent.sre_agent.tools)
     step_callbacks = [f for fs in agent.sre_agent.step_callbacks._callbacks.values() for f in fs]
     assert agent.guard_step_done in step_callbacks
     assert agent.claim_final_answer_check in agent.sre_agent.final_answer_checks
@@ -37,7 +38,8 @@ def test_agent_has_the_five_tools_and_the_guards():
 def test_prompt_classifies_first_and_has_no_fault_specific_hint():
     p = agent.SYSTEM_PROMPT
     assert "Classify the incident with the computed facts" in p and "minimum pod count in the facts" in p
-    assert "investigate with all three observation tools" in p
+    assert "investigate with both observation tools" in p and "get_deployment_history" not in p
+    assert "the deployment line of the pod breakdown" in p
     assert "p95 below 0.35 s" in p and "fewer than 1% of requests fail" in p and "at most 3 pods" in p
     assert "not evidence of a cause" in p and "it may be transient" in p
     assert "you have no tool to undo a change" in p
@@ -71,6 +73,8 @@ def test_tool_descriptions_agree_with_the_prompt():
     assert "Only useful" not in doc["get_kubernetes_logs"]
     assert "ALL backend pods" in doc["restart_kubernetes_deployment"]
     assert "new revision" in doc["restart_kubernetes_deployment"]
+    assert "what changed from the revision before it" in doc["get_pod_breakdown"]               # A34
+    assert "the first and the last time" in doc["get_kubernetes_logs"] and "rare requests" in doc["get_kubernetes_logs"]
 
 
 # ---------------------------------------------------------------- guards
@@ -101,14 +105,13 @@ def test_claim_check_accepts_no_action_and_real_actions():
     agent_tools.guard_stop()
 
 
-def test_diagnosis_rule_refuses_restart_until_all_three_observed():
+def test_diagnosis_rule_refuses_restart_until_both_observed():
     agent_tools.guard_start(enforce=True)
     agent_tools._guard_observed("get_pod_breakdown")
     agent_tools.guard_step_done()
     refusal = agent_tools._diagnosis_refusal()
     assert refusal.startswith("Refused (diagnosis first)")
-    assert "get_deployment_history()" in refusal and "get_kubernetes_logs()" in refusal
-    agent_tools._guard_observed("get_deployment_history")
+    assert "get_kubernetes_logs()" in refusal and "get_pod_breakdown()" not in refusal
     agent_tools._guard_observed("get_kubernetes_logs")
     assert agent_tools._diagnosis_refusal() is None
     agent_tools.guard_stop()
@@ -160,11 +163,10 @@ def _run_scripted(blocks, replicas_now=2):
 def test_replay_cpuhog_precommitment_is_refused():
     """Measured 2026-10-03 15:29 (agent v6, cpuhog): step 1 wrote observe + scale(3) + final_answer in one
     block, deciding before it had seen the evidence. The scale-up and the guessed answer are refused; the
-    restart goes through once all three observation tools were used."""
+    restart goes through once both observation tools were used."""
     applied, answer = _run_scripted([
         "```python\nprint(get_pod_breakdown())\nscale_kubernetes_deployment(replicas=3)\n"
         "final_answer('Root cause: overload (a guess). Action: scaled to 3.')\n```",
-        "```python\nprint(get_deployment_history())\n```",
         "```python\nprint(get_kubernetes_logs())\n```",
         "```python\nprint(restart_kubernetes_deployment())\n```",
         "```python\nfinal_answer('Root cause: runaway job. Action: rolling restart.')\n```",
@@ -185,14 +187,13 @@ def test_replay_demo_claimed_action_without_tool_call():
     assert agent_tools.run_outcome["actions"] == ["scale 2->3"]
 
 
-def test_replay_badconfig_restart_without_history_is_refused():
+def test_replay_badconfig_restart_before_the_logs_is_refused():
     """Measured 2026-10-03 21:08 (agent v7, badconfig): get_pod_breakdown, then a restart (the cause was a
-    config change it never looked at). The restart is refused; after history and logs it may act. (The
-    badconfig scenario is not part of phase 2; the guard it motivated is.)"""
+    config change it never looked at). The restart is refused; after the logs it may act. (The badconfig scenario
+    is not part of phase 2; the guard it motivated is. Since A34 the change shows in the breakdown itself.)"""
     applied, _ = _run_scripted([
         "```python\nprint(get_pod_breakdown())\n```",
         "```python\nprint(restart_kubernetes_deployment())\n```",
-        "```python\nprint(get_deployment_history())\n```",
         "```python\nprint(get_kubernetes_logs())\n```",
         "```python\nprint(restart_kubernetes_deployment())\n```",
         "```python\nfinal_answer('Root cause: x. Action: restart.')\n```",

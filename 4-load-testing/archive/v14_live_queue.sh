@@ -1,10 +1,10 @@
 #!/bin/bash
-# Agent v14 (A33, the final prompt), smoke runs before its campaign (2026-11-03/04): one-off queue, started once the
-# prompt evaluation (prompt_eval.py) passed its criteria. The user gave full autonomy for this and the campaign after it
-# ("μην σταματήσεις για τίποτα").
-#   stuck and cpuhog (memory off) and the normal load (memory on: the incidents of campaign-2026-11-01 and the v13 smoke
-#   runs, in the same model's space), notes smoke-v14-<date> (or the tag given): the new prompt live, with the
-#   verification and the detector of v13. 4-load-testing/smoke_gate.py <tag> checks them.
+# Agent v14 (A33, the final prompt; A34, the investigation with the data and the logs), smoke runs before its campaign:
+# one-off queue. The user gave full autonomy for this and the campaign after it ("μην σταματήσεις για τίποτα"), and
+# starts it by hand (v14_finish.sh).
+#   stuck and cpuhog (memory off) and the normal load (memory on: the incidents of campaign-2026-11-01, the v13 smoke
+#   runs and the hand tests of 8/11, in the same model's space), notes smoke-v14-<date> (or the tag given): the new
+#   prompt and tools live, with the verification and the detector of v13. 4-load-testing/smoke_gate.py <tag> checks them.
 # Every run waits for AC power and until llm_ready.py gets 3/3 answers. The campaign is started separately
 # (4-load-testing/v14_finish.sh runs this queue, the gate and then the campaign).
 # Run from the repo root:  nohup ./4-load-testing/archive/v14_live_queue.sh [tag] &   (log: 4-load-testing/v14_live_queue.log)

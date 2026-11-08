@@ -1,0 +1,72 @@
+
+===== [12:10:59] healthy, 57 rps: get_pod_breakdown()
+1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, event-loop lag p99 ~0.085 s (max 0.39), throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.
+- aiops-backend-deployment-579944d6c7-8glrm | revision 403 | age 3m02s | ready | container restarts 0
+    CPU 0.41 cores (throttled 9.1%) | 57.2 req/s | CPU per request 0.007 core-s | p95 0.07 s | 5xx 0.00/s | event-loop lag p99 0.10 s | memory 245 MiB / 1024 MiB limit
+Deployment: revision 403 is current, created at 12:07:56 (3m03s ago); change from revision 402: rolling restart only (no change to image, env or resources).
+
+===== [12:10:59] healthy, 57 rps: get_kubernetes_logs()
+Logs of the last 10 min of every backend pod (or since it started). Times are local; the application's own timestamps inside the lines are UTC.
+--- Pod aiops-backend-deployment-579944d6c7-8glrm: 16148 lines from 12:07:59 to 12:10:59 ---
+Warnings and errors, 1 kind(s), in order of first appearance:
+- WARN x1, first 12:10:06, last 12:10:06 on POST /users/:id/favourite-places 1: Client error (4xx): 409 | Duration: 1ms | Status: 409
+Rare requests: none; every endpoint called in the window (8062 requests) is part of the steady traffic.
+
+===== [12:11:09] $ ./4-load-testing/inject.sh stuck
+pod/aiops-backend-deployment-579944d6c7-8glrm: {"stuck":true,"since":"2026-11-08T10:11:09.556Z","delayMs":3000}
+
+
+===== [12:11:44] stuck, 35 s after the inject: get_pod_breakdown()
+1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, event-loop lag p99 ~0.085 s (max 0.39), throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.
+- aiops-backend-deployment-579944d6c7-8glrm | revision 403 | age 3m47s | not ready (Running) | container restarts 0
+    CPU 0.21 cores (throttled 2.8%) | 24.7 req/s | CPU per request 0.009 core-s | p95 4.16 s | 5xx 4.34/s | event-loop lag p99 0.01 s | memory 90 MiB / 1024 MiB limit
+Deployment: revision 403 is current, created at 12:07:56 (3m48s ago); change from revision 402: rolling restart only (no change to image, env or resources).
+
+===== [12:11:44] stuck, 35 s after the inject: get_kubernetes_logs()
+Logs of the last 10 min of every backend pod (or since it started). Times are local; the application's own timestamps inside the lines are UTC.
+--- Pod aiops-backend-deployment-579944d6c7-8glrm: 19709 lines from 12:07:59 to 12:11:44 ---
+Warnings and errors, 3 kind(s), in order of first appearance:
+- WARN x2, first 12:10:06, last 12:11:09 on POST /users/:id/favourite-places 2: Client error (4xx): 409 | Duration: 1ms | Status: 409
+- ERROR x795, first 12:11:12, last 12:11:27 on GET /places/search 246, GET /places/:id 199, GET /places/:id/reviews 104 and 4 more endpoint(s): DB connection pool exhausted: waited 3000ms for a free connection (0/10 idle since 2026-11-08T10:11:09.556Z)
+- ERROR x803, first 12:11:12, last 12:11:44 on GET /places/search 246, GET /places/:id 199, GET /places/:id/reviews 104 and 5 more endpoint(s): Server error (5xx): 503 | Duration: 3002ms | Status: 503
+Rare requests: none; every endpoint called in the window (9445 requests) is part of the steady traffic.
+
+===== [12:11:51] $ ./4-load-testing/inject.sh reset
+deployment.apps/aiops-backend-deployment restarted
+deployment.apps/aiops-backend-deployment scaled
+Waiting for deployment "aiops-backend-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "aiops-backend-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "aiops-backend-deployment" rollout to finish: 1 old replicas are pending termination...
+deployment "aiops-backend-deployment" successfully rolled out
+reset done; wait ~2 min before a new test, so the detector sees healthy readings first
+
+
+===== [12:14:19] $ ./4-load-testing/inject.sh cpuhog
+pod/aiops-backend-deployment-8c89cc875-pv5bq: {"cpuhog":true,"since":"2026-11-08T10:14:19.670Z","busyMs":600}
+
+
+===== [12:15:04] cpuhog, 45 s after the inject: get_pod_breakdown()
+1 backend pod(s). Healthy reference (healthy traffic of the normal request mix): CPU per request ~0.0084 core-s (max 0.016), p95 <= 0.25 s, event-loop lag p99 ~0.085 s (max 0.39), throttling <= 25%. Below ~5 req/s per pod the process's idle CPU inflates CPU per request. A pod that is not ready receives no traffic.
+- aiops-backend-deployment-8c89cc875-pv5bq | revision 404 | age 3m20s | ready | container restarts 0
+    CPU 0.90 cores (throttled 28.2%) | 53.7 req/s | CPU per request 0.017 core-s | p95 0.20 s | 5xx 0.00/s | event-loop lag p99 1.11 s | memory 235 MiB / 1024 MiB limit
+Deployment: revision 404 is current, created at 12:11:44 (3m20s ago); change from revision 403: rolling restart only (no change to image, env or resources).
+
+===== [12:15:04] cpuhog, 45 s after the inject: get_kubernetes_logs()
+Logs of the last 10 min of every backend pod (or since it started). Times are local; the application's own timestamps inside the lines are UTC.
+--- Pod aiops-backend-deployment-8c89cc875-pv5bq: 21335 lines from 12:11:49 to 12:15:04 ---
+Warnings and errors, 3 kind(s), in order of first appearance:
+- WARN x1, first 12:14:19, last 12:14:19: job "rebuild-search-index" started
+- WARN x49, first 12:14:22, last 12:15:00 on POST /auth/login 49: High latency detected: Request queued or CPU throttled | Duration: 635ms | Status: 200
+- WARN x4, first 12:14:30, last 12:15:03: job "rebuild-search-index" still running after 11s (iteration 10, expected 1); event loop blocked 600ms per iteration
+Rare requests: none; every endpoint called in the window (10653 requests) is part of the steady traffic.
+
+===== [12:15:07] $ ./4-load-testing/inject.sh reset
+deployment.apps/aiops-backend-deployment restarted
+deployment.apps/aiops-backend-deployment scaled
+Waiting for deployment "aiops-backend-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "aiops-backend-deployment" rollout to finish: 1 old replicas are pending termination...
+deployment "aiops-backend-deployment" successfully rolled out
+reset done; wait ~2 min before a new test, so the detector sees healthy readings first
+
+
+===== [12:17:59] k6 exit 0

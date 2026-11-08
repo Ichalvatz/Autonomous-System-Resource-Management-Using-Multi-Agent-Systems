@@ -27,48 +27,41 @@ Criteria, declared before the first run (A33): v14 passes if, over the runs that
   3. its median number of LLM steps is not above v13's;
   4. it never restarts in a case whose right action is not a restart, where v13 never did either.
 
-Usage (repo root):  .venv/bin/python3 4-load-testing/prompt_eval.py [--reps 3]        # runs, resumable
-                    .venv/bin/python3 4-load-testing/prompt_eval.py --cases           # list the cases only
+Closed on 2026-11-08 (A34), before the runs still planned (v14 up to 3 runs and the lag check v14-lag on the 17
+investigation cases, ~380 calls): v14's investigation became two tools (the data and the logs; the deployment history
+a line of get_pod_breakdown; the logs from the last 10 min, grouped, with the rare requests), so those runs would have
+measured tools that are no longer the agent's, and the new logs tool cannot run on recorded wake-ups (only the old
+tool's output was recorded, not the pods' logs). The runs that were made measured the prompts with the three tools of
+v13 (get_pod_breakdown, get_deployment_history, get_kubernetes_logs); the code that ran them is commit ab2717a. This
+file now lists the cases and writes the report; it calls no LLM.
+
+Usage (repo root):  .venv/bin/python3 4-load-testing/prompt_eval.py --cases           # list the cases
                     .venv/bin/python3 4-load-testing/prompt_eval.py --report > 4-load-testing/prompt_eval.md
-One line per run in prompt_eval_results.jsonl (a run already there is not repeated). GEMINI_API_KEY from the
-environment or the root .env (llm_ready.load_key; never printed).
+One line per run in prompt_eval_results.jsonl.
 """
 import argparse
-import copy
 import glob
 import json
 import os
 import re
 import statistics
 import sys
-import time
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest import mock
-from zoneinfo import ZoneInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LT = os.path.join(ROOT, "4-load-testing")
-sys.path[:0] = [os.path.join(ROOT, "3-ai-agent"), LT, os.path.join(LT, "archive", "prompt_v13")]
-import llm_ready  # noqa: E402
-
-llm_ready.load_key()
+sys.path[:0] = [os.path.join(ROOT, "3-ai-agent"), LT]
+os.environ.setdefault("GEMINI_API_KEY", "not-used")   # the agent module wants a key; nothing here calls the LLM
 import agent  # noqa: E402
 import agent_tools  # noqa: E402
-import prompt_v13  # noqa: E402
-from smolagents import CodeAgent  # noqa: E402
-from smolagents.models import RateLimiter  # noqa: E402
-
-# Pacing (from 2026-11-04 12:00, A33): the key is on Gemini's free tier (~15 requests per minute), and back-to-back runs
-# went over it, so 429s cost retries and runs. Both prompts are paced the same, one call per 5 s at most; a run's
-# "seconds" includes the pacing (the runs before 12:00 were not paced).
-agent.model.rate_limiter = RateLimiter(12)
 
 RESULTS = os.path.join(LT, "prompt_eval_results.jsonl")
 DRAFT = "v14-draft1"   # the first draft of v14's prompt, its runs kept under this label (A33)
-LAG = "v14-lag"        # v14 with get_pod_breakdown's healthy event-loop lag reference, on the non-capacity cases (A33)
+LAG = "v14-lag"        # the lag check (A33): declared, never run (closed by A34)
 CASES = os.path.join(LT, "prompt_eval_cases.json")
-OBSERVE = ["get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs"]
+OBSERVE = ["get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs"]   # v13's, as recorded
 FAULT_AT_S = 240
 UNSTABLE_TEST = {"16:51:20": "scale 3", "16:52:35": "none", "16:55:12": "none", "16:58:26": "scale 1"}
 LEFT_OUT = {"16:50:32": "the 1 m window showed 61 rps of an actual 280 and the pod was not ready"}
@@ -225,176 +218,17 @@ def expected_action(case, start):
     return "none", f"minimum {need} = current {current}" + ("" if ready >= current else f", {ready} ready")
 
 
-# ---------------------------------------------------------------- one run of one prompt on one case
-
-def _recorded(real, output):
-    """The real tool (name, description, inputs) answering with the recorded output; the guards still see the call."""
-    t = copy.copy(real)
-
-    def forward(*_args, **_kwargs):
-        agent_tools._guard_observed(real.name)
-        return output if output else f"(No output was recorded for {real.name}() in this incident.)"
-    t.forward = forward
-    return t
-
-
-RECORDED_REFERENCE = "p95 <= 0.25 s, throttling <= 25%."
-LAG_REFERENCE = (f"p95 <= 0.25 s, event-loop lag p99 ~{agent_tools.HEALTHY_LAG_P99} s "
-                 f"(max {agent_tools.HEALTHY_LAG_P99_MAX}), throttling <= 25%.")
-
-
-def with_lag_reference(outputs):
-    """The recorded outputs with get_pod_breakdown's healthy reference as v14's tool gives it (A33, 12:28)."""
-    out = dict(outputs)
-    if out.get("get_pod_breakdown"):
-        out["get_pod_breakdown"] = out["get_pod_breakdown"].replace(RECORDED_REFERENCE, LAG_REFERENCE)
-    return out
-
-
-def _ends(text, head=300, tail=900):
-    """The start and the end of a long model output (where a missing code fence shows)."""
-    return text if len(text) <= head + tail else text[:head] + " [...] " + text[-tail:]
-
-
-def run_case(case, variant):
-    outputs = with_lag_reference(case["outputs"]) if variant == LAG else case["outputs"]
-    tools = [_recorded(getattr(agent_tools, t), outputs.get(t)) for t in OBSERVE] + \
-            [agent_tools.scale_kubernetes_deployment, agent_tools.restart_kubernetes_deployment]
-    metrics = {**case["metrics"], "window": "1m"}
-    if variant in ("v14", LAG):
-        sre = agent.make_sre_agent(agent.model, tools)
-        memory = (agent_tools.format_memory(case["memory_matches"], case["memory_resolved"],
-                                            agent_tools._similar_max())
-                  if case["memory_matches"] else case["memory_v13"])
-        task = agent.incident_message(metrics, memory, case["recent_v14"])
-    else:
-        sre = CodeAgent(tools=tools, model=agent.model, add_base_tools=False, max_steps=10,
-                        step_callbacks=[agent_tools.guard_step_done],
-                        final_answer_checks=[agent_tools.guard_final_answer_check,
-                                             agent_tools.claim_final_answer_check])
-        mj = json.dumps(case["metrics"])
-        task = prompt_v13.AGENT_PROMPT.format(
-            metrics_json=mj, signature=prompt_v13.generate_deterministic_signature(mj),
-            capacity=prompt_v13.capacity_context(agent.CAPACITY), facts=prompt_v13._computed_facts(case["metrics"]),
-            recent=case["recent_v13"], memory=case["memory_v13"], nfr_p95=agent.nfr_metrics.NFR_P95,
-            nfr_errors_pct=100 * agent.nfr_metrics.NFR_ERRORS, max_pods=agent.nfr_metrics.MAX_PODS)
-    sre.logger.level = -1     # quiet: the result line says what happened
-    agent.model.reset_stats()
-    agent_tools.reset_run_outcome()
-    agent_tools._last_scale_action_at = agent_tools._last_restart_action_at = -1e9
-    applied, answer, error = [], "", ""
-    started = time.monotonic()
-    with mock.patch.object(agent_tools, "get_kube_config"), \
-            mock.patch.object(agent_tools.client, "AppsV1Api") as apps:
-        apps.return_value.read_namespaced_deployment_scale.return_value.spec.replicas = int(round(metrics["replicas"]))
-        apps.return_value.patch_namespaced_deployment.side_effect = lambda **kw: applied.append("restart")
-        apps.return_value.patch_namespaced_deployment_scale.side_effect = \
-            lambda **kw: applied.append(f"scale {kw['body']['spec']['replicas']}")
-        agent_tools.guard_start(enforce=True)
-        try:
-            answer = str(sre.run(task))
-        except Exception as e:
-            error = f"{type(e).__name__}: {e}"[:300]
-        agent_tools.guard_stop()
-    steps = [s for s in sre.memory.steps if type(s).__name__ == "ActionStep"]
-    errors = [str(getattr(s, "error", "") or "") for s in steps]
-    return {"case": case["id"], "variant": variant, "expected": case["expected"], "applied": applied,
-            "answer": answer[:300], "error": error, "steps": len(steps),
-            "format_failures": sum(("Error in code parsing" in e or "variable `python`" in e) for e in errors),
-            "failed_outputs": [_ends(str(s.model_output or "")) + " || " + e[:200] for e, s in zip(errors, steps)
-                               if "Error in code parsing" in e or "variable `python`" in e],
-            "refusals": sum("Refused" in e or "Refused" in str(getattr(s, "observations", "") or "")
-                            for e, s in zip(errors, steps)),
-            "llm_calls": agent.model.stats["calls"], "retries": agent.model.stats["retries"],
-            "fallback_calls": agent.model.stats["fallback_calls"], "fenced": agent.model.stats["fenced"],
-            "seconds": round(time.monotonic() - started, 1),
-            "at": datetime.now().isoformat(timespec="seconds")}
-
+# ---------------------------------------------------------------- the report
 
 def outcome(r):
     """The decision of one run: 'none', 'restart' or 'scale N' (the last action applied)."""
     return r["applied"][-1] if r["applied"] else "none"
 
 
-# ---------------------------------------------------------------- driver and report
-
 def load_results():
     if not os.path.exists(RESULTS):
         return []
     return [json.loads(l) for l in open(RESULTS) if l.strip()]
-
-
-def last_reset(now=None):
-    """When Gemini's daily quota last reset: midnight Pacific time (10:00 in Greece in winter), as a local datetime."""
-    pacific = (now or datetime.now()).astimezone(ZoneInfo("America/Los_Angeles"))
-    return pacific.replace(hour=0, minute=0, second=0, microsecond=0).astimezone().replace(tzinfo=None)
-
-
-def wait_for_llm():
-    """Wait until the primary model answers. The key is on Gemini's free tier: 500 requests a day per model (the
-    fallback 20). When the day's quota is used up, sleep until 5 min after the next reset, else try every 5 min."""
-    import litellm
-    while True:
-        try:
-            litellm.completion(model=agent.PRIMARY_MODEL, max_tokens=5, timeout=30,
-                               messages=[{"role": "user", "content": "Reply with the single word OK."}])
-            return
-        except Exception as e:
-            if "PerDay" in str(e):
-                wake = last_reset() + timedelta(days=1, minutes=5)
-                print(f"[{datetime.now():%H:%M:%S}] the daily quota of {agent.PRIMARY_MODEL} is used up: waiting "
-                      f"until {wake:%Y-%m-%d %H:%M}", flush=True)
-                time.sleep(max(60.0, (wake - datetime.now()).total_seconds()))
-            else:
-                print(f"[{datetime.now():%H:%M:%S}] {agent.PRIMARY_MODEL} is not answering ({type(e).__name__}): "
-                      f"trying again in 5 min", flush=True)
-                time.sleep(300)
-
-
-def focus(case):
-    """The cases where the prompts differ: the 17 that call for an investigation (restart or no action). The capacity
-    cases were settled by 2026-11-04 (v13 41/41, v14 36/36 right, v14 0 format failures), so the rest of the runs
-    goes here (A33, 2026-11-05: Gemini's free tier allows 500 requests a day)."""
-    return not case["expected"].startswith("scale")
-
-
-def _run_logged(case, variant, rep, done):
-    r = run_case(case, variant)
-    r["rep"] = rep
-    with open(RESULTS, "a") as f:
-        f.write(json.dumps(r) + "\n")
-    done[(case["id"], variant)] += not r["error"]
-    print(f"[{datetime.now():%H:%M:%S}] rep {rep} {variant} {case['id']}: expected {case['expected']}, "
-          f"got {outcome(r)} ({'right' if outcome(r) == case['expected'] else 'WRONG'}); {r['steps']} steps, "
-          f"{r['llm_calls']} calls, {r['format_failures']} format failures, {r['seconds']} s"
-          + (f"; fenced {r['fenced']}" if r["fenced"] else "")
-          + (f"; fallback {r['fallback_calls']}" if r["fallback_calls"] else "")
-          + (f"; error {r['error'][:80]}" if r["error"] else ""), flush=True)
-    if r["error"]:   # the provider broke the run: it is run again later, once the model answers
-        wait_for_llm()
-
-
-def main_run(reps):
-    """The runs still missing, resumable: v14 up to `reps` runs on each focus case (v13's runs stay as they are:
-    1-3 per case), then the lag check (v14-lag) on the same cases. A run the provider broke (an exception: every retry
-    and the fallback failed) stays in the results, is not counted (report()) and is run again."""
-    cases = [c for c in extract_cases() if c["expected"]]
-    json.dump(cases, open(CASES, "w"), indent=1)
-    done = Counter((r["case"], r["variant"]) for r in load_results() if not r["error"] and not r.get("superseded"))
-    wait_for_llm()
-    for variant in ("v14", LAG):
-        todo = [c for c in cases if focus(c)]
-        while any(done[(c["id"], variant)] < reps for c in todo):
-            for rep in range(1, reps + 1):
-                for c in todo:
-                    if done[(c["id"], variant)] < rep:
-                        _run_logged(c, variant, rep, done)
-
-
-def calls_since_reset():
-    """LLM calls (with retries) of this evaluation since Gemini's daily quota last reset: an upper bound on its use."""
-    since = last_reset()
-    return sum(r["llm_calls"] for r in load_results() if datetime.fromisoformat(r["at"]) >= since)
 
 
 def _counted():
@@ -418,39 +252,12 @@ def _per_case(cases, by, v, ids):
     return rate, steps
 
 
-def lag_check(cases, by, primary):
-    """The lag reference check (A33, 12:28 on 4/11): v14 against v14-lag on the cases both ran; (c) as redeclared on
-    5/11 before any v14-lag run: not more format failures than v14 on the same cases."""
-    ids = [cid for cid in cases if by[cid][LAG] and by[cid]["v14"]]
-    def rate(v, kind, act):
-        rs = [r for cid in ids if cases[cid]["expected"] == kind for r in by[cid][v]]
-        return sum(outcome(r) == act for r in rs), len(rs)
-    out = {"ids": ids, "complete": all(len(by[cid][LAG]) >= 3 for cid in cases if focus(cases[cid])),
-           "restart": {v: rate(v, "restart", "restart") for v in ("v14", LAG)},
-           "wrong_restart": {v: rate(v, "none", "restart") for v in ("v14", LAG)},
-           "none_right": {v: rate(v, "none", "none") for v in ("v14", LAG)},
-           "format": {v: sum(r["format_failures"] for cid in ids for r in by[cid][v]) for v in ("v14", LAG)}}
-    frac = lambda x: x[0] / x[1] if x[1] else 0.0
-    out["a"] = frac(out["restart"][LAG]) >= frac(out["restart"]["v14"])
-    out["b"] = frac(out["wrong_restart"][LAG]) <= frac(out["wrong_restart"]["v14"])
-    out["c"] = out["format"][LAG] <= out["format"]["v14"]
-    return out
-
-
-def gate():
-    """0 if the lag check is complete and passed; else 1 (v14_finish.sh stops: the reference is then removed, A33)."""
-    cases, _, primary, by = _counted()
-    lc = lag_check(cases, by, primary)
-    ok = lc["complete"] and lc["a"] and lc["b"] and lc["c"]
-    print(f"lag check: {'complete' if lc['complete'] else 'INCOMPLETE'}; (a) {'pass' if lc['a'] else 'FAIL'}, "
-          f"(b) {'pass' if lc['b'] else 'FAIL'}, (c) {'pass' if lc['c'] else 'FAIL'}")
-    return 0 if ok else 1
-
-
 def report():
     cases, results, primary, by = _counted()
     superseded = [r for r in load_results() if r.get("superseded")]
     print("# Prompt evaluation: v13's prompt against v14's (A33)\n")
+    print("*Closed on 2026-11-08 (A34): the runs measured the prompts with v13's three observation tools; v14's "
+          "investigation then became two tools (the data and the logs), so the runs still planned were not made.*\n")
     print(f"*`prompt_eval.py --report`, {datetime.now():%Y-%m-%d %H:%M}. {len(cases)} recorded wake-ups "
           f"(1-3/11, the current health model), {len(results)} runs with {agent.PRIMARY_MODEL}; {len(primary)} used "
           f"only the primary model and are counted ({len(results) - len(primary)} used the fallback or failed).*\n")
@@ -506,26 +313,7 @@ def report():
         print(f"- {name}: **{'pass' if ok else 'FAIL'}**")
     if wrong_restart:
         print(f"  - wrong restarts by v14 only: {', '.join(wrong_restart)}")
-    lc = lag_check(cases, by, primary)
-    if lc["ids"]:
-        print(f"\n## The event-loop lag reference in get_pod_breakdown ({LAG}, A33)\n")
-        print("v14 against v14 with the tool's healthy lag reference (the recorded pod breakdown with the new reference "
-              f"line), on the {len(lc['ids'])} investigation cases both ran"
-              + ("" if lc["complete"] else " (**incomplete**)") + ".\n")
-        cell = lambda x: f"{x[0]}/{x[1]}"
-        print(f"| | v14 | {LAG} |\n|---|---|---|")
-        print(f"| restart cases: restarted | {cell(lc['restart']['v14'])} | {cell(lc['restart'][LAG])} |")
-        print(f"| no-action cases: wrong restarts | {cell(lc['wrong_restart']['v14'])} | {cell(lc['wrong_restart'][LAG])} |")
-        print(f"| no-action cases: right | {cell(lc['none_right']['v14'])} | {cell(lc['none_right'][LAG])} |")
-        print(f"| code-format failures | {lc['format']['v14']} | {lc['format'][LAG]} |")
-        print("\nCriteria (declared before the first run; (c) redeclared on 5/11, before any run):\n")
-        print(f"- (a) restart cases, right action not below v14's: **{'pass' if lc['a'] else 'FAIL'}**")
-        print(f"- (b) no-action cases, wrong restarts not above v14's: **{'pass' if lc['b'] else 'FAIL'}**")
-        print(f"- (c) not more code-format failures than v14: **{'pass' if lc['c'] else 'FAIL'}**")
-        print("\n| Case | Expected | v14 | " + LAG + " |\n|---|---|---|---|")
-        for cid in lc["ids"]:
-            runs = lambda v: ", ".join(outcome(r) for r in sorted(by[cid][v], key=lambda r: r["rep"])) or "-"
-            print(f"| {cid} | {cases[cid]['expected']} | {runs('v14')} | {runs(LAG)} |")
+    print(f"\n*The lag check ({LAG}, A33: v14 with get_pod_breakdown's healthy event-loop lag reference, on the investigation cases) was declared on 4/11 and never ran: the evaluation closed on 8/11 when the investigation tools changed (A34). The reference is judged in the live runs.*")
     print("\n## Every case\n")
     print("| Case | Expected (why) | At the time | v13 prompt | v14 prompt | Borrowed outputs |\n|---|---|---|---|---|---|")
     for cid, c in cases.items():
@@ -536,13 +324,13 @@ def report():
     left = [c for c in extract_cases() if not c["expected"]]
     if left:
         print("\nLeft out: " + "; ".join(f"{c['id']} ({c['why']})" for c in left))
-    failed = [r for r in primary if r.get("failed_outputs") and r["variant"] in ("v14", LAG)]
+    failed = [r for r in primary if r.get("failed_outputs") and r["variant"] == "v14"]
     if failed:
         print("\n## The replies that failed the code format (v14)\n")
         for r in failed:
             for text in r["failed_outputs"]:
                 print(f"- {r['variant']} {r['case']} (rep {r['rep']}): `{text[:600].replace(chr(10), ' / ')}`")
-    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] in ("v13", "v14", LAG)]
+    wrong = [r for r in primary if outcome(r) != r["expected"] and r["variant"] in ("v13", "v14")]
     if wrong:
         print("\n## The wrong runs\n")
         for r in wrong:
@@ -552,11 +340,8 @@ def report():
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--cases", action="store_true")
     ap.add_argument("--report", action="store_true")
-    ap.add_argument("--gate", action="store_true", help="exit 0 only if the lag check passed (A33)")
-    ap.add_argument("--calls-since-reset", action="store_true")
     a = ap.parse_args()
     if a.cases:
         for c in extract_cases():
@@ -565,9 +350,5 @@ if __name__ == "__main__":
                   f"/{c['memory_resolved']} | {c['why']}")
     elif a.report:
         report()
-    elif a.gate:
-        sys.exit(gate())
-    elif a.calls_since_reset:
-        print(calls_since_reset())
     else:
-        main_run(a.reps)
+        ap.print_help()

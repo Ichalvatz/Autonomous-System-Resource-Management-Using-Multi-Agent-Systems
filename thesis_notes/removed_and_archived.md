@@ -280,3 +280,16 @@ Prometheus), `4-load-testing/replay_v13.py` → `replay_v13.md`.
 **Προστέθηκαν:** `4-load-testing/prompt_eval.py` (η σύγκριση των δύο prompts σε καταγεγραμμένες αφυπνίσεις, με το πραγματικό
 LLM) → `prompt_eval_cases.json`, `prompt_eval_results.jsonl`, `prompt_eval.md`· `4-load-testing/archive/v14_live_queue.sh` (τα
 δοκιμαστικά runs του v14).
+
+**Α34 (2026-11-08): η έρευνα με δεδομένα και logs (agent v14, απόφαση του χρήστη).**
+
+| Τι έφυγε | Από πού | Τι μπήκε / γιατί |
+|---|---|---|
+| Το εργαλείο `get_deployment_history()`: τα τελευταία ως 7 revisions και τι άλλαξε σε κάθε ένα | `3-ai-agent/agent_tools.py`, `agent.SRE_TOOLS` | Μία γραμμή στο `get_pod_breakdown` (`_deployment_line`): το τρέχον revision, πότε έγινε τρέχον, τι άλλαξε από το προηγούμενο. Στη φάση 2 το εργαλείο κλήθηκε πριν από κάθε ένα από τα 50 restart, γιατί το απαιτούσε ο φραγμός, και δεν άλλαξε καμία απόφαση. Το είχαμε φτιάξει για το badconfig της φάσης 1. |
+| Τα logs ως «οι 10 τελευταίες WARN/ERROR/5xx γραμμές από τις 200 τελευταίες» | `agent_tools.get_kubernetes_logs` | Τα logs των τελευταίων 10 λεπτών: ομάδες ανά μήνυμα, με πλήθος, πρώτη και τελευταία φορά, endpoints και ένα παράδειγμα, και τα σπάνια αιτήματα του παραθύρου. Στα 57 rps οι 200 γραμμές ήταν 1,8 s logs. |
+| Ο φραγμός 3 με τρία εργαλεία | `agent_tools.DIAGNOSIS_TOOLS` | Δύο: `get_pod_breakdown`, `get_kubernetes_logs`. |
+| Η γραμμή `[ERROR] [chaos] - Database connection pool leak injected`, και τα αιτήματα `/chaos/*` στο log αιτημάτων και στις μετρήσεις | `2-target-app/software-backend/app.js` | Τα δύο endpoints δηλώνονται πριν από το request ID, τις μετρήσεις και το log. Η έγχυση δεν αφήνει ίχνος, ενώ τα συμπτώματα μένουν ίδια. Ένα Jest test το ελέγχει. |
+| Τα runs του `prompt_eval.py` (`--reps`, `--gate`, `--calls-since-reset`, ο έλεγχος `v14-lag`, η αναμονή για το όριο) | `4-load-testing/prompt_eval.py` | Μένουν μόνο τα `--cases` και `--report`. Ο κώδικας των runs είναι στο commit `ab2717a`. Τα ~380 runs που έμεναν θα μετρούσαν τα παλιά εργαλεία. |
+| Τα βήματα «δοκιμή → έλεγχος lag» του `v14_finish.sh` | `4-load-testing/v14_finish.sh` | Έλεγχος ορίου (`llm_ready.py --calls-today`, `--seconds-to-reset`), μετά τα δοκιμαστικά runs, το `smoke_gate.py` και η καμπάνια. |
+
+Το `analyze_agent_steps.py` κρατά το `get_deployment_history` στη λίστα του, γιατί διαβάζει τα logs των παλιών runs.

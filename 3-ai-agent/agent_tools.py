@@ -10,20 +10,23 @@ verification's rule and timings come from health_model.follow_verdict, which the
 pod-count change no verification watched. A32.1 (2026-11-02): the readings of the verification hold only data from
 after the rollout converged, and the noise of each comparison is measured (window_noise.json).
 
-THE 5 LLM TOOLS: the only things the LLM can call (agent.py passes them to the CodeAgent in this order).
+THE 4 LLM TOOLS: the only things the LLM can call (agent.py passes them to the CodeAgent in this order).
   Observe (read-only):
     1. get_pod_breakdown()            per pod: CPU, throttling, req/s, CPU per request, p95, 5xx, event-loop lag,
-                                      memory, restarts, age, revision, ready or not
-    2. get_deployment_history()       recent revisions and what changed in each (image, env, limits, restart)
-    3. get_kubernetes_logs()          warning / error / 5xx lines of every pod
+                                      memory, restarts, age, revision, ready or not; and the deployment's current
+                                      revision, when it became current and what changed from the one before
+    2. get_kubernetes_logs()          the last 10 min of every pod: warnings and errors grouped by message (count,
+                                      first and last time, endpoints) and the rare requests of the window
   Act (guarded; each one targets only default/aiops-backend-deployment and records what it applied):
-    4. scale_kubernetes_deployment(replicas)      capacity: 1-3 replicas, at most +-2 per call, 30 s cooldown
-    5. restart_kubernetes_deployment()            bad state in the running processes: rolling restart of the
+    3. scale_kubernetes_deployment(replicas)      capacity: 1-3 replicas, at most +-2 per call, 30 s cooldown
+    4. restart_kubernetes_deployment()            bad state in the running processes: rolling restart of the
                                                   whole app, 60 s cooldown
   Removed 2026-10-22 (the user's decision for phase 2): restart of one pod, rollback of a revision.
+  Removed 2026-11-08 (A34, the user's decision): get_deployment_history(), the recent revisions; its one fact a
+  decision needs is the deployment line of get_pod_breakdown().
 
 CODE AROUND THE LLM (not tools, so the LLM can neither skip nor fake them):
-  - guards: evidence before action; no claimed action without a tool call; full diagnosis before a
+  - guards: evidence before action; no claimed action without a tool call; both observation tools before a
     restart (active only during an agent run)
   - verification of every action by the trajectory of the health model's score (verify_metrics_stabilization),
     called by agent.py after the run: improving -> wait; normal -> STABLE; worse or stuck -> UNSTABLE (re-wake)
@@ -178,17 +181,21 @@ def _owned_replica_sets(apps_v1):
     return by_revision
 
 
-# ===== Observation tools (1-3): read-only, the toolbox of an on-call engineer ===================
-# The detector's five metrics are aggregates over all pods: they cannot show WHICH pod is sick or WHAT
-# changed. These three tools can. Each one marks itself as observed for the guards below.
+# ===== Observation tools (1-2): read-only, the toolbox of an on-call engineer ===================
+# The detector's five metrics are aggregates over all pods: they cannot show WHICH pod is sick, WHAT changed or
+# WHEN it started. The data (per pod, and the deployment's last change) and the logs can. Each tool marks itself
+# as observed for the guards below. (Until A34 a third tool, get_deployment_history, listed the recent revisions.)
 # --- 1. get_pod_breakdown ---
 @tool
 def get_pod_breakdown() -> str:
     """
     Shows every backend pod separately (1-minute windows): CPU and CPU throttling, request
     rate, CPU cost per request, p95 latency, 5xx error rate, Node.js event-loop lag, memory,
-    container restarts, age and deployment revision. Use it to see whether one pod differs
-    from the others and whether resource usage is consistent with the traffic each pod serves.
+    container restarts, age and deployment revision; and the deployment's current revision,
+    when it became current and what changed from the revision before it (image, environment,
+    resources, or a plain restart). Use it to see whether one pod differs from the others,
+    whether resource usage is consistent with the traffic each pod serves, and whether a
+    change to the deployment coincides with the start of the problem.
     """
     _guard_observed("get_pod_breakdown")
     try:
@@ -205,6 +212,10 @@ def get_pod_breakdown() -> str:
         values = {name: _prom_by_pod(q) for name, q in POD_QUERIES.items()}
     except Exception as e:
         return f"Error building the pod breakdown: {e}"
+    try:
+        deployment = _deployment_line(apps_v1, core_v1)
+    except Exception as e:
+        deployment = f"Deployment: its revisions could not be read ({e})."
 
     lines = [f"{len(pods)} backend pod(s). Healthy reference (healthy traffic of the normal request mix): "
              f"CPU per request ~{HEALTHY_CPU_PER_REQUEST} core-s (max {HEALTHY_CPU_PER_REQUEST_MAX}), "
@@ -230,10 +241,11 @@ def get_pod_breakdown() -> str:
             f"5xx {fmt(get('errors') or 0.0, '{:.2f}')}/s | event-loop lag p99 {fmt(get('lag'), '{:.2f}')} s | "
             f"memory {memory}{limit}"
         )
+    lines.append(deployment)
     return "\n".join(lines)
 
 
-# --- 2. get_deployment_history (and its helpers) ---
+# --- the deployment line of get_pod_breakdown (and its helpers) ---
 def _template_summary(rs):
     container = rs.spec.template.spec.containers[0]
     env = {e.name: (e.value if e.value is not None else "<from secret/config>") for e in (container.env or [])}
@@ -277,106 +289,166 @@ def _activation_times(core_v1):
     return out
 
 
-@tool
-def get_deployment_history() -> str:
-    """
-    Lists the recent revisions of the backend deployment (newest first): when each was
-    created and what changed compared with the revision before it (image, environment
-    variables, resource limits, or a plain rolling restart). Use it to check whether a
-    change to the deployment coincides with the start of the problem.
-    """
-    _guard_observed("get_deployment_history")
-    try:
-        get_kube_config()
-        apps_v1 = client.AppsV1Api()
-        dep = apps_v1.read_namespaced_deployment(name=ALLOWED_DEPLOYMENT, namespace=ALLOWED_NAMESPACE)
-        current = int((dep.metadata.annotations or {}).get(REVISION_ANNOTATION, 0))
-        by_revision = _owned_replica_sets(apps_v1)
-        activated = _activation_times(client.CoreV1Api())
-    except Exception as e:
-        return f"Error reading the deployment history: {e}"
-    if not by_revision:
-        return "No revision history found."
-    # A rollback re-uses the old ReplicaSet: it gets a new revision number and keeps the
-    # old ones in "revision-history". Expand them, so every revision is listed with the
-    # template it ran, and diffs compare consecutive revisions in time. (Bug fix 2026-10-03,
-    # found in a live test of the tool: without it a re-applied revision showed its first
-    # creation time and the revision it replaced vanished from the list.)
+def _deployment_line(apps_v1, core_v1):
+    """The deployment's current revision: when it became current and what changed from the revision before it.
+    Until A34 (2026-11-08) a tool of its own, get_deployment_history, listed the last revisions; in phase 2 it never
+    changed a decision (165 wake-ups, its call required before each of the 50 restarts), and this is its one fact a
+    decision needs: whether a change to the pod template coincides with the problem."""
+    dep = apps_v1.read_namespaced_deployment(name=ALLOWED_DEPLOYMENT, namespace=ALLOWED_NAMESPACE)
+    current = int((dep.metadata.annotations or {}).get(REVISION_ANNOTATION, 0))
+    # A rollback re-uses the old ReplicaSet: it gets a new revision number and keeps the old ones in
+    # "revision-history". Expanded, every revision maps to the template it ran. (Bug fix 2026-10-03, found in a live
+    # test: without it a re-applied revision showed its first creation time.)
     template_of, first_rev_of_rs = {}, {}
-    for latest, rs in by_revision.items():
+    for latest, rs in _owned_replica_sets(apps_v1).items():
         older = [int(x) for x in (rs.metadata.annotations or {}).get(HISTORY_ANNOTATION, "").split(",") if x.strip()]
         for r in older + [latest]:
             template_of[r] = rs
         first_rev_of_rs[latest] = min(older + [latest])
-    now = datetime.datetime.now(datetime.timezone.utc)
-    revisions = sorted(template_of)
-    summaries = {r: _template_summary(template_of[r]) for r in revisions}
-    lines = [f"Deployment {ALLOWED_DEPLOYMENT}: current revision {current}, "
-             f"{dep.status.available_replicas or 0}/{dep.spec.replicas} replicas available. Newest first:"]
-    for i in range(len(revisions) - 1, -1, -1):
-        r = revisions[i]
-        rs = template_of[r]
-        rs_latest = int((rs.metadata.annotations or {}).get(REVISION_ANNOTATION, r))
-        first = first_rev_of_rs.get(rs_latest, r)
-        previous = summaries[revisions[i - 1]] if i > 0 else None
-        if r == first:
-            created = rs.metadata.creation_timestamp
-            when = f"created {created.astimezone().strftime('%H:%M:%S')} ({_age(created, now)} ago)"
+    if current not in template_of:
+        return f"Deployment: current revision {current}; its ReplicaSet was not found."
+    rs = template_of[current]
+    if first_rev_of_rs.get(current, current) == current:
+        when, at = "created", rs.metadata.creation_timestamp
+    else:
+        when, at = (f"re-applied the template of revision {first_rev_of_rs[current]}",
+                    _activation_times(core_v1).get(rs.metadata.name))
+    if at:
+        when += f" at {at.astimezone().strftime('%H:%M:%S')} ({_age(at)} ago)"
+    previous = max((r for r in template_of if r < current), default=None)
+    if previous is None:
+        return f"Deployment: revision {current} is current, {when}; no earlier revision is kept."
+    change = _describe_change(_template_summary(template_of[previous]), _template_summary(rs))
+    return f"Deployment: revision {current} is current, {when}; change from revision {previous}: {change}."
+
+
+# --- 2. get_kubernetes_logs (and its helpers) ---
+# What an on-call engineer looks at first in the logs: what the application reports, since when, and what came in
+# just before. Until A34 (2026-11-08) the tool showed the last 10 warning/error lines of the last 200 lines; every
+# request writes two lines, so at 57 rps that was the last 1.8 s (114 lines/s, measured 8/11): ten copies of the
+# symptom, not when or how it started.
+LOG_WINDOW_SECONDS = 600
+LOG_KINDS_SHOWN = 8
+RARE_REQUESTS_MAX = 3      # an endpoint called at most this often in the window is not part of the steady traffic,
+RARE_MIN_REQUESTS = 300    # once the window holds this many requests
+_LOG_LINE = re.compile(r"^\[(?P<ts>\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)\] \[(?P<level>[A-Z]+)\] \[[^\]]*\] "
+                       r"(?:(?P<method>GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (?P<path>\S+) )?- (?P<message>.*)$")
+_UNSTRUCTURED_PROBLEM = re.compile(r"error|exception|fatal|out of memory|\bOOM", re.I)
+_ID_SEGMENT = re.compile(r"/[^/]*\d[^/]*")
+_VARIABLE = [(re.compile(r"\d{4}-\d\d-\d\dT[\d:.]+Z"), "<time>"),
+             (re.compile(r"\b[0-9a-f]{8,}(?:-[0-9a-f]{4,})*\b"), "<id>"),
+             (re.compile(r"\d+(?:\.\d+)?"), "N")]
+
+
+def _clock(ts):
+    return ts.astimezone().strftime("%H:%M:%S") if ts else "?"
+
+
+def _summarise_log(text):
+    """One pod's log: (number of lines, first and last time, {kind: count, first, last, endpoints, example}, requests
+    started per endpoint, the start times of the first few requests of each endpoint)."""
+    kinds, arrivals, arrival_times = {}, {}, {}
+    first = last = None
+    lines = text.splitlines()
+    for line in lines:
+        m = _LOG_LINE.match(line)
+        if m:
+            ts = datetime.datetime.fromisoformat(m["ts"].replace("Z", "+00:00"))
+            first, last = first or ts, ts
+            endpoint = f"{m['method']} {_ID_SEGMENT.sub('/:id', m['path'])}" if m["method"] else None
+            if endpoint and m["message"] == "Request started":
+                arrivals[endpoint] = arrivals.get(endpoint, 0) + 1
+                if arrivals[endpoint] <= RARE_REQUESTS_MAX:
+                    arrival_times.setdefault(endpoint, []).append(ts)
+                continue
+            if m["level"] not in ("WARN", "ERROR", "FATAL"):
+                continue
+            level, message = m["level"], m["message"]
+        elif _UNSTRUCTURED_PROBLEM.search(line):   # e.g. a crash outside the structured logger
+            ts, level, message, endpoint = last, "unstructured", line.strip(), None
         else:
-            at = activated.get(rs.metadata.name) if r == rs_latest else None
-            when = (f"re-applied the template of revision {first} (a rollback, or a change back to an identical template)"
-                    + (f" at {at.astimezone().strftime('%H:%M:%S')} ({_age(at, now)} ago)" if at else ""))
-        if r != rs_latest:
-            when += f"; its template was later re-applied as revision {rs_latest}"
-        marker = " (CURRENT)" if r == current else ""
-        lines.append(f"- revision {r}{marker}: {when}: {_describe_change(previous, summaries[r])}")
-        if len(lines) > 7:
-            break
-    return "\n".join(lines)
+            continue
+        key = message
+        for pattern, placeholder in _VARIABLE:
+            key = pattern.sub(placeholder, key)
+        kind = kinds.setdefault((level, key), {"n": 0, "first": ts, "last": ts, "endpoints": {}, "example": message})
+        kind["n"] += 1
+        kind["last"] = ts or kind["last"]
+        if endpoint:
+            kind["endpoints"][endpoint] = kind["endpoints"].get(endpoint, 0) + 1
+    return len(lines), first, last, kinds, arrivals, arrival_times
 
 
-# --- 3. get_kubernetes_logs ---
+def _describe_log(name, text):
+    n, first, last, kinds, arrivals, arrival_times = _summarise_log(text)
+    out = [f"--- Pod {name}: {n} lines from {_clock(first)} to {_clock(last)} ---"]
+    if not kinds:
+        out.append("Warnings and errors: none.")
+    else:
+        shown = sorted(kinds.items(), key=lambda kv: -kv[1]["n"])[:LOG_KINDS_SHOWN]
+        out.append(f"Warnings and errors, {len(kinds)} kind(s), in order of first appearance:")
+        earliest = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)   # a line before any timestamp
+        for (level, _), k in sorted(shown, key=lambda kv: kv[1]["first"] or earliest):
+            eps = sorted(k["endpoints"].items(), key=lambda e: -e[1])
+            where = ""
+            if eps:
+                where = " on " + ", ".join(f"{e} {c}" for e, c in eps[:3])
+                where += f" and {len(eps) - 3} more endpoint(s)" if len(eps) > 3 else ""
+            out.append(f"- {level} x{k['n']}, first {_clock(k['first'])}, last {_clock(k['last'])}{where}: "
+                       f"{k['example'][:240]}")
+        if len(kinds) > len(shown):
+            rest = sorted(kinds.values(), key=lambda k: -k["n"])[len(shown):]
+            out.append(f"(and {len(rest)} smaller kind(s), {sum(k['n'] for k in rest)} line(s))")
+    total = sum(arrivals.values())
+    rare = sorted((times[0], e) for e, times in arrival_times.items() if arrivals[e] <= RARE_REQUESTS_MAX)
+    if total < RARE_MIN_REQUESTS:
+        out.append(f"Rare requests: too little traffic to tell ({total} requests in the window).")
+    elif not rare:
+        out.append(f"Rare requests: none; every endpoint called in the window ({total} requests) is part of the "
+                   "steady traffic.")
+    else:
+        out.append(f"Rare requests (called at most {RARE_REQUESTS_MAX} times, of {total} requests in the window): "
+                   + "; ".join(f"{e} at {', '.join(_clock(t) for t in arrival_times[e])}" for _, e in rare) + ".")
+    return out
+
+
 @tool
 def get_kubernetes_logs() -> str:
     """
-    Scans the last 200 log lines of every backend pod and returns, for each pod, the number
-    of lines scanned and its last 10 warning, error, 5xx or OOM lines. Use it to see what
-    the application itself reports about the problem.
+    Reads the last 10 minutes of logs of every backend pod and summarises them: the warning
+    and error lines grouped by message, each with its count, the first and the last time it
+    appeared and the endpoints it came from; and the rare requests of that window (endpoints
+    called at most 3 times, so not part of the steady traffic), with their times. Use it to
+    see what the application itself reports, when it started, and what came just before.
     """
     _guard_observed("get_kubernetes_logs")
-    deployment_name = ALLOWED_DEPLOYMENT
-    namespace = ALLOWED_NAMESPACE
     try:
         get_kube_config()
         v1 = client.CoreV1Api()
-
         # Same pod selection as get_pod_breakdown. (Until 2026-10-11 the selector was
         # app=aiops-backend-deployment, which matches no pod, so every call fell back to
         # listing all pods of the namespace and filtering by name: same pods, same output.)
-        pods = v1.list_namespaced_pod(namespace=namespace, label_selector="app=aiops-backend").items
-        matched_pods = [p for p in pods if p.metadata.name.startswith(deployment_name)]
-
-        if not matched_pods:
-            return f"No active Pods were found for deployment: {deployment_name}"
-
-        report = []
-        for pod in matched_pods:
-            pod_name = pod.metadata.name
-            logs = v1.read_namespaced_pod_log(name=pod_name, namespace=namespace, tail_lines=200)
-            lines = logs.splitlines()
-            problems = [
-                line for line in lines
-                if "[WARN" in line or "[ERROR" in line or "Status: 5" in line
-                or "Error" in line or "OOM" in line
-            ]
-            report.append(f"--- Pod {pod_name}: {len(lines)} lines scanned, {len(problems)} warnings/errors ---")
-            report.extend(problems[-10:])
-        return "\n".join(report)
+        pods = v1.list_namespaced_pod(namespace=ALLOWED_NAMESPACE, label_selector="app=aiops-backend").items
+        pods = [p for p in pods if p.metadata.name.startswith(ALLOWED_DEPLOYMENT)]
+        if not pods:
+            return f"No active Pods were found for deployment: {ALLOWED_DEPLOYMENT}"
     except Exception as e:
         return f"Error retrieving logs: {str(e)}"
+    report = [f"Logs of the last {LOG_WINDOW_SECONDS // 60} min of every backend pod (or since it started). Times are "
+              "local; the application's own timestamps inside the lines are UTC."]
+    for pod in sorted(pods, key=lambda p: p.metadata.name):
+        name = pod.metadata.name
+        try:
+            text = v1.read_namespaced_pod_log(name=name, namespace=ALLOWED_NAMESPACE,
+                                              since_seconds=LOG_WINDOW_SECONDS, _request_timeout=30)
+        except Exception as e:
+            report.append(f"--- Pod {name}: logs not available ({str(e)[:120]}) ---")
+            continue
+        report.extend(_describe_log(name, text))
+    return "\n".join(report)
 
 
-# ===== Action tools (4-5): each one is the fix for one kind of cause ============================
+# ===== Action tools (3-4): each one is the fix for one kind of cause ============================
 # capacity -> scale | bad state in the running processes -> restart (the whole app, rolling).
 # Hard-coded target, cooldowns, and every applied action recorded in run_outcome.
 # --- 4. scale_kubernetes_deployment ---
@@ -459,7 +531,7 @@ def restart_kubernetes_deployment() -> str:
     keeps serving) by fresh processes from the current pod template (same image, environment
     and resources). It clears bad state held inside the running processes; a problem that
     comes from the pod template itself comes back in the new pods. It appears afterwards as
-    a new revision in get_deployment_history().
+    a new revision in the deployment line of get_pod_breakdown().
     """
     refusal = _guard_refusal() or _diagnosis_refusal()
     if refusal:
@@ -516,8 +588,8 @@ def restart_kubernetes_deployment() -> str:
 # 2. No claimed action without a tool call: a final answer that is not "No action taken: ..." is
 #    refused while no action has been recorded in this run.
 # 3. Diagnosis before a disruptive action: a restart (every process is replaced; until phase 2 also a pod
-#    restart or a rollback) is refused until all three observation tools were used in the run. Scaling, the
-#    capacity path, is not affected.
+#    restart or a rollback) is refused until both observation tools were used in the run (until A34, 2026-11-08,
+#    all three: the deployment history was a tool of its own). Scaling, the capacity path, is not affected.
 # Active only between guard_start() and guard_stop(), which agent.py calls around one run.
 # guard_start(enforce=False) (AIOPS_ACT_GUARD=off) disables all three, for an ablation.
 _guard = {"active": False, "enforce": False, "step": 0, "observed_in": None, "observed": set()}
@@ -529,7 +601,7 @@ CLAIM_MESSAGE = ("Refused: no action tool was executed in this run, so the clust
                  "the action tool now (one tool per step), or answer final_answer(\"No action taken: <reason>\").")
 
 
-DIAGNOSIS_TOOLS = ("get_pod_breakdown", "get_deployment_history", "get_kubernetes_logs")
+DIAGNOSIS_TOOLS = ("get_pod_breakdown", "get_kubernetes_logs")
 
 
 def guard_start(enforce=True):
@@ -566,7 +638,7 @@ def _diagnosis_refusal():
         return None
     missing = [t for t in DIAGNOSIS_TOOLS if t not in _guard["observed"]]
     if missing:
-        return ("Refused (diagnosis first): a restart is disruptive, so look at all three observation "
+        return ("Refused (diagnosis first): a restart is disruptive, so look at both observation "
                 f"tools before it. Still missing: {', '.join(t + '()' for t in missing)}.")
     return None
 

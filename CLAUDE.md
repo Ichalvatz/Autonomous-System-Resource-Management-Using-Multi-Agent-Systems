@@ -13,12 +13,16 @@ The comparison is against the native Kubernetes HPA.
   summaries: `thesis_notes/results_summary.md` (v12, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
   order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
   current version; superseded ones go to `thesis_notes/history/`).
-  - **Agent v14 is the current code** (branch `nfr-v14`, since 2026-11-03; A33): v13 with the final prompt (our own
-    system prompt, the incident as its own message, one code format), every LLM call cut after 60 s, bare code fenced
-    in code, and the healthy event-loop lag in `get_pod_breakdown`. **Status (2026-11-05):** the prompt evaluation is
-    partly done (`prompt_eval.md`; stopped on Gemini's free-tier daily quota, 500 requests); no live run yet. Everything
-    left (rest of the evaluation, the lag check, smoke runs and their gate, the campaign) runs with one command:
-    `nohup ./4-load-testing/v14_finish.sh > /dev/null 2>&1 &` (log `4-load-testing/v14_finish.log`; A33's last part).
+  - **Agent v14 is the current code** (branch `nfr-v14`, since 2026-11-03; A33, A34): v13 with the final prompt (our
+    own system prompt, the incident as its own message, one code format), every LLM call cut after 60 s, bare code
+    fenced in code, the healthy event-loop lag in `get_pod_breakdown`, and (A34, 2026-11-08, the user's decision) the
+    investigation with the data and the logs: two observation tools, the deployment's last change a line of the pod
+    breakdown (`get_deployment_history` removed: it never changed a decision in phase 2), the logs from the last 10 min
+    grouped by message with their first / last time and the rare requests; the fault injector leaves no trace in the
+    logs. **Status (2026-11-08):** the prompt evaluation is closed (`prompt_eval.md`: per-case right action 94.0% = v13's,
+    format failures 1 vs 5; the runs used v13's three tools); hand tests of 8/11 (demo, stuck) went right with the
+    three tools; no measured live run yet. Smoke runs, their gate and the campaign run with one command:
+    `nohup ./4-load-testing/v14_finish.sh > /dev/null 2>&1 &` (log `4-load-testing/v14_finish.log`).
   - **Agent v13** = git tag `v13-live-check` (A32, A32.1, live-checked 2026-11-03, no campaign): v12's
     model, prompt and tools, with two changes the user asked for.
     - **A32:** the detector judges every reading after a pod-count change ("να κρίνει αμέσως αν είμαστε stable, το οποίο
@@ -71,8 +75,8 @@ The comparison is against the native Kubernetes HPA.
 | Folder | What it is |
 |---|---|
 | `1-infrastructure/` | kind cluster config (ports 80/443), kube-prometheus-stack values, ServiceMonitors (backend `/metrics`; `ingress-metrics.yaml` for ingress-nginx :10254), ingresses, ChromaDB (pinned digest, PVC at `/data`) |
-| `2-target-app/` | The **system under management**: "myWorld Travel" (from a Software Engineering II course project). `software-backend/`: Node 18 / Express, in-memory DB, bcryptjs login, prom-client metrics, `/health` (shallow), `/ready`, `POST /chaos/stuck`, `POST /chaos/cpuhog`. `software-frontend/`: React + Vite behind nginx. The k8s manifests sit at this folder's top level (`backend-deployment.yaml`: 1 core / 1 GiB, readiness and liveness probes, `SEED_DATASET=load`). |
-| `3-ai-agent/` | The runtime: `anomaly_detector.py` (main loop) → `agent.py` (facts, prompt, CodeAgent, LLM retries) → `agent_tools.py` (5 tools, guards, verification, memory). Shared modules: `nfr_metrics.py` (every PromQL query), `health_model.py` (the SVM transform, score, explanation, embedding, trajectory judgement). `memory_snapshot.py` saves / restores the memory. |
+| `2-target-app/` | The **system under management**: "myWorld Travel" (from a Software Engineering II course project). `software-backend/`: Node 18 / Express, in-memory DB, bcryptjs login, prom-client metrics, `/health` (shallow), `/ready`, `POST /chaos/stuck`, `POST /chaos/cpuhog` (declared before the request log and the metrics, so an injection leaves no trace; A34). `software-frontend/`: React + Vite behind nginx. The k8s manifests sit at this folder's top level (`backend-deployment.yaml`: 1 core / 1 GiB, readiness and liveness probes, `SEED_DATASET=load`). |
+| `3-ai-agent/` | The runtime: `anomaly_detector.py` (main loop) → `agent.py` (facts, prompt, CodeAgent, LLM retries) → `agent_tools.py` (4 tools, guards, verification, memory). Shared modules: `nfr_metrics.py` (every PromQL query), `health_model.py` (the SVM transform, score, explanation, embedding, trajectory judgement). `memory_snapshot.py` saves / restores the memory. |
 | `4-load-testing/` | k6 scenarios in `k6/` (generated, frozen), the experiment harness, campaign scripts and reports (see "Evaluation harness") |
 | `5-ml-training/` | Capacity discovery, healthy data, training (see "ML pipeline"); artifacts; `phase1/` (archived phase-1 pipeline and data) |
 | `thesis_notes/` | `README.md` (start here), `system_overview.md` (the whole picture: before / after / now), design decisions (A1–A31), worklogs, results summary, study guide, defense Q&A, manual testing guide, figures; superseded versions in `history/` |
@@ -202,8 +206,8 @@ The NFRs are anomalous at every load (R ≤ 0.81 < 1). (v9's score was the raw d
 - SIGTERM is handled like Ctrl+C (prints a summary).
 - **Blind spot:** a request is counted when it finishes. A process that never answers is seen only when nginx times out.
 
-**Agent v14** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at"}`; decision procedure and
-tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and verification, and A33's prompt):
+**Agent v14** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at"}`; decision procedure as
+v9, the rest as v10, with v12's minimum pod count, v13's detector and verification, A33's prompt and A34's tools):
 - **Computed facts** (`agent._computed_facts`):
   - the score and its explanation (with the objectives); ready vs desired pods;
   - the **minimum pod count** = the smallest count the **health model** calls healthy for max(rps, rps + max(0, trend)
@@ -224,17 +228,26 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
     (the detector sends `window`), the facts, "Your recent actions" (the last 15 min with their verdicts, in-process:
     `agent.RECENT_ACTIONS`), the incident memory, and as the last line the task with its three key constraints;
   - how to decide (v9's procedure): classify (A) capacity, when the minimum ≠ current and the pods are ready: scale to
-    the minimum, no investigation, and scale down when over-provisioned; (B) anything else: all three observation tools,
-    then act on the cause: restart on evidence of a bad process state (ERROR lines or a stuck / runaway job in the logs,
+    the minimum, no investigation, and scale down when over-provisioned; (B) anything else: both observation tools (the
+    pods with the deployment's last change; the logs), then act on the cause: restart on evidence of a bad process state (ERROR lines or a stuck / runaway job in the logs,
     unready pods, event-loop lag or CPU per request several times healthy); scale if it is capacity after all. A recent
     deployment change → "No action taken … needs a human decision", because there is no undo tool. A short breach
     without evidence → no action;
   - why (A33): until v13 smolagents asked for `<code>` blocks and our prompt for ```` ```python ````, and 15 of 581
     phase-2 steps (9 runs) failed on a stray `python` line; plus two capacity numbers for one thing, raw JSON, the
-    phase-1 "signature", generic examples and shouting. Evaluated against v13's prompt on 47 recorded wake-ups with the
-    real LLM before any live run (`4-load-testing/prompt_eval.py` → `prompt_eval.md`).
-- **5 tools** (top of `agent_tools.py`): `get_pod_breakdown`, `get_deployment_history`, `get_kubernetes_logs`,
-  `scale_kubernetes_deployment`, `restart_kubernetes_deployment` (rolling).
+    phase-1 "signature", generic examples and shouting. Evaluated against v13's prompt on 43 recorded wake-ups with the
+    real LLM before any live run, with v13's three observation tools (`4-load-testing/prompt_eval.py` →
+    `prompt_eval.md`; closed by A34).
+- **4 tools** (top of `agent_tools.py`): `get_pod_breakdown`, `get_kubernetes_logs`, `scale_kubernetes_deployment`,
+  `restart_kubernetes_deployment` (rolling).
+  - `get_pod_breakdown`: per pod CPU, throttling, req/s, CPU per request, p95, 5xx, event-loop lag, memory, restarts,
+    age, revision, with the healthy reference; and one line on the deployment: the current revision, when it became
+    current, what changed from the one before (image, env, limits or a plain restart).
+  - `get_kubernetes_logs` (A34): the last 10 min of every pod, warnings and errors grouped by message (count, first and
+    last time, endpoints, one example) and the rare requests of the window (endpoints called ≤ 3 times among ≥ 300).
+    Until A34 the last 10 problem lines of the last 200 lines: at 57 rps the last 1.8 s.
+  - `get_deployment_history` was removed by A34 (2026-11-08, the user: «περιττό και πολύ συγκεκριμένο»): its call was
+    required before each of the 50 phase-2 restarts and it never changed a decision.
   - Guards: namespace and deployment hard-coded; replicas 1–3 (`MAX_REPLICAS`); at most ±2 per call; cooldowns 30 s
     (scale) and 60 s (restart).
   - `add_base_tools=False`, `max_steps=10`.
@@ -242,7 +255,7 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
 - **Three behaviour guards** (smolagents `step_callbacks` + `final_answer_checks`, off with `AIOPS_ACT_GUARD=off`):
   1. no action or final answer in the same step as an observation;
   2. no claimed action without a tool call (a final answer must start "No action taken" if nothing ran);
-  3. no restart before all three observation tools ran.
+  3. no restart before both observation tools ran (until A34 all three).
 
   Each was added after the LLM broke the rule in a measured phase-1 run. `tests/test_final_agent.py` replays those
   incidents through a real CodeAgent.
@@ -350,13 +363,15 @@ tools as v9, the rest as v10, with v12's minimum pod count, v13's detector and v
 - **`replay_v13.py`** (A32, A32.1): v12's detector and verification against v13's on every action of phase 2 with data
   (117), the detector after the 113 STABLE ones, the live validations (series saved as `detector_validation_series.json`
   next to each validation) and the four campaigns → `replay_v13.md`. (A32's 1 m version: `archive/a32_replay_follow/`.)
-- **`prompt_eval.py`** (A33): v13's prompt against v14's with the real LLM on 43 recorded wake-ups (recorded tool
-  outputs, real action tools on a mocked cluster), plus the lag check (`v14-lag`) → `prompt_eval.md`; resumable, waits
-  for Gemini's daily quota; `--gate` (the lag check), `--calls-since-reset`.
+- **`prompt_eval.py`** (A33, closed by A34): v13's prompt against v14's with the real LLM on 43 recorded wake-ups
+  (recorded tool outputs of v13's three observation tools, real action tools on a mocked cluster) → `prompt_eval.md`.
+  Now `--cases` and `--report` only (no LLM); the code of its runs is commit `ab2717a`. The lag check (`v14-lag`) was
+  declared and never ran.
 - **`smoke_gate.py TAG`:** did a new version's smoke runs go right (one run per scenario, every action STABLE, no agent
   crash, faults recovered by a restart, no battery)?
-- **`v14_finish.sh`:** the rest of v14 in one command (evaluation → lag gate → quota check → smoke runs → smoke gate →
-  `full_campaign.sh campaign-v14-<date>`).
+- **`v14_finish.sh`:** v14's live runs in one command (quota check → smoke runs → smoke gate →
+  `full_campaign.sh campaign-v14-<date>`). `llm_ready.py --calls-today` / `--seconds-to-reset` (no LLM call): the
+  agent's requests since the daily reset (incident_log.csv), the time to the next one.
 - **Gemini's free tier** (the key's plan): 500 requests a day for the primary, 20 for the fallback, reset at 10:00 Greek
   time. A campaign uses ~200 (140 in the agent runs of campaign-2026-11-01, plus `llm_ready`). Count an experiment's
   calls before running it.
@@ -453,9 +468,9 @@ python 3-ai-agent/anomaly_detector.py         # live
 k6 run 4-load-testing/k6/demo.js              # in another terminal
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (104: detector loop, post-change readings and the follow of a
-  pod-count change, tools and guards, facts, the system prompt and the incident message, one code format, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
-- Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812).
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (105: detector loop, post-change readings and the follow of a
+  pod-count change, tools and guards, facts, the system prompt and the incident message, one code format, the deployment line and the log summary, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
+- Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812; one checks that an injection leaves no log line).
 - After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.
 
 ## Conventions / notes

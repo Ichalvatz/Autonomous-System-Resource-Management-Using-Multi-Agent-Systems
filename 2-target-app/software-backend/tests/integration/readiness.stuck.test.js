@@ -40,7 +40,19 @@ describe('GET /places/search pagination', () => {
 
 describe('stuck fault (POST /chaos/stuck)', () => {
   it('makes requests fail with 503 after the 3 s pool wait, and /ready report not ready', async () => {
-    expect((await api.post('/chaos/stuck')).status).toBe(200);
+    // The injection leaves no trace in the logs (A34, 2026-11-08): the agent reads them, and a real
+    // connection leak has no request that announces it.
+    const logged = [];
+    const saved = { log: console.log, warn: console.warn, error: console.error };
+    for (const level of Object.keys(saved)) console[level] = (...args) => logged.push(args.join(' '));
+    let injected;
+    try {
+      injected = await api.post('/chaos/stuck');
+    } finally {
+      Object.assign(console, saved);
+    }
+    expect(injected.status).toBe(200);
+    expect(logged.filter((line) => /chaos|inject/i.test(line))).toEqual([]);
 
     const ready = await api.get('/ready');
     expect(ready.status).toBe(503);
