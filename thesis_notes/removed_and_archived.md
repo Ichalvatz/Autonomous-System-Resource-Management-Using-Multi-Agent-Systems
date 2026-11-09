@@ -299,3 +299,12 @@ LLM) → `prompt_eval_cases.json`, `prompt_eval_results.jsonl`, `prompt_eval.md`
 | Τι έφυγε | Από πού | Τι μπήκε / γιατί |
 |---|---|---|
 | `gamma_holes.png` (τα υγιή διαστήματα για κάθε γ του πλέγματος, 1 / 2 / 3 pods) και η `fig_gamma_holes` | `thesis_notes/figures/presentation/`, `make_presentation_figures.py` | `gamma_hills.png` (τι είναι το γ: οι λόφοι και το άθροισμά τους, 1 pod) και `gamma_choice.png` (και οι δύο πλευρές της επιλογής στο 1 pod: τρύπες με μεγάλο γ, ανοχή στη NFR με μικρό). Στα 2 και 3 pods κάθε γ δίνει ένα διάστημα, οπότε δεν έδειχναν κάτι. Το παλιό: `git show 8371798:thesis_notes/figures/presentation/gamma_holes.png` |
+
+## 14. Μετά την καμπάνια του v14 (2026-11-09)
+
+| Τι μετακινήθηκε | Από πού | Πού είναι τώρα / γιατί |
+|---|---|---|
+| Η σύνοψη αποτελεσμάτων του v12 | `thesis_notes/results_summary.md` | `thesis_notes/history/v12/results_summary_v12.md`. Τα αρχεία στη ρίζα του `thesis_notes/` περιγράφουν πάντα την τρέχουσα έκδοση· η νέα σύνοψη είναι του v14. |
+| Η σύγκριση του v12 (`comparison_nfr.md` και τα τρία σχήματα timelines) | `4-load-testing/` | `4-load-testing/archive/comparison_campaign-2026-11-01_v12/`, από το git πριν τη γράψει από πάνω το τέλος της καμπάνιας του v14. |
+| Τα παραδείγματα του v10 / v12 στα `presentation.md`, `system_overview.md` §5, `study_guide.md` §6.4, `manual_testing.md` | τα ίδια αρχεία | Πραγματικά περιστατικά της καμπάνιας του v14 (stuck 8/11 20:07, cpuhog 21:12, κανονικό 14:45 και 22:07). Τα παλιά: στο git (tag `v12-campaign`). |
+| Ο πίνακας score / p95 του `presentation.md` §4.3 | `thesis_notes/presentation.md` | Ήταν ακόμα του μοντέλου v11 (+1.00 στο υγιές, −0.94 στη NFR)· τώρα του μοντέλου που τρέχει (v12: +0.59, −0.80). |

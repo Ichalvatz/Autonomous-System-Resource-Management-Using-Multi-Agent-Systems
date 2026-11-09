@@ -1,0 +1,26 @@
+18m         Normal    Scheduled           pod/aiops-backend-deployment-7f7544494f-bdggj    Successfully assigned default/aiops-backend-deployment-7f7544494f-bdggj to aiops-cluster-control-plane
+54m         Normal    Scheduled           pod/aiops-backend-deployment-84d5fdcf6-b8hd4     Successfully assigned default/aiops-backend-deployment-84d5fdcf6-b8hd4 to aiops-cluster-control-plane
+54m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-84d5fdcf6 from 2 to 3
+54m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-84d5fdcf6    Created pod: aiops-backend-deployment-84d5fdcf6-b8hd4
+54m         Normal    Pulled              pod/aiops-backend-deployment-84d5fdcf6-b8hd4     Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+54m         Normal    Created             pod/aiops-backend-deployment-84d5fdcf6-b8hd4     Container created
+54m         Normal    Started             pod/aiops-backend-deployment-84d5fdcf6-b8hd4     Container started
+44m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-84d5fdcf6 from 3 to 2
+44m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-84d5fdcf6    Deleted pod: aiops-backend-deployment-84d5fdcf6-svrkt
+44m         Normal    Killing             pod/aiops-backend-deployment-84d5fdcf6-svrkt     Stopping container aiops-backend-container
+43m         Warning   Unhealthy           pod/aiops-backend-deployment-84d5fdcf6-svrkt     Readiness probe failed: Get "http://10.244.0.38:3001/ready": dial tcp 10.244.0.38:3001: connect: connection refused
+37m         Normal    Killing             pod/aiops-backend-deployment-84d5fdcf6-b8hd4     Stopping container aiops-backend-container
+37m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-84d5fdcf6    Deleted pod: aiops-backend-deployment-84d5fdcf6-b8hd4
+37m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-84d5fdcf6 from 2 to 1
+37m         Warning   Unhealthy           pod/aiops-backend-deployment-84d5fdcf6-b8hd4     Readiness probe failed: Get "http://10.244.0.39:3001/ready": dial tcp 10.244.0.39:3001: connect: connection refused
+18m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-7f7544494f   Created pod: aiops-backend-deployment-7f7544494f-bdggj
+18m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-7f7544494f from 0 to 1
+18m         Normal    Created             pod/aiops-backend-deployment-7f7544494f-bdggj    Container created
+18m         Normal    Started             pod/aiops-backend-deployment-7f7544494f-bdggj    Container started
+18m         Normal    Pulled              pod/aiops-backend-deployment-7f7544494f-bdggj    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+18m         Warning   Unhealthy           pod/aiops-backend-deployment-7f7544494f-bdggj    Readiness probe failed: Get "http://10.244.0.40:3001/ready": dial tcp 10.244.0.40:3001: connect: connection refused
+18m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-84d5fdcf6    Deleted pod: aiops-backend-deployment-84d5fdcf6-thsvd
+18m         Normal    Killing             pod/aiops-backend-deployment-84d5fdcf6-thsvd     Stopping container aiops-backend-container
+18m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-84d5fdcf6 from 1 to 0
+17m         Warning   Unhealthy           pod/aiops-backend-deployment-84d5fdcf6-thsvd     Readiness probe failed: Get "http://10.244.0.37:3001/ready": dial tcp 10.244.0.37:3001: connect: connection refused
+3m16s       Warning   Unhealthy           pod/aiops-backend-deployment-7f7544494f-bdggj    Readiness probe failed: HTTP probe failed with statuscode: 503

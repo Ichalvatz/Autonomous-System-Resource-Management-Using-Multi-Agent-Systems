@@ -9,21 +9,20 @@ The comparison is against the native Kubernetes HPA.
 
 **Two phases.**
 - **Phase 2** (since 2026-10-22, after a meeting with the supervisors): NFRs, request mix, one SVM, HPA-only comparison.
-  Decisions and results: `thesis_notes/design_decisions.md` A24–A31. Log: `thesis_notes/phase2_worklog.md`. One-page
-  summaries: `thesis_notes/results_summary.md` (v12, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
+  Decisions and results: `thesis_notes/design_decisions.md` A24–A34. Log: `thesis_notes/phase2_worklog.md`. One-page
+  summaries: `thesis_notes/results_summary.md` (v14, the current version); older versions in `thesis_notes/history/<version>/`. **Reading
   order and the version map: `thesis_notes/README.md`** (the files at the top of `thesis_notes/` always describe the
   current version; superseded ones go to `thesis_notes/history/`).
-  - **Agent v14 is the current code** (branch `nfr-v14`, since 2026-11-03; A33, A34): v13 with the final prompt (our
+  - **Agent v14 is the current code and the last measured version** (branch `nfr-v14`, since 2026-11-03; tag `v14-campaign` =
+    measured code `a46ea82`; A33, A34): v13 with the final prompt (our
     own system prompt, the incident as its own message, one code format), every LLM call cut after 60 s, bare code
     fenced in code, the healthy event-loop lag in `get_pod_breakdown`, and (A34, 2026-11-08, the user's decision) the
     investigation with the data and the logs: two observation tools, the deployment's last change a line of the pod
     breakdown (`get_deployment_history` removed: it never changed a decision in phase 2), the logs from the last 10 min
     grouped by message with their first / last time and the rare requests; the fault injector leaves no trace in the
-    logs. **Status (2026-11-08):** the prompt evaluation is closed (`prompt_eval.md`: per-case right action 94.0% = v13's,
-    format failures 1 vs 5; the runs used v13's three tools); hand tests of 8/11 (demo, stuck) went right with the
-    three tools. **The campaign `campaign-v14-2026-11-08` started 2026-11-08 ~13:20** with
-    `nohup ./4-load-testing/v14_finish.sh > /dev/null 2>&1 &` (log `4-load-testing/v14_finish.log`): no separate smoke
-    runs; the campaign's first round is judged by `smoke_gate.py --first` and a FAIL stops it (A34).
+    logs. The prompt evaluation is closed (`prompt_eval.md`: per-case right action 94.0% = v13's, format failures 1 vs 5;
+    the runs used v13's three tools). **Measured in `campaign-v14-2026-11-08`** (2026-11-08 13:16 → 2026-11-09 01:53,
+    started by `v14_finish.sh`; the first round passed `smoke_gate.py --first`, A34; results below).
   - **Agent v13** = git tag `v13-live-check` (A32, A32.1, live-checked 2026-11-03, no campaign): v12's
     model, prompt and tools, with two changes the user asked for.
     - **A32:** the detector judges every reading after a pod-count change ("να κρίνει αμέσως αν είμαστε stable, το οποίο
@@ -374,15 +373,43 @@ v9, the rest as v10, with v12's minimum pod count, v13's detector and verificati
   on its first round, `smoke_gate.py --first`, which stops the campaign on a FAIL). `llm_ready.py --calls-today` / `--seconds-to-reset` (no LLM call): the
   agent's requests since the daily reset (incident_log.csv), the time to the next one.
 - **Gemini's free tier** (the key's plan): 500 requests a day for the primary, 20 for the fallback, reset at 10:00 Greek
-  time. A campaign uses ~200 (140 in the agent runs of campaign-2026-11-01, plus `llm_ready`). Count an experiment's
+  time. A campaign uses ~120–200 (v14's: 72 in the agent runs + ~45 `llm_ready`; v12's: 140 + `llm_ready`). Count an experiment's
   calls before running it.
 - **`inject.sh stuck|cpuhog|reset|status`:** hand testing (`thesis_notes/manual_testing.md`).
 - **Prometheus keeps 10 days.** Every run's series is in its `series.json`.
 
-## Results of the phase-2 campaigns (A31 / A30 / A29 / A27, `thesis_notes/results_summary.md`)
+## Results of the phase-2 campaigns (A34 / A31 / A30 / A29 / A27, `thesis_notes/results_summary.md`)
 
-**`campaign-2026-11-01` (agent v12, the last measured version; v13 changes only the detector's handling of a pod-count
-change, and replayed on this campaign it wakes the agent at the same moments, A32):** 4 + 4 runs per scenario, 2026-11-01 19:07 → 2026-11-02 06:48,
+**`campaign-v14-2026-11-08` (agent v14, the current and last measured version):** 4 + 4 runs per scenario, 2026-11-08 13:16
+→ 2026-11-09 01:08; one battery-touched agent run (18:24) relabelled `llm-v14-INVALID` and repeated 01:12–01:53
+(`archive/campaign_followup_2026-11-08.sh`); all others on AC power.
+
+| | HPA | Agent v14 |
+|---|---|---|
+| Normal load: NFR violation | 47.5 ± 41 s (0 / 50 / 40 / 100) | 27.5 ± 38 s (0 / 80 / 0 / 30), agent < HPA p = 0.24 (not significant) |
+| Normal load: cost | 77.4 replica-min | 71.6 (−7.5%, permutation p = 0.014) |
+| Normal load: correct provisioning | 75.0% | 88.2% |
+| Stuck: recovery | never (0/4), 74.3% failed requests | 4/4, restart, 125 ± 17 s (110 / 150 / 120 / 120), 6.4% failed |
+| Cpuhog: recovery | never (0/4), scaled to 2 pods (27.6 replica-min) | 4/4, restart, 102 ± 5 s (16.2 replica-min) |
+| Faults pooled | 0/8 | 8/8 (Fisher p = 0.00008); all phase-2 campaigns: agent 41/42, HPA 0/44 |
+
+- **v14 agent decisions:** 24 wake-ups, 24 actions (16 scale, 8 restart), all right at the first wake-up and verified
+  STABLE at the first reading (+20 s after the rollout); 0 re-wakes, 0 false wakes, 0 guard refusals; 2 LLM calls per scale,
+  4 per restart; 0 retries, 0 fallback, 2 fenced replies; agent time median 4.5 s, max 94 s (two Gemini calls of 37 and
+  42 s). The root cause it wrote was right in 8/8 faults (DB pool exhaustion; the `rebuild-search-index` job), read from
+  the grouped logs whose first line sat at the fault's time; no trace of "chaos". Memory found a same-action incident at
+  12/12 normal-load wake-ups after the first run. One STABLE was marginal (2nd cpuhog: the new pod's first 20 s had p95
+  0.30 s, score +0.03).
+- **Where the normal-load violation comes from:** the agent's only around scale-ups (90 s at 1→2, 20 s at 2→3, in 2 of 4
+  runs): it wakes at 90–97 rps, where the single pod's 1 m p95 is 0.30–0.39 s, and the window keeps the queue for 20–40 s
+  after the scale (A31's mechanism). The HPA's are short pod stalls, not its scaling: in all three episodes the handler p95
+  stayed 0.07–0.09 s while the event-loop lag jumped to ~1 s and throttling rose (the one-machine slowdowns of 11-01); none
+  happened in an agent run. So the violation difference is not a finding for either method.
+- Against v12 (different day, not controlled): stuck 125 vs 138 s, cpuhog 102 vs 118 s, agent median 4.5 vs 11 s, retries
+  0/24 vs 11/28 wake-ups, cost 71.6 vs 72.2, correct 88.2% vs 84.5%.
+
+**`campaign-2026-11-01` (agent v12; v13 changes only the detector's handling of a pod-count change, and replayed on this
+campaign it wakes the agent at the same moments, A32):** 4 + 4 runs per scenario, 2026-11-01 19:07 → 2026-11-02 06:48,
 all 24 on AC power, none invalid.
 
 | | HPA | Agent v12 |

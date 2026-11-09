@@ -1,0 +1,39 @@
+22m         Normal    Scheduled           pod/aiops-backend-deployment-784787589b-87chl    Successfully assigned default/aiops-backend-deployment-784787589b-87chl to aiops-cluster-control-plane
+29m         Normal    Scheduled           pod/aiops-backend-deployment-784787589b-ctpt8    Successfully assigned default/aiops-backend-deployment-784787589b-ctpt8 to aiops-cluster-control-plane
+40m         Normal    Scheduled           pod/aiops-backend-deployment-784787589b-zct2g    Successfully assigned default/aiops-backend-deployment-784787589b-zct2g to aiops-cluster-control-plane
+60m         Normal    Killing             pod/aiops-backend-deployment-64b876699-ftm47     Stopping container aiops-backend-container
+60m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-64b876699 from 3 to 2
+60m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-64b876699    Deleted pod: aiops-backend-deployment-64b876699-ftm47
+59m         Warning   Unhealthy           pod/aiops-backend-deployment-64b876699-ftm47     Readiness probe failed: Get "http://10.244.0.65:3001/ready": dial tcp 10.244.0.65:3001: connect: connection refused
+53m         Normal    Killing             pod/aiops-backend-deployment-64b876699-xnm98     Stopping container aiops-backend-container
+53m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-64b876699    Deleted pod: aiops-backend-deployment-64b876699-xnm98
+53m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-64b876699 from 2 to 1
+53m         Warning   Unhealthy           pod/aiops-backend-deployment-64b876699-xnm98     Readiness probe failed: Get "http://10.244.0.63:3001/ready": dial tcp 10.244.0.63:3001: connect: connection refused
+40m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-784787589b from 0 to 1
+40m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-784787589b   Created pod: aiops-backend-deployment-784787589b-zct2g
+40m         Normal    Started             pod/aiops-backend-deployment-784787589b-zct2g    Container started
+40m         Normal    Created             pod/aiops-backend-deployment-784787589b-zct2g    Container created
+40m         Normal    Pulled              pod/aiops-backend-deployment-784787589b-zct2g    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+40m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-64b876699    Deleted pod: aiops-backend-deployment-64b876699-pkddg
+40m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-64b876699 from 1 to 0
+40m         Normal    Killing             pod/aiops-backend-deployment-64b876699-pkddg     Stopping container aiops-backend-container
+39m         Warning   Unhealthy           pod/aiops-backend-deployment-64b876699-pkddg     Readiness probe failed: Get "http://10.244.0.64:3001/ready": dial tcp 10.244.0.64:3001: connect: connection refused
+29m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-784787589b   Created pod: aiops-backend-deployment-784787589b-ctpt8
+29m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-784787589b from 1 to 2
+29m         Normal    Started             pod/aiops-backend-deployment-784787589b-ctpt8    Container started
+29m         Normal    Created             pod/aiops-backend-deployment-784787589b-ctpt8    Container created
+29m         Normal    Pulled              pod/aiops-backend-deployment-784787589b-ctpt8    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+29m         Warning   Unhealthy           pod/aiops-backend-deployment-784787589b-ctpt8    Readiness probe failed: Get "http://10.244.0.67:3001/ready": dial tcp 10.244.0.67:3001: connect: connection refused
+22m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled up replica set aiops-backend-deployment-784787589b from 2 to 3
+22m         Normal    Pulled              pod/aiops-backend-deployment-784787589b-87chl    Container image "aiops-backend:latest" already present on machine and can be accessed by the pod
+22m         Normal    SuccessfulCreate    replicaset/aiops-backend-deployment-784787589b   Created pod: aiops-backend-deployment-784787589b-87chl
+22m         Normal    Created             pod/aiops-backend-deployment-784787589b-87chl    Container created
+22m         Normal    Started             pod/aiops-backend-deployment-784787589b-87chl    Container started
+12m         Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-784787589b   Deleted pod: aiops-backend-deployment-784787589b-87chl
+12m         Normal    Killing             pod/aiops-backend-deployment-784787589b-87chl    Stopping container aiops-backend-container
+12m         Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-784787589b from 3 to 2
+12m         Warning   Unhealthy           pod/aiops-backend-deployment-784787589b-87chl    Readiness probe failed: Get "http://10.244.0.68:3001/ready": dial tcp 10.244.0.68:3001: connect: connection refused
+5m59s       Normal    SuccessfulDelete    replicaset/aiops-backend-deployment-784787589b   Deleted pod: aiops-backend-deployment-784787589b-zct2g
+5m59s       Normal    Killing             pod/aiops-backend-deployment-784787589b-zct2g    Stopping container aiops-backend-container
+5m59s       Normal    ScalingReplicaSet   deployment/aiops-backend-deployment              Scaled down replica set aiops-backend-deployment-784787589b from 2 to 1
+5m33s       Warning   Unhealthy           pod/aiops-backend-deployment-784787589b-zct2g    Readiness probe failed: Get "http://10.244.0.66:3001/ready": dial tcp 10.244.0.66:3001: connect: connection refused
