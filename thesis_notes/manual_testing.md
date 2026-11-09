@@ -42,7 +42,7 @@ curl -s http://mwtback.aiops/ready                           # {"status":"ready"
 
 source .venv/bin/activate
 set -a; source .env; set +a      # φορτώνει το GEMINI_API_KEY στο τερματικό, χωρίς να το τυπώσει
-.venv/bin/python3 -m pytest 3-ai-agent/tests -q              # 86 passed
+.venv/bin/python3 -m pytest 3-ai-agent/tests -q              # 105 passed
 python 4-load-testing/llm_ready.py                           # απαντά το Gemini; (το κλειδί δεν τυπώνεται)
 ```
 
@@ -69,6 +69,12 @@ the change (WAIT)» ή «The change to N pod(s) is healthy», Α32.)
 ```bash
 python 3-ai-agent/anomaly_detector.py              # ο agent v14
 python 3-ai-agent/anomaly_detector.py --dry-run    # μόνο ο ανιχνευτής: χωρίς LLM, δεν αγγίζει το cluster
+```
+**Ή το HPA στη θέση του agent** (ποτέ και τα δύο μαζί):
+```bash
+kubectl apply -f 4-load-testing/baselines/hpa.yaml     # CPU 60%, 1–3 pods, scale-down μετά από 120 s
+kubectl get hpa aiops-backend-hpa -w                   # TARGETS = η CPU ως % του request (1 core), REPLICAS
+kubectl delete hpa aiops-backend-hpa                   # στο τέλος, πριν ξεκινήσεις τον agent
 ```
 Κάθε 10 s τυπώνει μια γραμμή:
 `rps: 57.0 (57.0/pod), p95: 0.113s, errors: 0.0%, replicas: 1 (ready 1), prediction: 1 (score +1.000)`.
@@ -116,20 +122,20 @@ tail -f 3-ai-agent/incident_log.csv                      # κάθε αφύπνι
 k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/baseline.js   # 38 λεπτά, το μετρημένο σενάριο
 k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/demo.js       # 22 λεπτά, γρήγορη εκδοχή
 ```
-Ενδεικτικά, από το run της 28/10 06:31 (baseline.js):
+Ενδεικτικά, από το run του agent v14 της 8/11 14:45 (baseline.js):
 
 | Πότε | Φορτίο | Τι πρέπει να δεις |
 |---|---|---|
 | 0–8 λεπτά | 43 → 87 rps | 1 pod, score ~1.0, καμία ενέργεια |
-| ~8 λεπτά | ~96 rps | πάνω από τη ζώνη του 1 pod (87): αφύπνιση. Τα γεγονότα λένε «Minimum pod count …: 2. Current: 1», ακολουθεί `scale 1->2` και STABLE σε ~40 s |
+| ~8 λεπτά | ~96 rps | πάνω από τη ζώνη του 1 pod (87): αφύπνιση. Τα γεγονότα λένε «Minimum pod count …: 2. Current: 1», ακολουθεί `scale 1->2` και STABLE στην πρώτη μέτρηση, 20 s μετά το rollout |
 | ~16 λεπτά | ~170 rps | πάνω από τη ζώνη των 2 pods (162): `scale 2->3` |
 | ~25 λεπτά | ~114 rps | κάτω από τη ζώνη των 3 pods (124), άρα σπατάλη: `scale 3->2` |
 | ~32 λεπτά | ~67 rps | κάτω από τη ζώνη των 2 pods (73): `scale 2->1` |
 
 - **Στο κανονικό φορτίο ο agent δεν χρειάζεται εργαλεία παρατήρησης:** ταξινομεί ως «CAPACITY» και κάνει scale.
 - **Μνήμη:** από το 2ο run και μετά, βλέπεις «1 similar verified past incident … scale 1->2 -> verified STABLE».
-- **Αποτέλεσμα στην καμπάνια:** 0–110 s έξω από τις NFR, ανάλογα με το πόσο γρήγορα απάντησε το LLM. Το HPA έχει 0 s, αλλά
-  πληρώνει ~5% περισσότερα pods.
+- **Αποτέλεσμα στην καμπάνια του v14:** 0–80 s έξω από τις NFR, μόνο γύρω από τα scale-up (Α34). Το HPA κλιμακώνει νωρίτερα
+  (1→2 στα 70–80 rps) και πληρώνει 7.5% περισσότερα pods· είχε 0–100 s, από σύντομα παγώματα του μηχανήματος.
 
 ---
 
@@ -188,12 +194,12 @@ k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/cpuhog
 ## 6. Ένα μετρημένο run με μία εντολή
 
 ```bash
-SCENARIO=stuck    AIOPS_MEMORY=off ./4-load-testing/run_experiment.sh llm manual-2026-10-28   # ~19 λεπτά
-SCENARIO=cpuhog   AIOPS_MEMORY=off ./4-load-testing/run_experiment.sh llm manual-2026-10-28   # ~19 λεπτά
-SCENARIO=baseline                  ./4-load-testing/run_experiment.sh llm manual-2026-10-28   # ~41 λεπτά
-SCENARIO=stuck ./4-load-testing/run_experiment.sh hpa manual-2026-10-28                       # το ίδιο με το HPA
+SCENARIO=stuck    AIOPS_MEMORY=off ./4-load-testing/run_experiment.sh llm manual-2026-11-09   # ~19 λεπτά
+SCENARIO=cpuhog   AIOPS_MEMORY=off ./4-load-testing/run_experiment.sh llm manual-2026-11-09   # ~19 λεπτά
+SCENARIO=baseline                  ./4-load-testing/run_experiment.sh llm manual-2026-11-09   # ~41 λεπτά
+SCENARIO=stuck ./4-load-testing/run_experiment.sh hpa manual-2026-11-09                       # το ίδιο με το HPA
 ```
-Το 2ο όρισμα (`manual-2026-10-28`) μπαίνει στη στήλη `notes`, ώστε τα runs να μην ανακατεύονται με μια καμπάνια. Το script
+Το 2ο όρισμα (`manual-2026-11-09`) μπαίνει στη στήλη `notes`, ώστε τα runs να μην ανακατεύονται με μια καμπάνια. Το script
 διαβάζει μόνο του το `.env`.
 
 **Τι κάνει:**
@@ -208,10 +214,10 @@ SCENARIO=stuck ./4-load-testing/run_experiment.sh hpa manual-2026-10-28         
 - Μία γραμμή στο `results_nfr*.csv`.
 - Αναφορά για όλα τα runs με την ίδια ετικέτα:
   ```bash
-  .venv/bin/python3 4-load-testing/campaign_report.py manual-2026-10-28 > 4-load-testing/manual-2026-10-28.md
+  .venv/bin/python3 4-load-testing/campaign_report.py manual-2026-11-09 > 4-load-testing/manual-2026-11-09.md
   ```
   Μην τρέξεις το `compare_results.py` με άλλη ετικέτα, γιατί ξαναγράφει το `comparison_nfr.md` της καμπάνιας. Αν το κάνεις,
-  ξανατρέξ' το μετά με `campaign-2026-11-01`.
+  ξανατρέξ' το μετά με `campaign-v14-2026-11-08`.
 
 ---
 
