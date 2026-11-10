@@ -92,6 +92,8 @@ def battery_seconds(run_dir, start, end):
         parts = line.split()
         if len(parts) == 2 and parts[1] == "BATTERY":
             t = datetime.strptime(f"{day} {parts[0]}", "%Y-%m-%d %H:%M:%S").timestamp()
+            if t < start - 12 * 3600:   # the log has clock times only: a time far before the start is the next day
+                t += 24 * 3600          # (until 2026-11-10 battery time after midnight was not counted; no run had any)
             n += start <= t <= end
     return 30 * n
 

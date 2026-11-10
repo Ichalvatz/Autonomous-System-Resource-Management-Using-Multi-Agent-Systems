@@ -4,7 +4,7 @@
 # the NFR capacity table) -> stop the strategy -> score with evaluate_run.py at the ingress (as users see it).
 #
 # Usage (from repo root):  ./4-load-testing/run_experiment.sh <strategy> [notes]
-#   llm       anomaly detector + LLM agent v9 (needs GEMINI_API_KEY, read from .env if unset)
+#   llm       anomaly detector + LLM agent (the current version; needs GEMINI_API_KEY, read from .env if unset)
 #   hpa       Kubernetes HPA (4-load-testing/baselines/hpa.yaml, needs metrics-server): the native mechanism.
 #             Both strategies run on the same deployment, with the same readiness and liveness probes, so the
 #             comparison is "Kubernetes alone" vs "Kubernetes + agent".

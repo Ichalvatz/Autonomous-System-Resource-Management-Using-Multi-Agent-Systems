@@ -507,10 +507,12 @@ def incident_message(metrics, memory, recent):
 def trigger_ai_agent(metrics_json):
     """
     Called from anomaly_detector.py when an anomaly is confirmed. Returns {"resolved", "rewake", "verdict",
-    "changed_at"}: rewake asks the detector to wake the agent again at once (the verification saw the state get worse or
-    stop improving), except after a failed scale-down, which code has already undone; changed_at is the time
-    (time.monotonic, same process) the action's rollout converged, from which the detector's readings hold only
-    post-change data until they are a minute long (A32.1); None without an action.
+    "changed_at", "rolled_back"}: rewake asks the detector to wake the agent again at once (the verification saw the
+    state get worse or stop improving), except after a failed scale-down, which code has already undone; changed_at is
+    the time (time.monotonic, same process) the action's rollout converged, from which the detector's readings hold only
+    post-change data until they are a minute long (A32.1); None without an action. rolled_back (2026-11-10): code
+    restored the pod count of a failed scale-down, a change no verification watched, so the detector follows it; the
+    count is the one it saw before the run, so it cannot tell from the readings.
     """
     started = time.monotonic()
     woke_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -540,7 +542,7 @@ def trigger_ai_agent(metrics_json):
 
     # Judge success from what the tools recorded, not from the LLM's text.
     actions = list(run_outcome["actions"])
-    verdict, detail, saved, rewake, changed_at = "", "", "", False, None
+    verdict, detail, saved, rewake, changed_at, rolled_back = "", "", "", False, None, False
     if not actions:
         resolved = not agent_error
         print(f"\n [AIOps Agent] No action applied to the cluster.\nAgent Final Output: {response}")
@@ -564,6 +566,7 @@ def trigger_ai_agent(metrics_json):
             rollback = _rollback_failed_scale_down(actions)
             if rollback:
                 actions.append(rollback)
+                rolled_back = not rollback.endswith("FAILED")   # a failed one leaves the new count: seen as a change
             rewake = verdict == "UNSTABLE" and not rollback
         run_outcome.update(recovery_s=recovery_s, score_after=score_after)
 
@@ -593,4 +596,4 @@ def trigger_ai_agent(metrics_json):
         "final_answer": response[:500],
     })
     return {"resolved": resolved, "rewake": rewake, "verdict": detail.split("\n", 1)[0] if detail else verdict,
-            "changed_at": changed_at}
+            "changed_at": changed_at, "rolled_back": rolled_back}

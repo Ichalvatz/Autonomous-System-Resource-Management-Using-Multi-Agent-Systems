@@ -6,7 +6,7 @@ Agent v10 (2026-10-26, design_decisions.md A28): the verification follows the v1
 the memory's "similar" distance comes from the model. Tools, guards and safety bounds as in v9. Agent v11 (2026-10-27,
 A30): the same, with the v11 health model (inputs in NFR units, no tuned weights). Agent v12 (2026-11-01, A31): the
 verification judges the trajectory from 10 s after the rollout instead of 60 s. Agent v13 (2026-11-02, A32): the
-verification's rule and timings come from health_model.follow_verdict, which the detector also uses to follow a
+verification's rule comes from health_model.judge_trajectory, which the detector also uses to follow a
 pod-count change no verification watched. A32.1 (2026-11-02): the readings of the verification hold only data from
 after the rollout converged, and the noise of each comparison is measured (window_noise.json).
 

@@ -592,7 +592,7 @@ deployment ενδιάμεσα (15.5 s μόνο εκείνο το βήμα), κα
     ομάδες των logs που άρχιζαν στην ώρα του σφάλματος.
 - **Χρόνος του agent:** διάμεσος 4.5 s, μέγιστο 94 s. 0 επαναλήψεις, 0 εφεδρικό. 2 κλήσεις ανά scale, 4 ανά restart.
 - **Πού είναι η παραβίαση:**
-  - **του agent** μόνο στα scale-up (90 s στο 1→2, 20 s στο 2→3, σε 2 από τα 4 runs): ξυπνά στα 90–97 rps, όταν το pod έχει
+  - **του agent** μόνο στα scale-up (60 και 30 s στο 1→2 σε δύο runs, 20 s στο 2→3 σε ένα): ξυπνά στα 90–97 rps, όταν το pod έχει
     ήδη ουρά, και το παράθυρο του λεπτού την κρατά για 20–40 s μετά το scale·
   - **του HPA** σε σύντομα παγώματα των pods (handler 0.07–0.09 s, event-loop lag ~1 s, throttling 13–22%): το μηχάνημα, όχι το
     scaling. Στα runs του agent δεν έτυχε κανένα.
@@ -733,7 +733,7 @@ deployment ενδιάμεσα (15.5 s μόνο εκείνο το βήμα), κα
 | τον detector | `3-ai-agent/anomaly_detector.py` |
 | το prompt, τα γεγονότα, τη ροή ενός περιστατικού | `3-ai-agent/agent.py` |
 | τα εργαλεία, τους φραγμούς, την επαλήθευση, τη μνήμη | `3-ai-agent/agent_tools.py` |
-| τα tests (διάβασέ τα σαν «προδιαγραφή») | `3-ai-agent/tests/` (105) |
+| τα tests (διάβασέ τα σαν «προδιαγραφή») | `3-ai-agent/tests/` (107) |
 | χωρητικότητα, δεδομένα, εκπαίδευση | `5-ml-training/capacity_discovery.py`, `collect_healthy_data.py`, `train_health_baseline.py` |
 | τα σφάλματα της εφαρμογής, τα probes | `2-target-app/software-backend/app.js`, `2-target-app/backend-deployment.yaml` |
 | φορτίο και σενάρια | `4-load-testing/k6/lib/mix.js`, `k6/make_profiles.py`, `k6/*.js` |

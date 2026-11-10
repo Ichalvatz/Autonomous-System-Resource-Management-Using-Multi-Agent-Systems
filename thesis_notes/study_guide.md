@@ -675,7 +675,7 @@ Rare requests: none; every endpoint called in the window (14610 requests) is par
 | `4-load-testing/replay_model.py` | το μοντέλο και η επαλήθευση ξανά, offline, πάνω σε καταγεγραμμένες μετρήσεις |
 | `2-target-app/software-backend/app.js` | `/chaos/stuck`, `/chaos/cpuhog`, `/ready`, `/health` |
 | `4-load-testing/run_experiment.sh`, `evaluate_run.py` | το harness και η βαθμολόγηση |
-| `3-ai-agent/tests/` | 105 unit tests: διάβασέ τα σαν «προδιαγραφή» του τι πρέπει να κάνει κάθε κομμάτι |
+| `3-ai-agent/tests/` | 107 unit tests: διάβασέ τα σαν «προδιαγραφή» του τι πρέπει να κάνει κάθε κομμάτι |
 
 ---
 

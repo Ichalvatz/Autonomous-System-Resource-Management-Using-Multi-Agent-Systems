@@ -114,11 +114,12 @@ def evaluate(bundle, reading):
 
 
 def _outcome(result):
-    """trigger_ai_agent returns {"resolved", "rewake", "verdict", "changed_at"}; a bare bool is read as "resolved"."""
+    """trigger_ai_agent returns {"resolved", "rewake", "verdict", "changed_at", "rolled_back"}; a bare bool is read as
+    "resolved"."""
     if isinstance(result, dict):
         return (bool(result.get("resolved")), bool(result.get("rewake")), result.get("verdict", ""),
-                result.get("changed_at"))
-    return bool(result), False, "", None
+                result.get("changed_at"), bool(result.get("rolled_back")))
+    return bool(result), False, "", None, False
 
 
 def run_monitor(dry_run=False):
@@ -312,24 +313,30 @@ def run_monitor(dry_run=False):
                                            "load_trend_rps_per_min": round(trend, 1) if trend is not None else None})
                 print("Αναμονή ολοκλήρωσης ενεργειών από τον Agent...")
                 try:
-                    resolved, rewake, verdict, changed_at = _outcome(trigger_ai_agent(metrics_json))
+                    resolved, rewake, verdict, changed_at, rolled_back = _outcome(trigger_ai_agent(metrics_json))
                 except Exception as e:
                     # trigger_ai_agent already survives LLM errors; this catches anything else around it
                     # (e.g. a failed write of incident_log.csv). Without it one such error would end
                     # monitoring in the middle of an experiment. (Added 2026-10-11.)
                     stats["agent_errors"] += 1
                     print(f"⚠️ Agent run failed outside the agent: {type(e).__name__}: {e}. Monitoring continues.")
-                    resolved, rewake, verdict, changed_at = False, False, "", None
+                    resolved, rewake, verdict, changed_at, rolled_back = False, False, "", None, False
 
                 # The verification watched the change of this run (STABLE, or UNSTABLE with a re-wake): the next
                 # reading is judged as usual, the change is not followed again, and the readings hold only data from
-                # after it took effect (A32.1). Not after the rollback of a failed scale-down (code restored the pod
-                # count, nothing watched it: it is followed), an unverifiable action or no action.
+                # after it took effect (A32.1). Not after an unverifiable action or no action. The rollback of a failed
+                # scale-down (code restored the pod count, nothing watched it) is followed from here: the count is
+                # again the one of the reading before the run, so the comparison of counts above cannot see it (until
+                # 2026-11-10 it was not followed, and its 1 m readings held the minute with fewer pods).
                 if verdict and (resolved or rewake):
                     last_replicas = None
                     following = None
                     if changed_at is not None:
                         window_from = changed_at
+                elif rolled_back:
+                    following = {"seen": time.monotonic(), "start": None, "points": []}
+                    window_from = None
+                    stats["followed"] += 1
                 now = datetime.now().strftime('%H:%M:%S')
                 if resolved:
                     rewakes_in_a_row = 0

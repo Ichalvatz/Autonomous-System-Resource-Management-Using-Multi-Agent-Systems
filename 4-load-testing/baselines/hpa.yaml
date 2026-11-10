@@ -9,7 +9,9 @@
 #   So the HPA keeps the NFRs at every count with the smallest margin; the default 70% (phase 1) would let
 #   2 pods run to ~93 rps each, past their safe load;
 # - scale-up immediate (the default), scale-down after 120 s of lower demand instead of the default 300 s
-#   (about the agent's own reaction: 3 readings + 90 s settle), so neither strategy pays for a longer wait.
+#   (about the agent's reaction when this was set, v9: 3 readings + a 90 s settle; since v13 the agent has no
+#   settle, and in the v14 campaign it scaled down 1-3 min before the HPA), so the HPA does not pay for the
+#   default's longer wait.
 # The readiness and liveness probes of the deployment (2-target-app/backend-deployment.yaml) are part of the
 # native setup for every strategy. Phase 1 used target 70% and the default behaviour ("HPA as shipped").
 apiVersion: autoscaling/v2

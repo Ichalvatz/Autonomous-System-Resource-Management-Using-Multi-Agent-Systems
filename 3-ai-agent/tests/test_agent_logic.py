@@ -347,7 +347,8 @@ def test_failed_scale_down_is_rolled_back_logged_saved_as_failed_and_not_rewoken
     agent action's (UNSTABLE). Code already undid it, so no re-wake."""
     result, row, save = _trigger(["scale 3->1"], "UNSTABLE", "UNSTABLE: worse than before the action")
     assert result == {"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse than before the action",
-                      "changed_at": None}     # the fake verification sets no rollout time
+                      "changed_at": None,     # the fake verification sets no rollout time
+                      "rolled_back": True}    # the detector follows the restored count
     assert row["verification"] == "UNSTABLE" and row["actions"] == "scale 3->1; rollback to 3"
     assert save.call_args.args[2] == "UNSTABLE"
 

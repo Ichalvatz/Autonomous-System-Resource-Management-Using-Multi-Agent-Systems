@@ -42,7 +42,7 @@ curl -s http://mwtback.aiops/ready                           # {"status":"ready"
 
 source .venv/bin/activate
 set -a; source .env; set +a      # φορτώνει το GEMINI_API_KEY στο τερματικό, χωρίς να το τυπώσει
-.venv/bin/python3 -m pytest 3-ai-agent/tests -q              # 105 passed
+.venv/bin/python3 -m pytest 3-ai-agent/tests -q              # 107 passed
 python 4-load-testing/llm_ready.py                           # απαντά το Gemini; (το κλειδί δεν τυπώνεται)
 ```
 

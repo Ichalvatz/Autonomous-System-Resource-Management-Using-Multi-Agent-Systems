@@ -189,7 +189,9 @@ The NFRs are anomalous at every load (R ≤ 0.81 < 1). (v9's score was the raw d
   - Any other pod-count change (a person, the validation script, the rollback of a failed scale-down) is **followed** from
     the reading that shows its pods ready (or after 90 s) with the verification's rule (`health_model.judge_trajectory`):
     healthy → normal monitoring at once; anomalous but moving towards healthy → wait, not counted; worse / not improving /
-    still anomalous after 4 min → a confirmed anomaly. Columns `window` and `follow` in the dry-run CSV.
+    still anomalous after 4 min → a confirmed anomaly. Columns `window` and `follow` in the dry-run CSV. A rollback
+    restores the count the detector saw before the run, so the agent reports it (`rolled_back`; until 2026-11-10 it was
+    not followed; never happened in a campaign).
   - v12 skipped every reading for 90 s (`REPLICA_SETTLE_SECONDS`, removed).
 - **Outages are anomalies, not low traffic:** when no pod is ready, the ingress answers fast 503s, and throughput counts
   every status.
@@ -206,7 +208,7 @@ The NFRs are anomalous at every load (R ≤ 0.81 < 1). (v9's score was the raw d
 - SIGTERM is handled like Ctrl+C (prints a summary).
 - **Blind spot:** a request is counted when it finishes. A process that never answers is seen only when nginx times out.
 
-**Agent v14** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at"}`; decision procedure as
+**Agent v14** (`agent.trigger_ai_agent`, returns `{"resolved", "rewake", "verdict", "changed_at", "rolled_back"}`; decision procedure as
 v9, the rest as v10, with v12's minimum pod count, v13's detector and verification, A33's prompt and A34's tools):
 - **Computed facts** (`agent._computed_facts`):
   - the score and its explanation (with the objectives); ready vs desired pods;
@@ -400,13 +402,24 @@ v9, the rest as v10, with v12's minimum pod count, v13's detector and verificati
   the grouped logs whose first line sat at the fault's time; no trace of "chaos". Memory found a same-action incident at
   12/12 normal-load wake-ups after the first run. One STABLE was marginal (2nd cpuhog: the new pod's first 20 s had p95
   0.30 s, score +0.03).
-- **Where the normal-load violation comes from:** the agent's only around scale-ups (90 s at 1→2, 20 s at 2→3, in 2 of 4
-  runs): it wakes at 90–97 rps, where the single pod's 1 m p95 is 0.30–0.39 s, and the window keeps the queue for 20–40 s
+- **Where the normal-load violation comes from:** the agent's only around scale-ups (60 and 30 s at 1→2 in two runs,
+  20 s at 2→3 in one): it wakes at 90–97 rps, where the single pod's 1 m p95 is 0.30–0.39 s, and the window keeps the queue for 20–40 s
   after the scale (A31's mechanism). The HPA's are short pod stalls, not its scaling: in all three episodes the handler p95
   stayed 0.07–0.09 s while the event-loop lag jumped to ~1 s and throttling rose (the one-machine slowdowns of 11-01); none
   happened in an agent run. So the violation difference is not a finding for either method.
 - Against v12 (different day, not controlled): stuck 125 vs 138 s, cpuhog 102 vs 118 s, agent median 4.5 vs 11 s, retries
   0/24 vs 11/28 wake-ups, cost 71.6 vs 72.2, correct 88.2% vs 84.5%.
+- **Audit of 2026-11-10** (`design_decisions.md` "Α34: έλεγχος μετά την καμπάνια"; the measured code stays tag
+  `v14-campaign`): every number above recomputed from the CSVs; two bugs outside any measurement fixed (the rollback was
+  not followed; battery time after midnight was not counted); three limits added to the notes:
+  - the cpuhog log line states its own diagnosis ("event loop blocked 600ms per iteration", copied verbatim in 2 of the
+    4 root causes), so "right root cause" there is partly reading that line; the restart also rests on the event-loop
+    lag (1.08–1.35 s vs 0.085), not measured without the phrase;
+  - "correct provisioning" is judged against the capacity table the agent's bands come from, so it is not independent;
+    cost is;
+  - of the 5.8 replica-min saved, 2.0 (34%) come from scaling up ~1 min later than the HPA (at 94–103 / 169–179 rps
+    with 1 m p95 0.30–0.39 s; the HPA at 70–80 / 150–162 rps with 0.19–0.25 s), the same thing that gives the 1→2
+    violation, and 3.8 (66%) from scaling down 1–3 min sooner.
 
 **`campaign-2026-11-01` (agent v12; v13 changes only the detector's handling of a pod-count change, and replayed on this
 campaign it wakes the agent at the same moments, A32):** 4 + 4 runs per scenario, 2026-11-01 19:07 → 2026-11-02 06:48,
@@ -496,7 +509,7 @@ python 3-ai-agent/anomaly_detector.py         # live
 k6 run 4-load-testing/k6/demo.js              # in another terminal
 SCENARIO=stuck ./4-load-testing/run_experiment.sh llm     # one measured run
 ```
-- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (105: detector loop, post-change readings and the follow of a
+- Tests: `.venv/bin/python3 -m pytest 3-ai-agent/tests -q` (107: detector loop, post-change readings and the follow of a
   pod-count change, tools and guards, facts, the system prompt and the incident message, one code format, the deployment line and the log summary, the judgement of a change with its noise, the factorisation the range probes rely on, memory, CodeAgent replays; everything external mocked).
 - Backend: `cd 2-target-app/software-backend && npm test` (Jest, 812; one checks that an injection leaves no log line).
 - After changing the backend: `docker build -t aiops-backend:latest 2-target-app/software-backend/ && kind load docker-image aiops-backend:latest --name aiops-cluster && kubectl rollout restart deployment/aiops-backend-deployment`.

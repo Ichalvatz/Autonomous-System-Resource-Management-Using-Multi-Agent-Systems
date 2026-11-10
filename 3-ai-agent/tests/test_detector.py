@@ -152,7 +152,7 @@ def test_a_change_that_does_not_improve_wakes_after_three_readings_without_a_ris
 
 @pytest.mark.parametrize("outcome, calls", [
     ({"resolved": True, "rewake": False, "verdict": "STABLE"}, 2),            # watched: judged as usual
-    ({"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse"}, 1),  # a rollback restored the count: followed
+    ({"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse"}, 1),  # not watched to the end: followed
     ({"resolved": True, "rewake": False}, 1),                 # no action, so a change by someone else: followed
 ])
 def test_a_change_the_verification_watched_is_not_followed_again(outcome, calls):
@@ -162,6 +162,22 @@ def test_a_change_the_verification_watched_is_not_followed_again(outcome, calls)
     trigger = mock.Mock(return_value=outcome)
     improving = [reading(p95=p, reps=2) for p in (3.0, 2.6, 2.2, 1.8, 1.4, 1.0, 0.8, 0.6)]
     assert run([A, A, A] + improving, trigger=trigger).call_count == calls
+
+
+@pytest.mark.parametrize("rolled_back, calls", [(True, 1), (False, 2)])
+def test_the_rollback_of_a_failed_scale_down_is_followed(rolled_back, calls):
+    # 3 pods, the agent scaled 3 -> 2, the verification said UNSTABLE and code restored 3: the readings show 3 pods
+    # before and after, so only the agent's "rolled_back" tells the detector that the pods changed. Followed: a
+    # distance that falls every 10 s waits. (Without it the readings are judged as usual and the agent is woken
+    # again when the cooldown ends; until 2026-11-10 that is what happened after a rollback.)
+    outcome = {"resolved": False, "rewake": False, "verdict": "UNSTABLE: worse", "rolled_back": rolled_back}
+    trigger = mock.Mock(return_value=outcome)
+    A3 = reading(p95=1.0, reps=3)
+    improving = [reading(p95=p, reps=3) for p in (3.0, 2.6, 2.2, 1.8, 1.4, 1.0, 0.8, 0.6)]
+    windows = []
+    assert run([A3, A3, A3] + improving, trigger=trigger, windows=windows).call_count == calls
+    if rolled_back:      # post-change data only: the pods are ready at the first reading after the run
+        assert windows[3:] == ["1m", "1m", "20s", "30s", "40s", "50s", "1m", "1m"]
 
 
 def test_after_a_verified_action_the_readings_hold_only_data_since_its_rollout():
