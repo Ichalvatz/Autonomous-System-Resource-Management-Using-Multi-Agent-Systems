@@ -6,7 +6,8 @@ Figures of the v14 presentation (2026-11-08): each one backs a design choice of 
                           why the NFRs are measured at the ingress
   if_vs_ocsvm.png         Isolation Forest (raw features) against the deployed One-Class SVM on the same 210 healthy
                           readings, along the load and along the latency of 1 pod: why the SVM
-  svm_map.png             what the SVM calls healthy for 1 / 2 / 3 pods (load x p95), with the training readings
+  svm_map.png             what the SVM calls healthy for 1 / 2 / 3 pods (load x p95) on one load axis, the overlaps of
+                          the bands shaded, with the training readings
   gamma_hills.png         what gamma is: the support vectors of 1 pod as hills along the load, their sum against the
                           threshold, for gamma 0.1 (2 wide hills) and 1.0 (11 narrow ones, 3 holes)
   gamma_choice.png        why gamma 0.1, both sides on 1 pod: holes in the band from gamma 0.2 up (A31), and the p95
@@ -47,6 +48,7 @@ NORMAL = ("eval_llm_20261108_1443", "eval_hpa_20261108_1527")
 
 INK, MUTED, BG, GRID = "#14213D", "#5B6577", "#FBFAF7", "#E4E1DA"
 AGENT, HPA, NFR_C, FILL = "#D9731A", "#3A6EA5", "#A23B4C", "#F4DFC6"
+OVERLAP = "#E8B278"   # healthy with either of two pod counts (svm_map.png): FILL's hue, darker
 PODS_C = {1: "#9DB4D3", 2: "#5F86B8", 3: "#2F5C94", 4: INK}
 
 plt.rcParams.update({
@@ -223,33 +225,48 @@ def fig_if_vs_ocsvm():
 
 # --- what the SVM calls healthy --------------------------------------------------------------------------------------
 def fig_svm_map():
-    loads = np.geomspace(0.7, 400, 260)
-    lats = np.geomspace(0.05, 1.0, 220)
+    """One panel, a common linear load axis: the three healthy regions drawn over each other, so the overlap of the
+    bands is seen (until 2026-11-14 three panels on a log axis, where it had to be read from the titles)."""
+    x_max, y_lo, y_hi = 270.0, 0.05, 1.0
+    loads = np.linspace(0.5, x_max, 540)
+    lats = np.geomspace(y_lo, y_hi, 220)
     L, P = np.meshgrid(loads, lats)
-    fig, axes = plt.subplots(1, 3, figsize=(16.6, 6.4), sharey=True)
-    for ax, n in zip(axes, (1, 2, 3)):
+    fig, ax = plt.subplots(figsize=(16.6, 6.0))
+    band, inside = {}, {}
+    for n in (1, 2, 3):
         grid = pd.DataFrame({"throughput": L.ravel(), "latency_p95": P.ravel(), "error_rate": 0.0, "replicas": float(n)})
         d = hm.decision(bundle, grid).reshape(L.shape)
-        ax.contourf(L, P, d >= 0, levels=[0.5, 1.5], colors=[FILL])
+        inside[n] = d >= 0
+        ax.contourf(L, P, inside[n], levels=[0.5, 1.5], colors=[FILL], alpha=0.75)
         ax.contour(L, P, d, levels=[0], colors=[AGENT], linewidths=3)
-        h = health[health["replicas"] == n]
-        ax.scatter(h["throughput"], h["latency_p95"], s=22, color=INK, zorder=3, label="υγιείς μετρήσεις")
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlim(0.7, 400)
-        ax.set_ylim(0.05, 1.0)
-        ax.set_xticks([1, 10, 100, 300])
-        ax.set_xticklabels(["1", "10", "100", "300"])
-        ax.set_yticks([0.1, 0.25, 0.35, 1.0])
-        ax.set_yticklabels(["0.1", "0.25", "0.35", "1"])
-        lo, hi = bundle["bands"][n] if n in bundle["bands"] else (np.nan, np.nan)
         iv = thb.intervals(bundle, n)
-        ax.set_title(f"{n} pod{'s' if n > 1 else ''}: υγιές {iv[0][0]:.1f}–{iv[-1][1]:.1f} αιτ./s", fontsize=17)
-        ax.axhline(nfr.NFR_P95, color=NFR_C, ls="--", lw=2)
-        ax.set_xlabel("φορτίο (αιτήματα/s)")
-    axes[0].set_ylabel("p95 (s)")
-    axes[0].legend(loc="upper left", fontsize=14)
-    axes[2].text(420, nfr.NFR_P95, " NFR", color=NFR_C, va="center", fontsize=15)
+        band[n] = (iv[0][0], iv[-1][1])
+        ax.text(sum(band[n]) / 2, 0.76, f"{n} pod{'s' if n > 1 else ''}", ha="center", va="bottom", fontsize=19,
+                fontweight="bold")
+        ax.text(sum(band[n]) / 2, 0.75, f"{band[n][0]:.1f}–{band[n][1]:.1f} αιτ./s", ha="center", va="top", fontsize=16,
+                color=MUTED)
+    ax.scatter(health["throughput"], health["latency_p95"], s=26, color=INK, edgecolor=BG, linewidth=0.6, zorder=3,
+               label="υγιείς μετρήσεις")
+    for n in (1, 2):                                                               # the overlap of n and n + 1 pods
+        lo, hi = band[n + 1][0], band[n][1]
+        ax.contourf(L, P, inside[n] & inside[n + 1], levels=[0.5, 1.5], colors=[OVERLAP], zorder=1.5)
+        for x in (lo, hi):
+            ax.plot([x, x], [y_lo, 0.43], color=INK, lw=1.2, ls=":", zorder=2)
+        ax.plot([lo, hi], [0.43, 0.43], color=INK, lw=3, solid_capstyle="butt", zorder=4)
+        ax.text((lo + hi) / 2, 0.455, f"υγιές με {n} ή {n + 1} pods\n{lo:.1f}–{hi:.1f}", ha="center", va="bottom",
+                fontsize=15, linespacing=1.15)
+    ax.set_yscale("log")
+    ax.set_xlim(0, x_max)
+    ax.set_ylim(y_lo, y_hi)
+    ax.set_xticks(range(0, 271, 30))
+    ax.set_yticks([0.1, 0.25, 0.35, 1.0])
+    ax.set_yticklabels(["0.1", "0.25", "0.35", "1"])
+    ax.minorticks_off()
+    ax.axhline(nfr.NFR_P95, color=NFR_C, ls="--", lw=2)
+    ax.text(x_max, nfr.NFR_P95, " NFR 0.35 s", color=NFR_C, va="center", fontsize=15)
+    ax.set_xlabel("φορτίο (αιτήματα/s)")
+    ax.set_ylabel("p95 (s)")
+    ax.legend(loc="lower right", fontsize=14)
     fig.tight_layout()
     save(fig, "svm_map.png")
 
