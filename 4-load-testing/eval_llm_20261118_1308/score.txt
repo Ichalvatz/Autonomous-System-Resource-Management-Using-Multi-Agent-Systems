@@ -1,0 +1,35 @@
+                       label: llm-v14-memtest
+                       start: 2026-11-18 13:10:52
+                         end: 2026-11-18 13:48:53
+                duration_min: 38.0
+             nfr_violation_s: 160
+             slo_violation_s: 160
+                     error_s: 50
+                  errors_pct: 0.09
+                    p95_mean: 0.217
+                     p95_p99: 1.969
+             replica_minutes: 73.2
+                under_prov_s: 20
+                 over_prov_s: 330
+            correct_prov_pct: 84.6
+               scale_actions: 4
+             replica_changes: 06:40 1->2, 15:50 2->3, 25:20 3->2, 32:10 2->1
+                   unready_s: 20
+           liveness_restarts: 0
+                on_battery_s: 0
+                 k6_requests: 243959
+                    k6_p95_s: 0.178
+               k6_failed_pct: 0.18
+                  k6_dropped: 0
+                   incidents: 5
+                      stable: 4
+                     rewakes: 1
+                   llm_calls: 12
+                agent_s_mean: 4.8
+               agent_actions: 13:17 scale 1->2 (UNSTABLE); 13:18 restart (STABLE); 13:26 scale 2->3 (STABLE); 13:36 scale 3->2 (STABLE); 13:42 scale 2->1 (STABLE)
+                       notes: memory-tests-2026-11-18
+                     run_dir: 4-load-testing/eval_llm_20261118_1308
+                fault_at_min: 6.0
+                  recovery_s: 168
+ nfr_violation_after_fault_s: 160
+    max_replicas_after_fault: 3

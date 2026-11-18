@@ -126,11 +126,13 @@ app.post('/chaos/cpuhog', (_, res) => {
         Math.sqrt(Math.random()); // "re-indexing"
       }
       iteration += 1;
+      // What a scheduler can know about its own job. Until 2026-11-18 the line ended with "; event loop blocked
+      // 600ms per iteration", which states the diagnosis (the agent copied it into 2 of 4 root causes in the v14
+      // campaign, tag v14-campaign); a real job does not measure its effect on the event loop.
       if (iteration % 10 === 0) {
         console.warn(
           `[${new Date().toISOString()}] [WARN] [scheduler] - job "rebuild-search-index" still running ` +
-          `after ${Math.round((Date.now() - hogSince) / 1000)}s (iteration ${iteration}, expected 1); ` +
-          `event loop blocked ${HOG_BUSY_MS}ms per iteration`
+          `after ${Math.round((Date.now() - hogSince) / 1000)}s (iteration ${iteration}, expected 1)`
         );
       }
       setTimeout(runIteration, 100 + Math.random() * 300);

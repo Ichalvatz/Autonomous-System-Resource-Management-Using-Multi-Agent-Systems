@@ -9,12 +9,14 @@
 #        The failed scale is saved as "failed", which the lookup never returns (A15), so the 2nd run can retrieve
 #        only the 1st run's restart, not avoid its first scale.
 # Calls: ~44 Gemini requests (4 x llm_ready 3; stuck 4 each; ramp+cpuhog ~12 each). ~2 h 15 min.
-# Results: eval_* dirs, rows labelled llm-v14-memtest with notes memory-tests-2026-11-09 (not part of any campaign),
-# report memory-tests-2026-11-09.md. Run from the repo root:
+# Written 2026-11-09, first run 2026-11-18 by archive/experiments_2026-11-18.sh, after the cpuhog job's log line lost
+# its "event loop blocked 600ms per iteration" (app.js), so tests 3-4 see the neutral line.
+# Results: eval_* dirs, rows labelled llm-v14-memtest with notes memory-tests-2026-11-18 (not part of any campaign),
+# report memory-tests-2026-11-18.md. Run from the repo root:
 #   nohup ./4-load-testing/archive/memory_tests_2026-11-09.sh > /dev/null 2>&1 &
 {
 cd "$(dirname "$0")/../.." || exit 1
-TAG=memory-tests-2026-11-09
+TAG=memory-tests-2026-11-18
 LOG=4-load-testing/${TAG}.log
 PY=.venv/bin/python3
 log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"; }

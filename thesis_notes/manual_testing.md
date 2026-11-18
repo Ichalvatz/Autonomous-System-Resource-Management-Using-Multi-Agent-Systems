@@ -183,11 +183,51 @@ k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/cpuhog
 2. `get_pod_breakdown`: event-loop lag p99 πάνω από 1 s (υγιές ~0.085 s, max 0.39)· η CPU ανά αίτημα ανεβαίνει λίγο (0.013
    έναντι 0.0084), γιατί η CPU της εργασίας μοιράζεται στα αιτήματα.
 3. `get_kubernetes_logs`: η ομάδα `job "rebuild-search-index" started` (μία φορά, στην ώρα του inject), μετά `still
-   running after 10s … event loop blocked 600ms per iteration`, και `High latency detected` κυρίως στο `POST /auth/login`.
+   running after 11s (iteration 10, expected 1)`, και `High latency detected` κυρίως στο `POST /auth/login`. (Ως τις 18/11
+   η γραμμή τελείωνε και με «; event loop blocked 600ms per iteration», που έλεγε μόνη της τη διάγνωση· η καμπάνια του v14
+   έτρεξε με εκείνη.)
 4. Restart, και STABLE.
 
 **Στην καμπάνια του v14:** ανάκαμψη σε 100–110 s. Το HPA πάει 1→2 pods και μένει εκεί, με p95 ~0.7 s, χωρίς ανάκαμψη:
-πληρώνει διπλά και δεν λύνει τίποτα.
+πληρώνει διπλά και δεν λύνει τίποτα. Με τη νέα γραμμή (18/11, 2 runs): restart 2 / 2, ανάκαμψη 110 s.
+
+---
+
+## 5α. Σενάριο: σφάλμα πάνω στη ράμπα (UNSTABLE και ξαναξύπνημα)
+
+Εδώ βλέπεις τι γίνεται όταν η πρώτη κίνηση του agent δεν πιάνει. Το cpuhog μπαίνει την ώρα που το φορτίο ανεβαίνει.
+
+```bash
+python 3-ai-agent/anomaly_detector.py                                                    # τερματικό 1 (μνήμη on ή AIOPS_MEMORY=off)
+k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/baseline.js    # τερματικό 2
+./4-load-testing/inject.sh cpuhog                                                        # τερματικό 3, στο 6ο λεπτό του k6
+```
+
+**Τι γίνεται** (το run της 18/11 13:08, `eval_llm_20261118_1308/controller.log`):
+1. Στο 6ο λεπτό το φορτίο είναι ~56 rps και ανεβαίνει ~17 rps/λεπτό. Το cpuhog ανεβάζει το p95 στα 1.5–1.7 s, και ο agent
+   ξυπνά σε ~30 s.
+2. **Τα γεγονότα τραβούν προς δύο μεριές.** Λένε «ελάχιστο 2» (η τάση φτάνει τα 88 rps σε 90 s, πάνω από τη ζώνη του 1 pod)
+   και «το φορτίο είναι μέσα στη ζώνη του 1 pod, άρα μόνο του δεν εξηγεί το latency».
+3. **Αν ακολουθήσει τον κανόνα A** (scale 1→2 χωρίς έρευνα): το νέο pod είναι υγιές, αλλά το παλιό, με το job, παίρνει ακόμα
+   τη μισή κίνηση. Η επαλήθευση δείχνει `-5.29 -> -5.06 -> -5.06 -> -4.95`, άνοδο 0.33 σε 30 s με θόρυβο 0.47, άρα
+   `UNSTABLE: not improving` στα +50 s.
+4. **Στην επόμενη ανώμαλη μέτρηση (10 s μετά)** βλέπεις `RE-WAKE: the last action did not help`, χωρίς τις 3 μετρήσεις και
+   χωρίς cooldown. Το μήνυμα του agent έχει πια:
+   - `Your recent actions: … scale 1->2; verification: UNSTABLE: not improving`
+   - «ελάχιστο 1, τωρινό 2». Το scale-down του κανόνα A ισχύει μόνο όταν οι NFR τηρούνται, και εδώ δεν τηρούνται.
+
+   Ερευνά λοιπόν:
+   - `get_pod_breakdown`: ένα pod με lag 1.11 s και CPU 1.00, το νέο με 0.08 s·
+   - `get_kubernetes_logs`: `job "rebuild-search-index" started` / `still running`.
+
+   Ακολουθεί restart, και STABLE στα +20 s. Από το σφάλμα ως το STABLE πέρασαν 2:15.
+5. **Μπορεί να μη το δεις:** στο 2ο run της 18/11, με τα ίδια γεγονότα, ο agent ερεύνησε κατευθείαν και έκανε restart (1:23).
+   Ο δρόμος αλλάζει από run σε run. Αν θέλεις οπωσδήποτε το UNSTABLE, ξανατρέξε· στις 18/11 βγήκε 1 στις 2.
+
+**Κόστος:** ~6–12 κλήσεις Gemini για κάθε δοκιμή (2 για το scale, 4 για την έρευνα με το restart, 2 για κάθε επόμενο scale
+της ράμπας). Μπορείς να σταματήσεις το k6 μετά το STABLE. Μετρημένη εκδοχή, ίδια με αυτή της 18/11:
+`archive/memory_tests_2026-11-09.sh`, τεστ 3–4: `SCENARIO=baseline run_experiment.sh llm`, και `inject.sh cpuhog` 6 λεπτά
+μετά το «k6 baseline.js started».
 
 ---
 

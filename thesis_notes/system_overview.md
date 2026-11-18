@@ -247,7 +247,9 @@ Offline (`4-load-testing/replay_v13.md`):
   - `POST /chaos/stuck`: «διαρροή» στο pool της βάσης. Κάθε αίτημα περιμένει 3 s και παίρνει **503 `DB_POOL_EXHAUSTED`**,
     το `/ready` αποτυγχάνει, η CPU πέφτει. Μόνο restart το διορθώνει.
   - `POST /chaos/cpuhog`: μια εργασία στο παρασκήνιο που δεν τελειώνει ποτέ. Μπλοκάρει το event loop για 600 ms κάθε φορά,
-    με κενά 100–400 ms. Μοιάζει με υπερφόρτωση (CPU ψηλά) με λίγο φορτίο. Μόνο restart το διορθώνει.
+    με κενά 100–400 ms. Μοιάζει με υπερφόρτωση (CPU ψηλά) με λίγο φορτίο. Μόνο restart το διορθώνει. Το job γράφει ανά 10
+    επαναλήψεις «still running after Ns (iteration N, expected 1)»· ως τις 18/11 πρόσθετε «event loop blocked 600ms per
+    iteration», που έλεγε τη διάγνωση (η καμπάνια του v14 έτρεξε με αυτήν).
 
 ### 4.2 Οι NFR και οι μετρικές (`3-ai-agent/nfr_metrics.py`)
 

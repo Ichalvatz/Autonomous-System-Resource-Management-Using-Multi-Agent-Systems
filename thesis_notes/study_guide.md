@@ -531,7 +531,9 @@ Rare requests: none; every endpoint called in the window (14610 requests) is par
 ```
 Το σφάλμα μπήκε στις 20:06:54: η πρώτη γραμμή της ομάδας είναι 2–3 s μετά (η αναμονή των 3 s), και το «idle since» λέει
 την ίδια ώρα σε UTC. Στο cpuhog (21:12) η πρώτη γραμμή είναι `job "rebuild-search-index" started` στις 21:12:48 και μετά
-`still running … event loop blocked 600ms per iteration`.
+`still running … event loop blocked 600ms per iteration`. (Από τις 18/11 η γραμμή σταματά στο «still running after Ns
+(iteration N, expected 1)»· με αυτήν ο agent έκανε πάλι restart 2 / 2 με σωστή αιτία, `design_decisions.md` Α34, «τα δύο
+πειράματα».)
 
 Το namespace και το deployment είναι καρφωμένα στον κώδικα. Τα docstrings των εργαλείων είναι μέρος του system prompt.
 

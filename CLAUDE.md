@@ -75,7 +75,7 @@ The comparison is against the native Kubernetes HPA.
 | Folder | What it is |
 |---|---|
 | `1-infrastructure/` | kind cluster config (ports 80/443), kube-prometheus-stack values, ServiceMonitors (backend `/metrics`; `ingress-metrics.yaml` for ingress-nginx :10254), ingresses, ChromaDB (pinned digest, PVC at `/data`) |
-| `2-target-app/` | The **system under management**: "myWorld Travel" (from a Software Engineering II course project). `software-backend/`: Node 18 / Express, in-memory DB, bcryptjs login, prom-client metrics, `/health` (shallow), `/ready`, `POST /chaos/stuck`, `POST /chaos/cpuhog` (declared before the request log and the metrics, so an injection leaves no trace; A34). `software-frontend/`: React + Vite behind nginx. The k8s manifests sit at this folder's top level (`backend-deployment.yaml`: 1 core / 1 GiB, readiness and liveness probes, `SEED_DATASET=load`). |
+| `2-target-app/` | The **system under management**: "myWorld Travel" (from a Software Engineering II course project). `software-backend/`: Node 18 / Express, in-memory DB, bcryptjs login, prom-client metrics, `/health` (shallow), `/ready`, `POST /chaos/stuck`, `POST /chaos/cpuhog` (declared before the request log and the metrics, so an injection leaves no trace; A34; since 2026-11-18 the job's log line no longer says "event loop blocked 600ms per iteration"). `software-frontend/`: React + Vite behind nginx. The k8s manifests sit at this folder's top level (`backend-deployment.yaml`: 1 core / 1 GiB, readiness and liveness probes, `SEED_DATASET=load`). |
 | `3-ai-agent/` | The runtime: `anomaly_detector.py` (main loop) → `agent.py` (facts, prompt, CodeAgent, LLM retries) → `agent_tools.py` (4 tools, guards, verification, memory). Shared modules: `nfr_metrics.py` (every PromQL query), `health_model.py` (the SVM transform, score, explanation, embedding, trajectory judgement). `memory_snapshot.py` saves / restores the memory. |
 | `4-load-testing/` | k6 scenarios in `k6/` (generated, frozen), the experiment harness, campaign scripts and reports (see "Evaluation harness") |
 | `5-ml-training/` | Capacity discovery, healthy data, training (see "ML pipeline"); artifacts; `phase1/` (archived phase-1 pipeline and data) |
@@ -412,14 +412,26 @@ v9, the rest as v10, with v12's minimum pod count, v13's detector and verificati
 - **Audit of 2026-11-10** (`design_decisions.md` "Α34: έλεγχος μετά την καμπάνια"; the measured code stays tag
   `v14-campaign`): every number above recomputed from the CSVs; two bugs outside any measurement fixed (the rollback was
   not followed; battery time after midnight was not counted); three limits added to the notes:
-  - the cpuhog log line states its own diagnosis ("event loop blocked 600ms per iteration", copied verbatim in 2 of the
-    4 root causes), so "right root cause" there is partly reading that line; the restart also rests on the event-loop
-    lag (1.08–1.35 s vs 0.085), not measured without the phrase;
+  - the cpuhog log line stated its own diagnosis ("event loop blocked 600ms per iteration", copied verbatim in 2 of the
+    4 root causes); closed on 2026-11-18 (below);
   - "correct provisioning" is judged against the capacity table the agent's bands come from, so it is not independent;
     cost is;
   - of the 5.8 replica-min saved, 2.0 (34%) come from scaling up ~1 min later than the HPA (at 94–103 / 169–179 rps
     with 1 m p95 0.30–0.39 s; the HPA at 70–80 / 150–162 rps with 0.19–0.25 s), the same thing that gives the 1→2
     violation, and 3.8 (66%) from scaling down 1–3 min sooner.
+- **The two optional experiments, 2026-11-18** (`design_decisions.md` "Α34: τα δύο πειράματα";
+  `archive/experiments_2026-11-18.sh`, 11:47 → 14:30, AC; 41 agent calls + ~20 `llm_ready`; labels `llm-v14-neutrallog` /
+  `llm-v14-memtest`, outside any campaign; reports `cpuhog-neutral-log-2026-11-18.md`, `memory-tests-2026-11-18.md`):
+  - **the cpuhog job's line no longer states the diagnosis** (`app.js`: ends at "(iteration N, expected 1)"; the campaign
+    ran with the old line, tag `v14-campaign`). 2 cpuhog runs, memory off: restart at the first wake-up 2/2, STABLE at
+    +20 s, recovery 110 / 110 s, right cause from the event-loop lag (0.98 / 1.27 s) and the "still running" job. One guard
+    refusal (restart before the logs, run 2), the first of v14;
+  - **memory on, stuck × 2:** the 2nd run did not find the 1st similar: errors 66.2% vs 50.8% = distance 17.1 (similar
+    ≤ 0.42); the 7 v14 stuck wake-ups are ≥ 0.53 apart. The memory works for capacity, not for severe faults;
+  - **memory on, normal load + cpuhog at 6:00 of k6 × 2:** run 1 = **the first live UNSTABLE of v14**: scale 1→2 (minimum 2
+    from the trend) → "not improving" at +50 s → re-wake → "Your recent actions" show it → investigate → restart → STABLE
+    (fault → STABLE 2:15). Run 2, same facts: investigated and restarted at once (1:23); then the 60 s cooldown held a real
+    1→2 for 20 s. One wrong detail in a diagnosis text ("running for over 10 minutes"; it was 1.5 min).
 
 **`campaign-2026-11-01` (agent v12; v13 changes only the detector's handling of a pod-count change, and replayed on this
 campaign it wakes the agent at the same moments, A32):** 4 + 4 runs per scenario, 2026-11-01 19:07 → 2026-11-02 06:48,
@@ -493,7 +505,7 @@ in the same campaign:
 - **Invalid runs:** two (charger dropped for 26 s and 43 s), relabelled `*-INVALID` and repeated after the campaign
   (`archive/campaign_followup_2026-10-26.sh`).
 - **Limits:** LLM provider dependency, latency below 0.25 s invisible to the model (A28.1), no live UNSTABLE in a campaign
-  (only in the v12 UNSTABLE test), shallow liveness by design, small n, one machine (v12: ingress slowdowns; the
+  (only in the v12 UNSTABLE test and once in v14's memory tests of 2026-11-18), shallow liveness by design, small n, one machine (v12: ingress slowdowns; the
   verification judges the state, not whether the action caused it, so the unnecessary restart was STABLE). Fixed in v12 (A31): v11 called 1 pod at 1–3.9 rps and at
   17.8–19.4 rps an anomaly, and its facts then suggested 3 pods (never reached in a measured run). v12's own: γ 0.1
   tolerates p95 up to ~0.33 s in the middle of the 1-pod band before it calls an anomaly; 1 pod at 1.000–1.002 rps is
