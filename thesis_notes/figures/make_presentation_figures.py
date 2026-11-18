@@ -487,17 +487,32 @@ def fig_normal_load():
 
 # --- the verification's noise ----------------------------------------------------------------------------------------
 def fig_window_noise():
+    """The noise each comparison of the verification is judged against (window_noise.json), with the two phases of the
+    window (it grows from 20 s to a minute, then slides) and the live UNSTABLE of 2026-11-18 as the worked example
+    (eval_llm_20261118_1308: score -5.29 at +20 s -> -4.95 at +50 s, a rise of 0.33 against 0.474)."""
     noise = bundle["window_noise"]
-    fig, ax = plt.subplots(figsize=(11, 6.6))
-    for key, color, name in [("step", AGENT, "πτώση μεταξύ 2 μετρήσεων (10 s) → «χειρότερα»"),
-                             ("span", HPA, "άνοδος σε 3 μετρήσεις (30 s) → «δεν βελτιώνεται»")]:
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    ax.axvspan(20, 60, color=FILL, alpha=0.55, lw=0, zorder=0)
+    for key, color, name, verdict in [("step", AGENT, "πτώση σε 10 s (από μέτρηση σε μέτρηση)", "«χειρότερα»"),
+                                      ("span", HPA, "άνοδος σε 30 s (3 μετρήσεις)", "«δεν βελτιώνεται»")]:
         xs = sorted(int(k) for k in noise[key])
-        ax.plot(xs, [noise[key][str(x)] for x in xs], "-o", color=color, lw=3, ms=8, label=name)
-    ax.set_xlabel("δευτερόλεπτα μετά την αλλαγή (το παράθυρο μεγαλώνει ως το 1 λεπτό)")
-    ax.set_ylabel("θόρυβος (95ο εκατοστημόριο, μονάδες score)")
+        ys = [noise[key][str(x)] for x in xs]
+        ax.plot(xs, ys, "-o", color=color, lw=2.5, ms=8, label=name, zorder=3)
+        ax.text(xs[-1] + 3, ys[-1], verdict, color=INK, fontsize=15, va="center")
+    rise, limit = -4.953 - -5.287, noise["span"]["50"]
+    ax.plot([50], [rise], "D", ms=10, color=INK, zorder=4)
+    ax.annotate("", xy=(50, limit - 0.01), xytext=(50, rise + 0.012),
+                arrowprops=dict(arrowstyle="<->", color=INK, lw=1.5), zorder=4)
+    ax.text(63, 0.435, f"18/11: άνοδος {rise:.2f} < {limit:.2f}\n→ «δεν βελτιώνεται» (UNSTABLE)",
+            fontsize=15, color=INK, va="center")
+    ax.text(40, 0.03, "το παράθυρο μεγαλώνει\n20 s → 1 λεπτό", ha="center", fontsize=14, color=MUTED)
+    ax.text(92, 0.03, "παράθυρο 1 λεπτού, κυλά", ha="center", fontsize=14, color=MUTED)
+    ax.set_xlim(18, 142)
+    ax.set_xticks(range(20, 121, 20))
     ax.set_ylim(0, 0.52)
-    ax.legend(loc="upper right", fontsize=15)
-    ax.set_title(f"Ο θόρυβος, μετρημένος ({noise['sequences']} ακολουθίες, {len(noise['runs'])} runs)")
+    ax.set_xlabel("δευτερόλεπτα μετά την αλλαγή")
+    ax.set_ylabel("θόρυβος (μονάδες score)")
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2, fontsize=15, handlelength=1.6, columnspacing=1.4)
     save(fig, "window_noise.png")
 
 
