@@ -6,7 +6,8 @@
 #   ./4-load-testing/inject.sh reset       rolling restart, 1 replica, waits for the rollout
 #   ./4-load-testing/inject.sh status      replicas (desired / ready), pods, revision
 # Run the scenario's load first in another terminal (k6 run 4-load-testing/k6/<stuck|cpuhog>.js)
-# and the agent in a third one. (The badconfig scenario of phase 1 was removed on 2026-10-22.)
+# and the agent in a third one; or, since 2026-11-20, one command that injects the fault itself at 4 min:
+# cd 4-load-testing/manual && k6 run <stuck|cpuhog>.js. (The badconfig scenario of phase 1 was removed on 2026-10-22.)
 set -u
 cd "$(dirname "$0")/.."
 D=deploy/aiops-backend-deployment

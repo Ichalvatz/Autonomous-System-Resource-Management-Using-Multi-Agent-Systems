@@ -116,6 +116,30 @@ tail -f 3-ai-agent/incident_log.csv                      # κάθε αφύπνι
 
 ---
 
+## Τα σενάρια με μία εντολή (`4-load-testing/manual/`, από 20/11)
+
+```bash
+cd 4-load-testing/manual
+k6 run baseline.js     # 1 → 2 → 3 → 2 → 1 pods, 38 λεπτά (το μετρημένο σενάριο)
+k6 run demo.js         # το ίδιο σχήμα, 22 λεπτά
+k6 run stuck.js        # 57 rps σε 1 pod, 16 λεπτά· το σφάλμα μπαίνει μόνο του στο 4ο λεπτό
+k6 run cpuhog.js       # το ίδιο, με το cpuhog
+```
+- **Πότε μπαίνει το σφάλμα:** `-e FAULT_AT=1m` το φέρνει νωρίτερα. Στο `baseline.js` / `demo.js` μπαίνει σφάλμα μόνο αν
+  το ζητήσεις: `k6 run -e FAULT=cpuhog -e FAULT_AT=6m baseline.js` (§5α).
+- **Τι στέλνει:** ένα `POST /chaos/<σφάλμα>` μέσα από το ingress, και το k6 το τυπώνει: `INJECT stuck: {"stuck":true,…}`.
+  Φτάνει σε **ένα** pod. Είναι ίδιο με το `inject.sh` όταν υπάρχει ένα pod, όπως στα σενάρια (57 rps στο 4ο λεπτό, ~56 rps
+  στο 6ο λεπτό του baseline). Αν υπάρχουν ήδη περισσότερα, το `inject.sh` τα πιάνει όλα.
+- **Το φορτίο είναι ακριβώς των μετρημένων σεναρίων:** τα scripts παίρνουν τα options από το `4-load-testing/k6/`, που μένει
+  ίδιο. Είναι «παγωμένο», γιατί κάθε αναφορά καμπάνιας ελέγχει το sha256 του, και στα μετρημένα runs το σφάλμα το βάζει το
+  `run_experiment.sh`.
+- **Πριν από κάθε σφάλμα:** `./4-load-testing/inject.sh reset`. Το σφάλμα μένει στο pod ώσπου να γίνει restart, άρα και μετά
+  από ένα run με το HPA ή χωρίς agent.
+- **Τα logins:** `-e TOKENS_FILE=$PWD/../../5-ml-training/k6_tokens.json` παίρνει τους χρήστες από το token pool (§1).
+  Χωρίς αυτό, το k6 κάνει 20 logins μαζί στην αρχή.
+
+Οι εντολές παρακάτω είναι οι ίδιες από τη ρίζα του repo, με το σφάλμα από τρίτο τερματικό.
+
 ## 3. Σενάριο: κανονικό φορτίο (κλιμάκωση πάνω και κάτω)
 
 ```bash
@@ -160,7 +184,8 @@ k6 run -e TOKENS_FILE=$PWD/5-ml-training/k6_tokens.json 4-load-testing/k6/stuck.
    το inject δεν αφήνει ίχνος στα logs.
 4. `restart_kubernetes_deployment()`, και η επαλήθευση δίνει STABLE στην πρώτη μέτρηση, 20 s μετά το rollout.
 
-Το inject δεν το κάνει το `stuck.js`: το τρέχεις εσύ στο 4ο λεπτό (στα runs της καμπάνιας το κάνει το `run_experiment.sh`).
+Το inject δεν το κάνει το `k6/stuck.js`: το τρέχεις εσύ στο 4ο λεπτό (στα runs της καμπάνιας το κάνει το
+`run_experiment.sh`). Το `manual/stuck.js` το κάνει μόνο του (πάνω).
 
 **Στην καμπάνια του v14:** ανάκαμψη σε 110–150 s (125 s κατά μέσο όρο). Το HPA δεν ανακάμπτει ποτέ: χωρίς κίνηση η CPU πέφτει,
 και το liveness περνά.
